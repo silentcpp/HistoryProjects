@@ -1,0 +1,1290 @@
+#pragma once
+#pragma warning(disable:4838)
+/************************************************************************/
+/* 检测工具类库包含AVM DVR功能检测集合和硬件检测集合只能使用在QT平台    */
+/************************************************************************/
+#include <QMessageBox>
+
+#include <QThread>
+
+#include <QDateTime>
+
+#include <QImage>
+
+#include <QDebug>
+
+#include <VoltageTestMgr/VoltageTestMgr.h>
+#pragma comment(lib, "VoltageTestMgr.lib")
+
+#include <MR-DO16-KNMgr/MR-DO16-KNMgr.h>
+#pragma comment(lib, "MR-DO16-KNMgr.lib")
+
+#include <UdsProtocolMgr/UdsFactory.h>
+#pragma comment(lib, "UdsProtocolMgr.lib")
+
+#include <ItechSCPIMgr/ItechSCPIMgr.h>
+#pragma comment(lib, "ItechSCPIMgr.lib")
+
+#include <CanMgr/ConnFactory.h>
+#pragma comment(lib, "CanMgr.lib")
+
+#include <CvvImage/CvvImage.h>
+#pragma comment(lib, "CvvImage.lib")
+
+#include <StaticCurrentMgr/StaticCurrentMgr.h>
+#pragma comment(lib,"StaticCurrentMgr.lib")
+
+#include "QLabelEx.h"
+
+#include <QProcess>
+
+#include "CanMatrix.h"
+
+#include "JsonTool.h"
+
+#include "RayAxis.h"
+
+#include "CanSender.h"
+
+#pragma comment(lib,"version.lib")
+
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
+
+/*QString转换为C字符串*/
+#define Q_TO_C_STR(X) X.toStdString().c_str()
+
+/*QString转换为宽字符串*/
+#define Q_TO_WC_STR(X) X.toStdWString().c_str()
+
+/*GBK/GB2312/GB18030转换为QString*/
+#define G_TO_Q_STR(X) QString::fromLocal8Bit(X)
+
+/*GBK/GB2312/GB18030转换为C字符串*/
+#define G_TO_C_STR(X) Q_TO_C_STR(G_TO_Q_STR(X))
+
+#define OK_NG(X) X ? "OK" : "NG"
+
+#define Q_SPRINTF(format,...) QString().sprintf(format,__VA_ARGS__)
+
+#define LOG_OUTPUT(INFO) \
+DetectionTool::m_lastError = INFO;\
+qDebug() << QString("%1 %2")\
+.arg(__FUNCTION__,DetectionTool::m_lastError) << endl;
+
+#define LOG_INPUT(format,...) Q_SPRINTF(format,__VA_ARGS__).replace(" ",",")
+
+#define LOG_ASSERT(success,error) \
+if (!success)\
+{\
+	DetectionTool::m_lastError = error;\
+	break;\
+}
+
+#define SCREEN_CENTER QPoint(GetSystemMetrics(SM_CXFULLSCREEN) / 2\
+,GetSystemMetrics(SM_CYFULLSCREEN) / 2)
+
+/*获取函数名*/
+#define FUNC_NAME(X) #X
+
+/*缓存区大小*/
+#define BUFF_SIZE 0x1000
+
+/*是否开启视频功能*/
+#define OPEN_VIDEO 1
+
+#define TS_SCAN_CODE 0x512
+#define TS_NO 0x1024
+
+#define NO_THROW_NEW new(std::nothrow)
+
+#if OPEN_VIDEO
+#include <Mil.h>
+#pragma comment(lib, "mil.lib")
+#include <MV800Mgr/MV800Mgr.h>
+#pragma comment(lib, "MV800Mgr.lib")
+#endif// !OPEN_VIDEO
+
+using namespace cv;
+
+/*检测类型*/
+typedef enum class DetectionType {
+	DT_AVM,
+	DT_DVR,
+	DT_HARDWARE,
+}detectionType_t;
+
+/************************************************************************/
+/* 测试结果                                                             */
+/************************************************************************/
+typedef enum class TestResult {
+	/*无测试*/
+	TR_NO,
+
+	/*测试正常*/
+	TR_OK,
+
+	/*测试异常*/
+	TR_NG,
+
+	/*正在测试*/
+	TR_TS
+}testResult_t;
+
+/*日志类型*/
+typedef enum LogType {
+	/*电压*/
+	LT_VOL,
+
+	/*电阻*/
+	LT_RES,
+
+	/*电流*/
+	LT_CUR,
+
+	/*静态电流*/
+	LT_SCUR,
+
+	/*按键*/
+	LT_KEY,
+
+	/*版本号*/
+	LT_VER,
+
+	/*故障码*/
+	LT_DTC,
+}LogType_t;
+
+/*日志名*/
+typedef enum LogName {
+	/*清除DTC*/
+	LN_CLEAR_DTC,
+
+	/*下载速度*/
+	LN_DOWNLOAD_SPEED,
+
+	/*光轴X*/
+	LN_RAY_AXIS_X,
+
+	/*光轴Y*/
+	LN_RAY_AXIS_Y,
+
+	/*光轴角度*/
+	LN_RAY_AXIS_A,
+
+	/*SFR值*/
+	LN_SFR_VALUE,
+
+	/*格式化SD卡*/
+	LN_FORMAT_SD,
+
+	/*CAN唤醒*/
+	LN_CAN_ROUSE,
+
+	/*CAN休眠*/
+	LN_CAN_SLEEP,
+
+	/*AVM视频*/
+	LN_AVM_VIDEO,
+
+	/*AVM前后视图*/
+	LN_FR_VIEW,
+
+	LN_LAST,
+}logName_t;
+
+/************************************************************************/
+/* DVR功能检测                                                          */
+/************************************************************************/
+
+/*VLC视频库*/
+#include <vlc/vlc.h>
+#pragma comment(lib, "libvlc.lib")
+#pragma comment(lib, "libvlccore.lib")
+#pragma comment(lib, "urlmon.lib")
+
+enum class DvrNetworkType {
+	DNT_WIFI,
+	DNT_ETHERNET,
+};
+
+/*DVR文件类型*/
+typedef enum class DvrFileType {
+	/*DVR正常录制*/
+	DFL_NOR,
+
+	/*DVR紧急录制*/
+	DFL_EVT,
+
+	/*DVR照片*/
+	DFL_PHO,
+
+	/*未知*/
+	DFL_D1,
+
+	/*未知*/
+	DFL_ALL,
+}dvrFileType_t;
+
+/*DVR文件信息结构,详情请查阅通讯协议*/
+typedef struct DvrFileInfo {
+	ushort index;
+
+	uchar path;
+	
+	uchar type;
+	
+	uchar suffix;
+	
+	uchar reserved[3];
+	
+	size_t size;
+	
+	size_t date;
+}dvrFileInfo_t;
+
+/*DVR文件列表,详情请查阅通讯协议*/
+typedef struct DvrFileList {
+	size_t listCount;
+
+	dvrFileInfo_t dvrFileInfo[100];
+}dvrFileList_t;
+
+/*DVR系统状态*/
+typedef enum class DvrSystemStatus {
+	/*初始化*/
+	DSS_INITIALIZING,
+
+	/*正常录制*/
+	DSS_GENERAL_RECORD,
+
+	/*暂停录制*/
+	DSS_PAUSE_RECORD,
+
+	/*用户紧急录制[硬按键]*/
+	DSS_HARDWARE_KEY,
+
+	/*紧急录制碰撞*/
+	DSS_CRASH_KEY,
+
+	/*更新模式*/
+	DSS_UPDATE_MODE,
+
+	/*错误*/
+	DSS_ERROR,
+}dvrSystemStatus_t;
+
+/*DVR WIFI状态*/
+typedef enum class DvrWifiStatus {
+	/*WIFI关闭*/
+	DWS_CLOSE,
+
+	/*WIFI初始化*/
+	DWS_INIT,
+
+	/*WIFI正常*/
+	DWS_NORMAL,
+
+	/*WIFI已连接*/
+	DWS_CONNECT,
+
+	/*WIFI错误*/
+	DWS_ERROR,
+}dvrWifiStatus_t;
+
+/*DVR以太网状态*/
+typedef enum class DvrEthernetStatus {
+	/*以太网已连接*/
+	DES_CONNECT,
+
+	/*以太网错误*/
+	DES_ERROR,
+}dvrEthernetStatus_t;
+
+/*DVR SD卡状态*/
+typedef enum class DvrSdCardStatus {
+	/*SD卡正常*/
+	DSCS_NORMAL,
+
+	/*无SD卡*/
+	DSCS_NO_SD,
+
+	/*SD卡错误*/
+	DSCS_ERROR,
+
+	/*SD卡没有格式化*/
+	DSCS_NOT_FORMAT,
+
+	/*SD卡存储不足*/
+	DSCS_INSUFFICIENT,
+
+	/*预留*/
+	DSCS_RESERVED,
+}dvrSdCardStatus_t;
+
+/*格式化sd卡*/
+typedef enum class DvrFormatSdCard {
+	/*通过网络*/
+	DFSC_BY_NETWORK,
+
+	/*通过CAN*/
+	DFSC_BY_CAN,
+
+	/*通过UDS*/
+	DFSC_BY_UDS,
+}dvrFormatSdCard_t;
+
+/*HASH码结构体用于模板判断*/
+typedef struct HashCode {
+	/*系统状态*/
+	size_t systemStatus;
+
+	/*WIFI状态*/
+	size_t wifiStatus;
+
+	/*以太网状态*/
+	size_t ethernetStatus;
+
+	/*SD卡状态*/
+	size_t sdCardStatus;
+}hashCode_t;
+
+/*采集卡结构体*/
+typedef struct CaptureCard {
+	/*采集卡名称*/
+	QString cardName;
+
+	/*图像宽度*/
+	int width;
+
+	/*图像高度*/
+	int height;
+
+	/*图像总大小*/
+	int size;
+}captureCard_t;
+
+#pragma comment(lib,"ws2_32.lib")
+
+/************************************************************************/
+/* SFR服务端,用于与SFR APP进行通讯,此处用作服务端                       */
+/************************************************************************/
+class SfrServer {
+public:
+	SOCKET m_socket;
+
+	SOCKET m_client;
+
+	sockaddr_in m_sockAddr;
+
+	QString m_lastError = "No Error";
+
+	bool m_quit = false;
+protected:
+	void setLastError(const QString& err);
+public:
+	SfrServer();
+
+	~SfrServer();
+
+	bool startListen(const ushort& port = 2000);
+
+	bool getSfr(const QString& filePath, float& sfr);
+
+	int send(SOCKET socket, char* buffer, int len);
+
+	int recv(SOCKET socket, char* buffer, int len);
+
+	void closeServer();
+
+	const QString& getLastError();
+};
+
+/************************************************************************/
+/* DVR客户端,用于与DVR服务端通讯                                        */
+/************************************************************************/
+class DvrClient {
+private:
+	QString m_lastError = "No Error";
+
+	SOCKET m_socket;
+
+	SOCKADDR_IN m_sockAddr;
+
+	char m_ipAddr[32] = {};
+
+	ushort m_port;
+
+	bool m_init = false;
+
+	bool m_close = false;
+protected:
+	void setLastError(const QString& err);
+public:
+	DvrClient();
+
+	~DvrClient();
+
+	bool connectServer(const char* ipAddr, const ushort& port, const int& protocol = SOCK_STREAM);
+
+	int send(char* buffer, int len);
+
+	int recv(char* buffer, int len);
+
+	const char* getIpAddr();
+
+	const ushort& getPort();
+
+	void closeConnect();
+
+	const QString& getLastError();
+};
+
+/*MIL采集卡线程声明*/
+class MilCaptureThread;
+
+/*启动处理回调函数*/
+typedef bool (*LaunchProc)(void*);
+
+/*请求处理回调函数*/
+typedef bool (*RequestProc)(const int&, void*);
+
+/************************************************************************/
+/* 检测工具类                                                           */
+/************************************************************************/
+class DetectionTool : public QThread
+{
+	Q_OBJECT
+private:
+	/*判断枚举*/
+	hashCode_t m_hashCode;
+
+	/*测试用时,毫秒*/
+	size_t m_elapsedTime = 0;
+
+	/*测试产品统计*/
+	size_t m_total = 1;
+
+	/*IP适配器信息*/
+	IP_ADAPTER_INFO m_ipAdapterInfo;
+
+	/*安全等级*/
+	int m_udsLevel = SAL_LEVEL1;
+
+	/*会话*/
+	int m_udsSession = 0x03;
+
+	QMap<int, bool> m_enableLogType;
+protected:
+	/*当前类是否初始化成功*/
+	bool m_success = false;
+
+	/*检测类型*/
+	DetectionType m_detectionType;
+
+	/*JSON*/
+	JsonTool* m_jsonTool = nullptr;
+
+	/*设备配置*/
+	deviceConfig_t m_deviceConfig;
+
+	/*硬件配置*/
+	hardwareConfig_t m_hardwareConfig;
+
+	/*继电器配置*/
+	relayConfig_t m_relayConfig;
+
+	/*图像检测配置*/
+	imageConfig_t m_imageCheckConfig;
+
+	/*范围配置*/
+	rangeConfig_t m_rangeConfig;
+
+	/*阈值配置*/
+	thresholdConfig_t m_thresholdConfig;
+
+	/*硬件检测信息*/
+	hwdConfig_t m_hwdInfo;
+
+	/*UDS检测信息*/
+	udsConfig_t m_udsInfo;
+
+	/*日志数据*/
+	QString m_logData[128];
+
+#if OPEN_VIDEO
+	/*采集卡结构体*/
+	captureCard_t m_captureCard;
+
+	/*类型*/
+	QString m_rectType;
+
+	/************************************************************************/
+	/* OpenCv                                                               */
+	/************************************************************************/
+
+	/*目标分析图像*/
+	IplImage* m_cvAnalyze = nullptr;
+
+	/*控件显示图像*/
+	IplImage* m_cvPainting = nullptr;
+
+	/*此处定义必须为指针类型*/
+	MilCaptureThread* m_milCaptureThread = nullptr;
+
+	/*MV800类*/
+	CMV800Mgr m_mv800Mgr;
+
+#endif// !OPEN_VIDEO
+	/************************************************************************/
+	/* vlc                                                                  */
+	/************************************************************************/
+	HWND m_vlcHwnd = nullptr;
+	libvlc_instance_t* m_vlcInstance = nullptr;
+	libvlc_media_t* m_vlcMedia = nullptr;
+	libvlc_media_player_t* m_vlcMediaPlayer = nullptr;
+
+	/************************************************************************/
+	/* CAN,UDS                                                              */
+	/************************************************************************/
+	/*CAN矩阵工具,未完成*/
+	CanMatrix m_canMatrix;
+
+	/*CAN连接工厂*/
+	CConnFactory m_canConnFactory;
+
+	/*CAN连接管理*/
+	IConnMgr* m_canConnMgr = nullptr;
+
+	/*UDS工厂*/
+	CUdsFactory m_udsFactory;
+
+	/*UDS申请管理*/
+	IUdsApplyMgr* m_udsApplyMgr = nullptr;
+
+	/*简单的发送管理*/
+	CanSender m_canSender;
+
+	/************************************************************************/
+	/* 功能测试硬件类、结构体                                               */
+	/************************************************************************/
+	/*电源类*/
+	CItechSCPIMgr m_power;
+
+	/*16路继电器类*/
+	CMRDO16KNMgr m_relay;
+
+	/*电压表类*/
+	CVoltageTestMgr m_voltage;
+
+	/*线程是否退出*/
+	bool m_quit = false;
+
+	/*是否连接*/
+	bool m_connect = false;
+
+	/*是否抓图*/
+	bool m_capture = false;
+
+	/*客户端*/
+	DvrClient m_dvrClient;
+
+	/*SFR服务端*/
+	SfrServer m_sfrServer;
+
+	/*必须重写*/
+	virtual void run() = 0;
+
+	/*设置错误信息,重载1*/
+	void setLastError(const QString& err);
+
+	/*设置错误信息,重载2*/
+	void setLastError(const QString& err, bool addItem, bool msgBox = false);
+
+	/*日志格式化写入,还需完善*/
+	void formatWriteLog(int logName, const char*, ...);
+
+	/*DVR网络类型*/
+	DvrNetworkType m_dvrNetworkType = DvrNetworkType::DNT_ETHERNET;
+
+	/*DVR声音和灯是否打开*/
+	bool m_soundLight = false;
+
+	/*UDS编码转换*/
+	bool udsEncodeConvert(VersonConfig* versionConfig);
+
+	int m_testSequence = TS_NO;
+public:
+	/*保存错误信息*/
+	static QString m_lastError;
+
+	/*构造*/
+	explicit DetectionTool(const DetectionType& type, QObject* parent = nullptr);
+
+	explicit DetectionTool(const DetectionType& type, std::initializer_list<LogType> logType, QObject* parent = nullptr);
+
+	/*拷贝构造删除*/
+	DetectionTool(const DetectionTool& other) = delete;
+
+	/*复制构造删除*/
+	DetectionTool& operator=(const DetectionTool&) = delete;
+
+	/*析构*/
+	virtual ~DetectionTool();
+
+	/*初始化实例*/
+	virtual bool initInstance();
+	
+	/*设置测试顺序*/
+	virtual void setTestSequence(const int& testSequence);
+
+	/*打开设备*/
+	virtual bool openDevice();
+
+	/*关闭设备*/
+	virtual bool closeDevice();
+
+	/*开始测试*/
+	virtual bool prepareTest(LaunchProc launchProc = nullptr, void* args = nullptr);
+
+	/*结束测试*/
+	virtual bool finishTest(QFile& file, bool success);
+
+	/*必须重写*/
+	virtual bool saveLog(bool success) = 0;
+
+	/*检测版本号*/
+	virtual bool checkVersion();
+
+	/*检测DTC*/
+	virtual bool checkDtc();
+
+	/*检测电流*/
+	virtual bool checkCurrent();
+
+	/*检测静态电流*/
+	virtual bool checkStaticCurrent(const ulong& delay = 6000U);
+
+	/*检测CAN唤醒休眠*/
+	virtual bool checkCanRouseSleep(const MsgNode& rouseMsg, const size_t& delay, LaunchProc launchProc, void* args);
+
+	/*检测按键电压*/
+	virtual bool checkKeyVoltag();
+
+	/*检测电压*/
+	virtual bool checkVoltage();
+
+	/*清除DTC*/
+	virtual bool clearDtc();
+
+	/*设置访问等级*/
+	void setAccessLevel(const int& udsLevel);
+
+	/*设置诊断会话*/
+	void setDiagnosticSession(const int& udsSession);
+
+	/*还原访问等级*/
+	void restoreAccessLevel();
+
+	/*还原诊断会话*/
+	void restoreDiagnosticSession();
+
+	/*通过DID写入数据*/
+	bool writeDataByDid(const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+
+	/*通过DID写入数据,拓展版本*/
+	bool writeDataByDidEx(const uchar* routine, const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+
+	/*通过DID确认数据*/
+	bool confirmDataByDid(const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+
+	/*写入默认日志*/
+	bool writeDefaultLog(QFile& file, bool success);
+
+	/*初始化基本检测日志*/
+	void initBaseDl();
+
+	/*设置写入基本检测日志*/
+	void setWriteBaseDl(std::initializer_list<LogType> logType);
+
+	/*创建日志文件*/
+	const QString createLogFile(bool success);
+
+	/*获取错误信息*/
+	const QString& getLastError();
+
+	/*进入安全访问*/
+	bool enterSecurityAccess(const uchar& session = 0x03, const uchar& access = 0x01);
+
+	/************************************************************************/
+	/* CanSender                                                            */
+	/************************************************************************/
+	/*添加CAN报文*/
+	bool addCanMsg(const MsgNode& msg, const int& cycle, const SendType& sendType = ST_Period, const int& count = 0);
+
+	bool addCanMsg(const CanMsg& msg);
+
+	bool delCanMsg(const int& id);
+
+	bool delCanMsgs(const int* ids, const int& count);
+
+	bool delCanMsgs(std::initializer_list<int> ids);
+
+	bool sendCanMsg();
+
+	bool stopCanMsg();
+	/************************************************************************/
+	/* 线程控制                                                               */
+	/************************************************************************/
+
+	/*线程暂停*/
+	void threadPause();
+
+	/*线程是否暂停*/
+	bool threadIsPause();
+
+	/*线程继续*/
+	void threadContinue();
+
+	/*线程退出*/
+	void threadQuit();
+
+	/*设置扫码对话框*/
+	void setScanCodeDlg(bool show);
+
+	/*设置结束对话框*/
+	void setUnlockDlg(bool show = true);
+
+	/*消息对话框,只可以在其他线程中使用*/
+	void setMessageBox(const QString& title, const QString& text);
+
+	/*消息对话框,加强版*/
+	void setMessageBoxEx(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
+
+	/*询问对话框,只可以在其他线程中使用*/
+	bool setQuestionBox(const QString& title, const QString& text);
+
+	/*询问对话框,加强版*/
+	bool setQuestionBoxEx(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
+
+	/*设置测试结果*/
+	void setTestResult(const testResult_t& testResult);
+
+	/*设置当前状态*/
+	void setCurrentStatus(const QString& status, bool systemStatus = false);
+
+	/*列表控件中增加一个元素*/
+	void addListItem(const QString& item, bool logItem = true);
+
+	/*列表控件中增加一个元素,拓展版*/
+	void addListItemEx(const QString& item);
+
+	/*清空列表控件*/
+	void clearListItem();
+
+	/************************************************************************/
+	/* 获取时间日期                                                           */
+	/************************************************************************/
+
+	/*获取当前时间*/
+	const QString getCurrentTime(bool fileFormat = false);
+
+	/*获取当前日期*/
+	const QString getCurrentDate(bool fileFormat = false);
+
+	/*获取当前时间日期*/
+	const QString getCurrentDateTime(bool fileFormat = false);
+
+	/************************************************************************/
+	/* 友元                                                                 */
+	/************************************************************************/
+
+	/*MIL采集卡类*/
+	friend class MilCaptureThread;
+
+	/*MV800回调函数*/
+	friend void __stdcall Mv800CaptureThread(const uchar* head, const uchar* bits, LPVOID param);
+
+	/*检测VERSION,DTC动态显示在listwidget中*/
+	friend void dynamicDisplay(void* arg, void* parent);
+
+	/************************************************************************/
+	/* 图像控制                                                              */
+	/************************************************************************/
+
+	/*设置采集卡属性*/
+	void setCaptureCardAttribute(const QString& cardName);
+
+	/*开始采集卡采集数据*/
+	void startCaptureCard();
+
+	/*停止采集卡采集数据*/
+	void endCaptureCard();
+
+	/*在图像上画矩形*/
+	inline void drawRectOnImage(IplImage* cvImage);
+
+	/*在图像上检测矩形*/
+	bool checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectConfig, QString& colorData);
+
+	/*设置矩形类型*/
+	void setRectType(const QString& rectType = QString("SMALL"));
+
+	/*还原矩形类型*/
+	void restoreRectType();
+
+	/*更新图像*/
+	void updateImage(const QImage& image);
+
+	/*Cv图像转Qt图像*/
+	bool cvImageToQtImage(IplImage* src, QImage* dst);
+
+	/************************************************************************/
+	/* AVM                                                                  */
+	/************************************************************************/
+
+	/*循环抓图,效率最高*/
+	bool cycleCapture();
+
+	/*通过按键触发AVM*/
+	void tiggerAVMByKey();
+
+	/*设置led灯*/
+	void setLedLight(bool _switch);
+
+	/*使用报文检测AVM*/
+	bool checkAVMUseMsg(const MsgNode& msg, const size_t& delay, bool (*judgeProc)(void*), void* args);
+
+	/*使用按键检测AVM*/
+	bool checkAVMUseKey(LaunchProc launchProc, RequestProc requestProc, const int& request, void* args, const ulong& delay = 0);
+
+	/*前后视图检测AVM*/
+	bool checkAVMFRView(std::initializer_list<MsgNode> msg, const size_t& delay);
+
+	/************************************************************************/
+	/* DVR                                                                  */
+	/************************************************************************/
+
+	/************************************************************************/
+	/*						      vlc									    */
+	/* vlc调用Rtsp协议出画,此处必须包含vlc ./bin 目录下的所有文件,包括      */
+	/* [lua ,plugins ,libvlc.dll ,libvlccore.dll]                           */
+	/************************************************************************/
+
+	/*设置DVR网络类型*/
+	void setDvrNetworkType(const DvrNetworkType& protocol);
+
+	/*设置vlc媒体播放句柄*/
+	void setVlcMediaHwnd(HWND vlcHwnd);
+
+	/*使用vlc库调用rtsp播放文件*/
+	bool vlcRtspStart(const QString& url);
+
+	/*停止rtsp播放*/
+	bool vlcRtspStop();
+
+	/*DVR网络通讯协议算法*/
+	const size_t dvrCrc32Algorithom(uchar const* memoryAddr, const size_t& memoryLen, const size_t& oldCrc32);
+
+	/*获取DVR文件列表*/
+	bool getDvrFileUrl(QString& url, const dvrFileType_t& fileType, const char* ipAddr = "10.0.0.10", const ushort port = 2000, const int protocol = SOCK_STREAM);
+
+	/*下载紧急录制文件*/
+	bool downloadDvrFile(const QString& url, const QString& dirName, bool downloadVideo = true);
+
+	/*检测DVR光轴*/
+	bool checkDvrRayAxis(const QString& url, const QString& dirName);
+
+	/*格式化DVR SD卡*/
+	bool formatDvrSdCard(const dvrFormatSdCard_t& flag);
+
+	/*获取DVR所有状态*/
+	template<class T>bool getDvrAllStatus(T& status);
+
+	/*自动处理DVR状态*/
+	template<class T>bool autoProcessDvrStatus();
+
+	/*开始DVR时间同步*/
+	void startDvrTimeSync();
+
+	/*停止DVR时间同步*/
+	void stopDvrTimeSync();
+
+	/*设置DVR声音和灯光*/
+	bool setDvrSoundLight(bool enable);
+
+	/*获取DVR声音和灯光*/
+	bool getDvrSoundLigth();
+
+	/*获取DVR解像度*/
+	bool checkDvrSfr(const QString& url, const QString& dirName);
+
+	/************************************************************************/
+	/* 其他功能                                                             */
+	/************************************************************************/
+	/*打开外部程序*/
+	bool startExternalProgram(const QString& program, int show = SW_HIDE);
+
+	/*关闭外部程序*/
+	bool finishExternalProgram(const QString& file);
+
+	/*改变IP地址[需要管理员权限,修改UA]*/
+	bool changeIpAddress(const QString& destAddr, const QString& subnetMask, const QString& gateway, const int& id = 1);
+
+	/*还原IP地址[需要管理员权限,修改UA]*/
+	bool restoreIpAddress();
+
+	/*获取物理适配器信息*/
+	bool getPhysicalAdapterInfo(IP_ADAPTER_INFO* info, const int& id = 1);
+
+	/*获取物理适配器数量*/
+	const int getPhysicalAdapterCount();
+
+	/************************************************************************/
+	/* Get                                                                  */
+	/************************************************************************/
+	/*获取CAN连接*/
+	IConnMgr* getCanConnect();
+
+	/*获取CAN发送者*/
+	CanSender& getCanSend();
+
+	/*获取CAN唤醒电流*/
+	const float& getCanRouseCur();
+
+	/*获取电源*/
+	CItechSCPIMgr& getPower();
+
+	/*获取Json工具*/
+	const JsonTool* const getJsonTool();
+
+	/*获取检测类型*/
+	const DetectionType& getDetectionType();
+signals:
+	/************************************************************************/
+	/* 信号同上                                                              */
+	/************************************************************************/
+
+	/*更新图像信号*/
+	void updateImageSignal(const QImage& image);
+
+	/*设置消息对话框信号*/
+	void setMessageBoxSignal(const QString& title, const QString& text);
+
+	/*设置消息对话框拓展版信号*/
+	void setMessageBoxExSignal(const QString& title, const QString& text, const QPoint& point);
+
+	/*设置询问对话框信号*/
+	void setQuestionBoxSignal(const QString& title, const QString& text, bool* result);
+
+	/*设置询问对话框拓展版信号*/
+	void setQuestionBoxExSignal(const QString& title, const QString& text, bool* result, const QPoint& point);
+
+	/*设置测试结果信号*/
+	void setTestResultSignal(const testResult_t& result);
+
+	/*设置当前状态信号*/
+	void setCurrentStatusSignal(const QString& status, bool append);
+
+	/*设置扫码对话框信号*/
+	void setScanCodeDlgSignal(bool show);
+
+	/*设置解锁对话框信号*/
+	void setUnlockDlgSignal(bool show);
+
+	/*增加一个列表项目信号*/
+	void addListItemSignal(const QString& item, bool logItem);
+
+	/*清空列表控件信号*/
+	void clearListItemSignal();
+};
+
+/*动态显示版本号,DTC数据到ListWidget中*/
+void dynamicDisplay(void* arg, void* parent);
+
+/*模板获取DVR所有状态*/
+template<class T> inline bool DetectionTool::getDvrAllStatus(T& status)
+{
+	bool result = false, success = false;
+	do
+	{
+		const size_t& statusCode = typeid(status).hash_code();
+		MsgNode msg[512] = { 0 };
+		size_t startTime = GetTickCount();
+		m_canConnMgr->ClearRecBuffer();
+		for (;;)
+		{
+			int size = m_canConnMgr->QuickReceive(msg, 512, 100);
+			for (int i = 0; i < size; i++)
+			{
+				if (msg[i].id == 0x5A0)
+				{
+					if (statusCode == m_hashCode.systemStatus)
+					{
+						status = static_cast<T>(msg[i].ucData[0] & 0x07);
+						switch (status)
+						{
+						case DvrSystemStatus::DSS_INITIALIZING:setCurrentStatus("系统初始化中", true); break;
+						case DvrSystemStatus::DSS_GENERAL_RECORD:setCurrentStatus("正常录制", true); break;
+						case DvrSystemStatus::DSS_PAUSE_RECORD:setCurrentStatus("暂停录制[缺少SD卡]", true); break;
+						case DvrSystemStatus::DSS_HARDWARE_KEY:setCurrentStatus("紧急录制 按键", true); break;
+						case DvrSystemStatus::DSS_CRASH_KEY:setCurrentStatus("紧急录制 碰撞", true); break;
+						case DvrSystemStatus::DSS_UPDATE_MODE:setCurrentStatus("更新模式", true); break;
+						case DvrSystemStatus::DSS_ERROR:setCurrentStatus("系统故障", true); break;
+						default:break;
+						}
+					}
+					else if (statusCode == m_hashCode.wifiStatus)
+					{
+						status = static_cast<T>((msg[i].ucData[0] >> 4) & 0x07);
+						switch (status)
+						{
+						case DvrWifiStatus::DWS_CLOSE:setCurrentStatus("WIFI已关闭", true); break;
+						case DvrWifiStatus::DWS_INIT:setCurrentStatus("WIFI正在初始化", true); break;
+						case DvrWifiStatus::DWS_NORMAL:setCurrentStatus("WIFI正常", true); break;
+						case DvrWifiStatus::DWS_CONNECT:setCurrentStatus("WIFI正在连接", true); break;
+						case DvrWifiStatus::DWS_ERROR:setCurrentStatus("WIFI错误", true); break;
+						default:break;
+						}
+					}
+					else if (statusCode == m_hashCode.ethernetStatus)
+					{
+						if (m_dvrClient.connectServer("10.0.0.10", 2000))
+						{
+							setCurrentStatus("以太网已连接", true);
+							status = static_cast<T>(DvrEthernetStatus::DES_CONNECT);
+						}
+						else
+						{
+							setCurrentStatus("以太网未连接", true);
+							status = static_cast<T>(DvrEthernetStatus::DES_ERROR);
+						}
+						m_dvrClient.closeConnect();
+					}
+					else if (statusCode == m_hashCode.sdCardStatus)
+					{
+						status = static_cast<T>(msg[i].ucData[1] & 0x07);
+						switch (status)
+						{
+						case DvrSdCardStatus::DSCS_NORMAL:setCurrentStatus("SD卡正常", true); break;
+						case DvrSdCardStatus::DSCS_NO_SD:setCurrentStatus("请插入SD卡", true); break;
+						case DvrSdCardStatus::DSCS_ERROR:setCurrentStatus("SD卡错误", true); break;
+						default:break;
+						}
+					}
+					success = true;
+					break;
+				}
+			}
+
+			if (success || GetTickCount() - startTime > 2000)
+			{
+				break;
+			}
+		}
+
+		if (!success)
+		{
+			break;
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
+/*模板自动处理DVR状态*/
+template<class T> inline bool DetectionTool::autoProcessDvrStatus()
+{
+	T status;
+	const size_t& statusCode = typeid(status).hash_code();
+	bool result = false, success = false;
+	do
+	{
+		size_t startTime = GetTickCount();
+		while (true)
+		{
+
+			if (!getDvrAllStatus<T>(status))
+			{
+				setLastError("未收到CAN报文,请检查供电");
+				break;
+			}
+
+			if (statusCode == m_hashCode.systemStatus)
+			{
+				if (status == static_cast<T>(DvrSystemStatus::DSS_GENERAL_RECORD))
+				{
+					success = true;
+					break;
+				}
+			}
+			else if (statusCode == m_hashCode.wifiStatus)
+			{
+				if (status == static_cast<T>(DvrWifiStatus::DWS_NORMAL))
+				{
+					success = true;
+					break;
+				}
+			}
+			else if (statusCode == m_hashCode.ethernetStatus)
+			{
+				if (status == static_cast<T>(DvrEthernetStatus::DES_CONNECT))
+				{
+					success = true;
+					break;
+				}
+			}
+			else if (statusCode == m_hashCode.sdCardStatus)
+			{
+				if (status == static_cast<T>(DvrSdCardStatus::DSCS_NORMAL))
+				{
+					success = true;
+					break;
+				}
+			}
+
+			if (success || GetTickCount() - startTime >= 20000)
+			{
+				break;
+			}
+		}
+
+		if (!success)
+		{
+			break;
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
+/************************************************************************/
+/* 图像转换                                                              */
+/************************************************************************/
+
+#if OPEN_VIDEO
+/*MIL采集卡线程*/
+class MilCaptureThread : public QThread {
+	Q_OBJECT
+private:
+	/*父线程指针*/
+	DetectionTool* m_threadHandler = nullptr;
+
+	/*MIL定义*/
+	MIL_ID MilApplication = 0, MilSystem = 0, MilDisplay = 0;
+	MIL_ID MilDigitizer = 0, MilImage = 0, MilImage0 = 0, MilImage2D = 0;
+
+	/*保存错误信息*/
+	QString m_lastError = "No Error";
+
+	bool m_capture = true;
+protected:
+	/*重写run*/
+	virtual void run();
+
+	/*设置错误*/
+	void setLastError(const QString& err);
+public:
+	/*构造*/
+	MilCaptureThread(QObject* parent = nullptr);
+
+	/*析构*/
+	~MilCaptureThread();
+
+	/*打开MIL设备驱动*/
+	bool openMil(const QString& name);
+
+	/*关闭MIL设备驱动*/
+	void closeMil();
+
+	/*开始采集*/
+	void startCapture();
+
+	/*结束采集*/
+	void endCapture();
+
+	/*获取错误信息*/
+	const QString& getLastError();
+};
+
+/*MV800采集卡线程*/
+void __stdcall Mv800CaptureThread(const uchar* head, const uchar* bits, LPVOID param);
+#endif// !OPEN_VIDEO
+
+/*主题工厂*/
+#include <QStyleFactory>
+#include <QApplication>
+#include <QBitmap>
+#include <QPainter>
+
+class ThemeFactory {
+public:
+	/*构造*/
+	inline ThemeFactory() {}
+
+	/*析构*/
+	inline ~ThemeFactory() {}
+
+	/*获取主题列表*/
+	inline static const QStringList getThemeList()
+	{
+		return QStyleFactory::keys();
+	}
+
+	/*随机选择一个主题*/
+	inline static void randomTheme()
+	{
+		setTheme(getThemeList().value(qrand() % getThemeList().size()));
+	}
+
+	/*设置主题*/
+	inline static void setTheme(const QString& theme = QString("Fusion"))
+	{
+		qApp->setStyle(QStyleFactory::create(theme));
+		QPalette palette;
+		palette.setColor(QPalette::Window, QColor(53, 53, 53));
+		palette.setColor(QPalette::WindowText, Qt::white);
+		palette.setColor(QPalette::Base, QColor(15, 15, 15));
+		palette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+		palette.setColor(QPalette::ToolTipBase, Qt::white);
+		palette.setColor(QPalette::ToolTipText, Qt::white);
+		palette.setColor(QPalette::Text, Qt::white);
+		palette.setColor(QPalette::Button, QColor(53, 53, 53));
+		palette.setColor(QPalette::ButtonText, Qt::white);
+		palette.setColor(QPalette::BrightText, Qt::red);
+		palette.setColor(QPalette::Highlight, QColor(142, 45, 197).lighter());
+		palette.setColor(QPalette::HighlightedText, Qt::black);
+		qApp->setPalette(palette);
+	}
+
+	/*设置边框为圆角*/
+	inline static void setBorderRadius(QWidget* widget)
+	{
+		QBitmap bmp(widget->size());
+		bmp.fill();
+		QPainter p(&bmp);
+		p.setPen(Qt::NoPen);
+		p.setBrush(Qt::black);
+		p.drawRoundedRect(bmp.rect(), 20, 20);
+		widget->setMask(bmp);
+	}
+};
+
+/*通过URL获取文件名*/
+const QString getFileNameByUrl(const QString& url);
+
+/*通过路径获取文件名*/
+const QString getFileNameByPath(const QString& path);
+
+/*获取当前文件名*/
+const QString getCurrentFileName();
+
+/*获取当前目录*/
+const QString getCurrentDir();
+
+/*获取APP版本号*/
+const QString getAppVersion();
+
+/*通过版本号重命名APP*/
+bool renameAppByVersion(QWidget* widget);
+

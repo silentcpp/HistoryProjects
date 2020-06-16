@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>Resources/images/connect.ico</file>
+        <file>Resources/images/disconnect.ico</file>
+        <file>Resources/images/error.png</file>
+        <file>Resources/images/exit.ico</file>
+        <file>Resources/images/setting.ico</file>
+        <file>Resources/images/system.ico</file>
+        <file>Resources/images/ok.ico</file>
+        <file>Resources/images/ng.ico</file>
+        <file>Resources/images/star.ico</file>
+        <file>Resources/images/tree.ico</file>
+        <file>Resources/images/document.ico</file>
+        <file>Resources/images/bird.ico</file>
+        <file>Resources/images/add.ico</file>
+        <file>Resources/images/collapse.ico</file>
+        <file>Resources/images/del.ico</file>
+        <file>Resources/images/expand.ico</file>
+        <file>Resources/images/file.ico</file>
+        <file>Resources/images/msg.ico</file>
+        <file>Resources/images/save.ico</file>
+        <file>Resources/images/treeExit.ico</file>
+        <file>Resources/images/key.ico</file>
+        <file>Resources/images/store.ico</file>
+    </qresource>
+</RCC>

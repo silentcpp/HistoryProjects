@@ -1,0 +1,3 @@
+[2020/03/12 13:49:55] > img dir:C:\Users\Administrator\Desktop\401½âÏñ¶È
+[2020/03/12 13:49:55] > link to ip:127.0.0.1, port:2000 success.
+[2020/03/12 13:50:01] > client recv status:-9

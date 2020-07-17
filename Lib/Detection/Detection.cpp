@@ -1469,7 +1469,7 @@ Dt::Function::~Function()
 		cvReleaseImageHeader(&m_cvPainting);
 	}
 
-	if (m_cardConfig.cardName == "MV800")
+	if (m_cardConfig.name == "MV800")
 	{
 		m_mv800.DeinitCard();
 	}
@@ -1489,7 +1489,7 @@ bool Dt::Function::initInstance()
 			break;
 		}
 
-		setCaptureCardAttribute(m_defConfig->device.captureName);
+		setCaptureCardAttribute();
 
 		m_cvAnalyze = cvCreateImage(cvSize(m_cardConfig.width, m_cardConfig.height), 8, 3);
 		RUN_BREAK(!m_cvAnalyze, "m_cvAnalyze分配内存失败");
@@ -1497,7 +1497,7 @@ bool Dt::Function::initInstance()
 		m_cvPainting = cvCreateImageHeader(cvSize(m_cardConfig.width, m_cardConfig.height), 8, 3);
 		RUN_BREAK(!m_cvPainting, "m_cvPainting分配内存失败");
 
-		if (m_defConfig->device.captureName == "MV800")
+		if (m_cardConfig.name == "MV800")
 		{
 			RUN_BREAK(!m_mv800.InitCard(1), "初始化MV800采集卡失败");
 		}
@@ -1521,16 +1521,24 @@ bool Dt::Function::openDevice()
 			break;
 		}
 
-		if (m_defConfig->device.captureName == "MV800")
+		if (m_cardConfig.name == "MV800")
 		{
-			if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, Cc::Mv800Proc, 1, this))
+			if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, Cc::Mv800Proc, m_cardConfig.channel, this))
 			{
-				setLastError("连接MV800采集卡失败," + G_TO_Q_STR(m_mv800.GetLastError()), false, true);
+				setLastError("打开MV800采集卡失败," + G_TO_Q_STR(m_mv800.GetLastError()), false, true);
 			}
 		}
 		else
 		{
-			m_mil->open("Config/ntsc.dcf") ? m_mil->start() : setLastError("采集卡初始化失败," + m_mil->getLastError(), false, true);
+			QString&& dcfFile = QString("Config/%1/ntsc.dcf").arg(DCF_FILE_VER);
+			if (!QFileInfo(dcfFile).exists())
+			{
+				setLastError("MOR采集卡丢失DCF配置文件", false, true);
+			}
+			else
+			{
+				m_mil->open(dcfFile, m_cardConfig.channel) ? m_mil->startCapture() : setLastError("打开MOR采集卡失败," + m_mil->getLastError(), false, true);
+			}
 		}
 		result = true;
 	} while (false);
@@ -1546,7 +1554,7 @@ bool Dt::Function::closeDevice()
 		{
 			break;
 		}
-		m_cardConfig.cardName == "MV800" ? m_mv800.DisConnect() : m_mil->close();
+		m_cardConfig.name == "MV800" ? m_mv800.DisConnect() : m_mil->close();
 		result = true;
 	} while (false);
 	return result;
@@ -1687,22 +1695,23 @@ bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, const ulong& delay, co
 	return result;
 }
 
-void Dt::Function::setCaptureCardAttribute(const QString& cardName)
+void Dt::Function::setCaptureCardAttribute()
 {
-	m_cardConfig.cardName = cardName;
-	m_cardConfig.width = (cardName == "MV800") ? 720 : 640;
+	m_cardConfig.name = m_defConfig->device.captureName;
+	m_cardConfig.channel = m_defConfig->device.captureChannel.toInt();
+	m_cardConfig.width = (m_cardConfig.name == "MV800") ? 720 : 640;
 	m_cardConfig.height = 480;
 	m_cardConfig.size = m_cardConfig.width * m_cardConfig.height * 3;
 }
 
 void Dt::Function::startCaptureCard()
 {
-	m_defConfig->device.captureName == "MV800" ? m_mv800.StartCapture() : m_mil->startCapture();
+	m_cardConfig.name == "MV800" ? m_mv800.StartCapture() : m_mil->startCapture();
 }
 
 void Dt::Function::endCaptureCard()
 {
-	m_defConfig->device.captureName == "MV800" ? m_mv800.EndCapture() : m_mil->endCapture();
+	m_cardConfig.name == "MV800" ? m_mv800.EndCapture() : m_mil->endCapture();
 }
 
 bool Dt::Function::cycleCapture()
@@ -3168,7 +3177,7 @@ void Cc::Mil::run()
 		return;
 	}
 
-	while (!m_function->m_quit)
+	while (!m_quit)
 	{
 		if (m_function->m_connect && m_capture)
 		{
@@ -3209,6 +3218,8 @@ Cc::Mil::Mil(QObject* parent)
 
 Cc::Mil::~Mil()
 {
+	m_quit = true;
+
 	if (isRunning())
 	{
 		wait(5000);
@@ -3216,11 +3227,19 @@ Cc::Mil::~Mil()
 	m_function = nullptr;
 }
 
-bool Cc::Mil::open(const QString& name)
+bool Cc::Mil::open(const QString& name,const int& channel)
 {
 	bool result = false;
 	do
 	{
+		m_quit = false;
+
+		if (channel < 0 || channel > 1)
+		{
+			setLastError(QString("MOR采集卡通道编号为%1,不支持的通道编号").arg(channel));
+			break;
+		}
+
 		if (!MappAlloc(M_DEFAULT, &MilApplication))
 		{
 			setLastError("MappAlloc失败");
@@ -3258,6 +3277,9 @@ bool Cc::Mil::open(const QString& name)
 			setLastError("MilDigitizer失败");
 			break;
 		}
+		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_DISABLE);
+		MdigControl(MilDigitizer, M_CHANNEL, m_channel[channel]);
+		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_ENABLE);
 		MdigGrabContinuous(MilDigitizer, MilImage);
 		result = true;
 	} while (false);
@@ -3266,6 +3288,7 @@ bool Cc::Mil::open(const QString& name)
 
 void Cc::Mil::close()
 {
+	m_quit = true;
 	MdigHalt(MilDigitizer);
 	MbufFree(MilImage);
 	MdigFree(MilDigitizer);
@@ -3275,6 +3298,10 @@ void Cc::Mil::close()
 
 void Cc::Mil::startCapture()
 {
+	if (!this->isRunning())
+	{
+		this->start();
+	}
 	m_capture = true;
 }
 
@@ -3957,7 +3984,7 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		}
 		QString title, newName;
 		title = newName = QString("%1%2检测[%3]").arg(device.modelName, device.detectionName, getAppVersion());
-		title = QString("%1[权限:%2]").arg(title, user);
+		title = QString("%1[%2][权限:%3]").arg(title, JSON_FILE_VER, user);
 
 		widget->setWindowTitle(title);
 

@@ -510,7 +510,7 @@ namespace Dt {
 		/************************************************************************/
 
 		/*设置采集卡属性*/
-		void setCaptureCardAttribute(const QString& cardName);
+		void setCaptureCardAttribute();
 
 		/*开始采集卡采集数据*/
 		void startCaptureCard();
@@ -577,7 +577,10 @@ namespace Dt {
 		/*采集卡结构体*/
 		struct CardConfig {
 			/*采集卡名称*/
-			QString cardName;
+			QString name;
+
+			/*采集卡通道数*/
+			int channel;
 
 			/*图像宽度*/
 			int width;
@@ -851,7 +854,7 @@ namespace Dt {
 						}
 						else if (statusCode == m_hashCode.ethernetStatus)
 						{
-							if (m_dvrClient->connectServer("10.0.0.10", 2000))
+							if (m_dvrClient->connectServer("10.0.0.10", 2000, 30))
 							{
 								setCurrentStatus("以太网已连接", true);
 								status = static_cast<T>(DvrTypes::ES_CONNECT);
@@ -978,6 +981,10 @@ namespace Cc {
 		QString m_lastError = "No Error";
 
 		bool m_capture = true;
+
+		bool m_quit = false;
+
+		int m_channel[2] = { M_CH0,M_CH1 };
 	protected:
 		/*重写run*/
 		virtual void run();
@@ -992,7 +999,7 @@ namespace Cc {
 		~Mil();
 
 		/*打开MIL设备驱动*/
-		bool open(const QString& name);
+		bool open(const QString& name, const int& channel);
 
 		/*关闭MIL设备驱动*/
 		void close();

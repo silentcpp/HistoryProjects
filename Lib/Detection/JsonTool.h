@@ -13,6 +13,10 @@
 #include <memory>
 #include <Common/Types.h>
 
+#define JSON_FILE_VER "JsonFile_1.0.0.0"
+
+#define DCF_FILE_VER "DcfFile_1.0.0.0"
+
 #define Q_TO_C_STR(X) X.toStdString().c_str()
 
 #define NO_THROW_NEW new(std::nothrow)
@@ -47,6 +51,9 @@ typedef struct DeviceConfig
 
 	/*采集卡名称*/
 	QString captureName;
+
+	/*采集卡通道*/
+	QString captureChannel;
 
 	/*检测名称*/
 	QString detectionName;
@@ -555,6 +562,7 @@ protected:
 		"UDS名称",//0
 		"CAN名称",//1
 		"采集卡名称",
+		"采集卡通道",
 		"检测名称",
 		"条码判断",
 		"条码长度"
@@ -566,6 +574,7 @@ protected:
 		"GuangQiA56",//0
 		"ZLG",//1
 		"MV800",
+		"1",
 		"功能",
 		"ABC",
 		"6"
@@ -826,6 +835,12 @@ public:
 
 	/*获取所有主键*/
 	const QStringList getAllMainKey();
+	
+	/*获取JSON文件版本*/
+	const QString getJsonFileVersion();
+
+	/*获取DCF文件版本*/
+	const QString getDCFFileVersion();
 
 	/************************************************************************/
 	/*读写配置文件操作                                                      */

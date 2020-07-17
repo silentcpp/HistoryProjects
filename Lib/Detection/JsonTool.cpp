@@ -244,11 +244,7 @@ bool JsonTool::parseVoltageConfigData()
 	bool result = false, convert = false, success = true;
 	do
 	{
-		if (m_hwdConfig.voltage)
-		{
-			delete[] m_hwdConfig.voltage;
-			m_hwdConfig.voltage = nullptr;
-		}
+		SAFE_DELETE_A(m_hwdConfig.voltage);
 
 		m_hwdConfig.voltage = NO_THROW_NEW VoltageConfig[getVoltageConfigCount()];
 		VoltageConfig* voltage = m_hwdConfig.voltage;
@@ -338,11 +334,7 @@ bool JsonTool::parseCurrentConfigData()
 	bool result = false, convert = false, success = true;
 	do
 	{
-		if (m_hwdConfig.current)
-		{
-			delete[] m_hwdConfig.current;
-			m_hwdConfig.current = nullptr;
-		}
+		SAFE_DELETE_A(m_hwdConfig.current);
 
 		m_hwdConfig.current = NO_THROW_NEW CurrentConfig[getCurrentConfigCount()];
 		CurrentConfig* current = m_hwdConfig.current;
@@ -409,11 +401,7 @@ bool JsonTool::parseResConfigData()
 	bool result = false, convert = false, success = true;
 	do
 	{
-		if (m_hwdConfig.res)
-		{
-			delete[] m_hwdConfig.res;
-			m_hwdConfig.res = nullptr;
-		}
+		SAFE_DELETE_A(m_hwdConfig.res);
 
 		m_hwdConfig.res = NO_THROW_NEW ResConfig[getResConfigCount()];
 		ResConfig* res = m_hwdConfig.res;
@@ -463,11 +451,8 @@ bool JsonTool::parseVerConfigData()
 	do
 	{
 		const char* code[] = { "ASCII", "ASCR4", "INT", "USN", "BIN", "BCD" };
-		if (m_udsConfig.ver)
-		{
-			delete[] m_udsConfig.ver;
-			m_udsConfig.ver = nullptr;
-		}
+
+		SAFE_DELETE_A(m_udsConfig.ver);
 
 		m_udsConfig.ver = NO_THROW_NEW VersonConfig[getVerConfigCount()];
 		VersonConfig* ver = m_udsConfig.ver;
@@ -526,11 +511,7 @@ bool JsonTool::parseDtcConfigData()
 	bool result = false, convert = false, success = true;
 	do
 	{
-		if (m_udsConfig.dtc)
-		{
-			delete[] m_udsConfig.dtc;
-			m_udsConfig.dtc = nullptr;
-		}
+		SAFE_DELETE_A(m_udsConfig.dtc);
 
 		m_udsConfig.dtc = NO_THROW_NEW DtcConfig[getDtcConfigCount()];
 		DtcConfig* dtc = m_udsConfig.dtc;
@@ -740,11 +721,7 @@ JsonTool* JsonTool::getInstance()
 
 void JsonTool::deleteInstance()
 {
-	if (m_self)
-	{
-		delete m_self;
-		m_self = nullptr;
-	}
+	SAFE_DELETE(m_self);
 }
 
 const QString& JsonTool::getLastError()
@@ -757,14 +734,27 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 	bool result = false, success = true;
 	do
 	{
-		if (!QDir(folderName).exists())
+		QString jsonPath = folderName + "/" + JSON_FILE_VER;
+		QString dcfPath = folderName + "/" + DCF_FILE_VER;
+
+		QStringList pathList = { jsonPath,dcfPath };
+		for (int i = 0; i < pathList.count(); i++)
 		{
-			QDir dir;
-			if (!dir.mkpath(folderName))
+			if (!QDir(pathList[i]).exists())
 			{
-				setLastError(QString("%1 创建文件夹%2失败").arg(__FUNCTION__, folderName));
-				break;
+				QDir dir;
+				if (!dir.mkpath(pathList[i]))
+				{
+					success = false;
+					setLastError(QString("%1 创建文件夹%2失败").arg(__FUNCTION__, pathList[i]));
+					break;
+				}
 			}
+		}
+
+		if (!success)
+		{
+			break;
 		}
 
 		bool (JsonTool:: * readFnc[])(const QString&) = { &JsonTool::readDefJsonFile,&JsonTool::readHwdJsonFile,
@@ -786,7 +776,7 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 
 		for (int i = 0; i < fileName.size(); i++)
 		{
-			const QString file = QString("./%1/%2").arg(folderName, fileName.value(i));
+			const QString file = QString("./%1/%2").arg(jsonPath, fileName.value(i));
 			if (!QFileInfo(file).exists() || update)
 			{
 				if (update ? !(this->*updateFnc[i])(file) : !(this->*writeFnc[i])(file))
@@ -814,8 +804,19 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 
 const QStringList JsonTool::getAllMainKey()
 {
-	return { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","图像配置","按键电压配置","电压配置",
+	static QStringList keys = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","图像配置","按键电压配置","电压配置",
 	"电流配置","电阻配置","静态电流配置","版本配置","诊断故障码配置","启用配置" };
+	return keys;
+}
+
+const QString JsonTool::getJsonFileVersion()
+{
+	return JSON_FILE_VER;
+}
+
+const QString JsonTool::getDCFFileVersion()
+{
+	return DCF_FILE_VER;
 }
 
 bool JsonTool::readDefJsonFile(const QString& name)
@@ -1395,12 +1396,29 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 	bool result = false, convert = false;
 	do 
 	{
-		if (key == "条码长度")
+		if (key == "条码长度" || key == "采集卡通道")
 		{
-			value.toInt(&convert);
+			int number = value.toInt(&convert);
 			if (!convert)
 			{
-				setLastError("条码长度必须为数字");
+				setLastError(key + "必须为整数");
+				break;
+			}
+
+			if (key == "采集卡通道")
+			{
+				if (number < 0 || number > 1)
+				{
+					setLastError(getDeviceConfigValue("采集卡名称") + key + "仅支持0或者1通道");
+					break;
+				}
+			}
+		}
+		else if (key == "采集卡名称")
+		{
+			if (value != "MV800" && value != "MOR")
+			{
+				setLastError("采集卡仅支持[MOR]或者[MV800]");
 				break;
 			}
 		}
@@ -1418,7 +1436,7 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 
 const QStringList JsonTool::getDeviceConfigExplain()
 {
-	return QStringList{ "界面标题", "车厂UDS协议", "支持CAN卡[ZLG ADV KVASER PORT]", "支持采集卡[MOR MV800]", "支持检测[硬件 功能]"
+	return QStringList{ "界面标题", "车厂UDS协议", "支持CAN卡[ZLG ADV KVASER PORT]", "支持采集卡[MOR MV800]", "支持0~1通道,[MV800,AV1是1,AV2是0通道]","支持检测[硬件 功能]"
 		, "表示前N位为当前字符串", "整个条码的总长度" };
 }
 

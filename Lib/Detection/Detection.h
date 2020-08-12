@@ -1,5 +1,5 @@
 #pragma once
-#include <Detection/Types.h>
+#include "Types.h"
 #pragma warning(disable:4838)
 #pragma execution_character_set("utf-8")
 
@@ -7,10 +7,6 @@
 /* namespace declare                                                    */
 /************************************************************************/
 namespace Cc {
-	class Mil;
-	
-	typedef CMV800Mgr Mv800;
-
 	void WINAPI Mv800Proc(const uchar* head, const uchar* bits, LPVOID param);
 }
 
@@ -49,6 +45,9 @@ namespace Misc {
 	/*设置APP附加名*/
 	void setAppAppendName(const QString& name);
 
+	/*获取APP附加名*/
+	const QString getAppAppendName();
+
 	/*通过版本号重命名APP*/
 	bool renameAppByVersion(QWidget* widget);
 
@@ -66,6 +65,12 @@ namespace Misc {
 
 	/*获取当前时间日期*/
 	const QString getCurrentDateTime(bool fileFormat = false);
+
+	/*通过路径获取文件列表*/
+	void getFileListByPath(const QString& path, QStringList& fileList);
+
+	/*通过后缀名获取文件列表*/
+	const QStringList getFileListBySuffixName(const QString& path, const QStringList& suffix);
 
 	class ThemeFactory {
 	public:
@@ -134,7 +139,7 @@ namespace Dt {
 		/*构造*/
 		Base(QObject* parent = nullptr);
 
-		/*析构*/
+		/*虚析构*/
 		virtual ~Base();
 
 		/*获取错误*/
@@ -164,11 +169,21 @@ namespace Dt {
 		/*关闭设备*/
 		virtual bool closeDevice();
 
-		/*开始测试*/
+		/*准备测试,重载1*/
 		virtual bool prepareTest(LaunchProc launchProc = nullptr, void* args = nullptr);
 
+		/*准备测试,重载2*/
 		virtual bool prepareTest(LaunchProcEx lauProcEx, void* args, const int& request = 0, MsgProc msgProc = nullptr);
 
+		/*
+		 准备测试,重载3
+		 @param1,总线状态报文ID
+		 @param2,启动超时
+		 @notice,如果不需要等待ECU完全启动则param3,4忽略
+		 @param3,完全启动请求
+		 @param4,完全启动处理
+		 @return,bool
+		 */
 		virtual bool prepareTest(const int& id, const ulong& delay = 20000U, const int& req = 0, MsgProc msgProc = nullptr);
 
 		/*设置启动延时*/
@@ -396,7 +411,7 @@ namespace Dt {
 		/*UDS申请管理*/
 		IUdsApplyMgr* m_udsApplyMgr = nullptr;
 
-		/*简单的发送管理*/
+		/*CAN发送者*/
 		static CanSender m_canSender;
 
 	protected:
@@ -408,6 +423,9 @@ namespace Dt {
 
 		/*UDS编码转换*/
 		bool udsEncodeConvert(VersonConfig* config);
+
+		/*获得忠告*/
+		static const char* getAdvice();
 	private:
 		/*UDS等级*/
 		int m_udsLevel = SAL_LEVEL1;
@@ -466,7 +484,7 @@ namespace Dt {
 	public:
 		Hardware(QObject* parent = nullptr);
 
-		virtual ~Hardware();
+		~Hardware();
 
 	protected:
 		virtual void run() override = 0;
@@ -481,12 +499,13 @@ namespace Dt {
 	class Function : public Base {
 		Q_OBJECT
 	public:
+		/*构造*/
 		Function(QObject* parent = nullptr);
 
-		virtual ~Function();
+		/*析构*/
+		~Function();
 
-		friend class Cc::Mil;
-
+		/*友元*/
 		friend void WINAPI Cc::Mv800Proc(const uchar* head, const uchar* bits, LPVOID param);
 
 		/*初始化实例*/
@@ -498,11 +517,21 @@ namespace Dt {
 		/*关闭设备*/
 		virtual bool closeDevice();
 
-		/*检测CAN唤醒休眠*/
+		/*检测CAN唤醒休眠,重载1[已废弃]*/
 		virtual bool checkCanRouseSleep(const MsgNode& msg, const ulong& delay, LaunchProc launchProc, void* args);
 
+		/*检测CAN唤醒休眠,重载2[已废弃]*/
 		virtual bool checkCanRouseSleep(const MsgNode& msg, const ulong& delay, LaunchProcEx lauProcEx, void* args, const int& request = 0, MsgProc msgProc = nullptr);
 		
+		/*
+		 *检测CAN唤醒休眠,重载3
+		 *@param1,唤醒报文
+		 *@param2,报文延时
+		 *@param3,总线状态报文ID
+		 *@param4,唤醒成功请求
+		 *@param5,lambda
+		 *@return,bool
+		*/
 		virtual bool checkCanRouseSleep(const MsgNode& msg, const ulong& delay, const int& id, const int& req = 0, MsgProc msgProc = nullptr);
 		
 		/************************************************************************/
@@ -513,10 +542,10 @@ namespace Dt {
 		void setCaptureCardAttribute();
 
 		/*开始采集卡采集数据*/
-		void startCaptureCard();
+		bool startCaptureCard();
 
 		/*停止采集卡采集数据*/
-		void endCaptureCard();
+		bool endCaptureCard();
 
 		/*循环抓图,效率最高*/
 		bool cycleCapture();
@@ -525,7 +554,7 @@ namespace Dt {
 		bool saveAnalyzeImage(const QString& name, const IplImage* image, const CvSize& size);
 
 		/*在图像上画矩形*/
-		inline void drawRectOnImage(IplImage* cvImage);
+		inline void drawRectOnImage();
 
 		/*在图像上检测矩形*/
 		bool checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectConfig, QString& colorData);
@@ -548,19 +577,54 @@ namespace Dt {
 		/*设置CANID*/
 		void setCanId(const int& id);
 
+		/*设置Mil采集卡通道ID*/
+		void setMilChannelId(const int& id);
+
+		/*设置Mv800采集卡通道ID*/
+		void setMv800ChannelId(const int& id);
+
 		/************************************************************************/
 		/* Get                                                                  */
 		/************************************************************************/
-		inline Cc::Mil* getMil() { return m_mil; };
+		inline MilCC* getMil() { return &m_mil; };
 
-		inline Cc::Mv800* getMv800() { return &m_mv800; }
+		inline CMV800Mgr* getMv800() { return &m_mv800; }
 
 		inline bool isCapture() { return m_capture; };
+		
+		inline const int& getMilChannelId() { return m_milChannelId; }
+
+		inline const int& getMv800ChannelId() { return m_mv800ChannelId; }
+		
+		inline const FcTypes::CardConfig& getCardConfig() { return m_cardConfig; };
+	public slots:
+		void getChannelImageSlot(const int& channelID, const IplImage* image);
 	protected:
+		/*必须重写线程*/
 		virtual void run() override = 0;
 
 		/*目标分析图像*/
 		IplImage* m_cvAnalyze = nullptr;
+
+		/*
+		 *自动回收,用于处理下载下来的视频和照片,导致占用的问题
+		 *@param1,路径列表
+		 *@param2,后缀名列表
+		 *@param3,几个月回收一次
+		 *@return,void
+		*/
+		void autoRecycle(const QStringList& path,
+			const QStringList& suffixName = { ".mp4",".jpg",".png",".bmp" },
+			const int& interval = 3);
+
+		/*启用自动回收*/
+		void enableRecycle(bool enable) { m_autoRecycle = enable; };
+
+		/*设置回收后缀名*/
+		void setRecycleSuffixName(const QStringList& suffixName) { m_recycleSuffixName = suffixName; }
+
+		/*设置回收间隔月*/
+		void setRecycleIntervalMonth(const int& interval) { m_recycleIntervalMonth = interval; }
 	private:
 		/*类型*/
 		FcTypes::RectType m_rectType = FcTypes::RT_NO;
@@ -569,34 +633,34 @@ namespace Dt {
 		IplImage* m_cvPainting = nullptr;
 
 		/*MIL采集卡*/
-		Cc::Mil* m_mil = nullptr;
+		MilCC m_mil;
 
 		/*MV800采集卡*/
-		Cc::Mv800 m_mv800;
+		CMV800Mgr m_mv800;
 
 		/*采集卡结构体*/
-		struct CardConfig {
-			/*采集卡名称*/
-			QString name;
-
-			/*采集卡通道数*/
-			int channel;
-
-			/*图像宽度*/
-			int width;
-
-			/*图像高度*/
-			int height;
-
-			/*图像总大小*/
-			int size;
-		}m_cardConfig;
+		FcTypes::CardConfig m_cardConfig;
 
 		/*抓图*/
 		bool m_capture = false;
 
 		/*CANID*/
 		int m_canId = 0;
+
+		/*启用自动回收*/
+		bool m_autoRecycle = true;
+
+		/*回收后缀名*/
+		QStringList m_recycleSuffixName = {};
+
+		/*回收间隔月*/
+		int m_recycleIntervalMonth = -1;
+
+		/*MIL采集卡通道ID*/
+		int m_milChannelId = 0;
+
+		/*MV800采集卡通道ID,AV2是0,AV1是1*/
+		int m_mv800ChannelId = 1;
 	};
 
 	/************************************************************************/
@@ -605,9 +669,11 @@ namespace Dt {
 	class Avm : public Function {
 		Q_OBJECT
 	public:
+		/*构造*/
 		Avm(QObject* parent = nullptr);
 
-		virtual ~Avm();
+		/*析构*/
+		~Avm();
 
 		/*初始化实例*/
 		virtual bool initInstance();
@@ -619,23 +685,44 @@ namespace Dt {
 		void setLedLight(bool _switch);
 
 		/*使用报文检测AVM*/
-		bool checkAVMUseMsg(const MsgNode& msg, const size_t& delay, bool (*judgeProc)(void*), void* args);
+		bool checkAVMUseMsg(const MsgNode& msg, const ulong& delay, const int& id, const int& req, MsgProc msgProc);
 
-		/*使用按键检测AVM*/
+		/*检测AVM使用按键,重载1[已废弃]*/
 		bool checkAVMUseKey(LaunchProc launchProc, RequestProc requestProc, void* args, const int& request, const ulong& delay = 0U);
 
+		/*检测AVM使用按键,重载2[已废弃]*/
 		bool checkAVMUseKey(LaunchProcEx launchProcEx, void* args, ReqList lauList, MsgProc lauFnc, RequestProcEx requestProcEx,
 			ReqList reqList, MsgProc reqFnc, const ulong& delay = 0U);
 
+		/*检测AVM使用按键,重载3
+		 *@param1,总线状态报文ID
+		 *@param2,启动成功请求
+		 *@param3,lambda
+		 *@param4,如果无法获取启动成功状态,则次处填写延时,否则0
+		 *@param5,进入全景请求
+		 *@param6,lambda
+		 *@return,bool
+		*/
 		bool checkAVMUseKey(const int& id, const int& req0, MsgProc msgProc0, const ulong& delay, const int& req1, MsgProc msgProc1);
 
-		/*前后视图检测AVM*/
+		/*检测AVM前后视图,重载1[已废弃]*/
 		bool checkAVMFRView(MsgList msgList, const ulong& msgDelay, RequestProc requestProc = nullptr, void* args = nullptr, const int& request = 0);
 
+		/*检测AVM前后视图,重载2[已废弃]*/
 		bool checkAVMFRView(MsgList msgList, const ulong& msgDelay, RequestProcEx reqProcEx, void* args, ReqList reqList, MsgProc reqFnc);
 
+		/*检测AVM前后视图,重载3
+		 *@notice,[F]代表前,[R]代表后
+		 *@param1,前后景报文列表
+		 *@param2,报文延时
+		 *@param3,接收ID
+		 *@param4,请求列表
+		 *@param5,lambda
+		 *@return,bool
+		 */
 		bool checkAVMFRView(MsgList msgList, const ulong& msgDelay, const int& id, ReqList reqList, MsgProc msgProc);
 	protected:
+		/*必须重写线程*/
 		virtual void run() override = 0;
 	private:
 	};
@@ -649,8 +736,8 @@ namespace Dt {
 		/*构造*/
 		Dvr(QObject* parent = nullptr);
 
-		/*析构*/
-		virtual ~Dvr();
+		/*虚析构*/
+		~Dvr();
 
 		/*初始化实例*/
 		virtual bool initInstance();
@@ -691,13 +778,23 @@ namespace Dt {
 		/*DVR网络通讯协议算法*/
 		const size_t crc32Algorithm(uchar const* memoryAddr, const size_t& memoryLen, const size_t& oldCrc32);
 
+		/*此函数处理的结果不正确,不要使用*/
 		bool crcVerify(const uchar* data, const size_t& length, const size_t& oldCrc32);
 
-		/*获取文件列表*/
-		bool getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const char* ip = "10.0.0.10", const ushort& port = 2000);
+		/*获取文件列表,重载1*/
+		bool getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const QString& address, const ushort& port);
 
-		/*下载紧急录制文件*/
+		/*获取文件列表,重载2*/
+		bool getFileUrl(QString& url, const DvrTypes::FilePath& filePath);
+
+		/*下载紧急录制文件,重载1*/
 		bool downloadFile(const QString& url, const QString& dirName, bool isVideo = true);
+
+		/*下载紧急录制文件,重载2*/
+		bool downloadFile(const QString& url, const DvrTypes::FileType& types);
+
+		/*设置下载文件目录*/
+		void setDownloadFileDir(const DvrTypes::FileType& types, const QString& dirName);
 
 		/*检测DVR光轴*/
 		bool checkRayAxis(const QString& url, const QString& dirName);
@@ -705,12 +802,29 @@ namespace Dt {
 		/*获取DVR解像度*/
 		bool checkSfr(const QString& url, const QString& dirName);
 
+		/*
+		 *检测光轴及图像解析度
+		 *@param1,拍照报文
+		 *@param2,报文延时
+		 *@param3,发送报文类型
+		 *@param4,报文次数
+		 *@param5,接收报文ID
+		 *@param6,请求结果
+		 *@param7,lambda
+		 *@return,bool
+		*/
+		bool checkRayAxisSfr(const MsgNode& msg, const int& delay, const SendType& st, const int& count, const int& id, const int& req, MsgProc proc);
+
 		/*格式化DVR SD卡*/
 		bool formatSdCard(const DvrTypes::FormatSdCard& flag);
+
+		/*设置地址端口*/
+		void setAddressPort(const QString& address, const ushort& port);
 	protected:
 		/*必须重写线程*/
 		virtual void run() override = 0;
 
+		/*写入网络日志*/
 		bool writeNetLog(const char* name, const char* data, const size_t& size);
 	private:
 		/*声音和灯是否打开*/
@@ -728,6 +842,18 @@ namespace Dt {
 		Nt::DvrClient* m_dvrClient = nullptr;
 
 		Nt::SfrServer* m_sfrServer = nullptr;
+
+		/*照片路径*/
+		QString m_photoPath = "PHODownload";
+
+		/*视频路径*/
+		QString m_videoPath = "EVTDownload";
+
+		/*IP地址*/
+		QString m_address = "10.0.0.10";
+
+		/*端口*/
+		ushort m_port = 2000;
 	private:
 		/*HASH码结构体用于模板判断*/
 		struct HashCode {
@@ -773,15 +899,13 @@ namespace Dt {
 	public:
 		Tap(QObject* parent = nullptr);
 
-		virtual	~Tap();
+		~Tap();
 
 		virtual bool initInstance();
 
 		virtual bool openDevice();
 
 		virtual bool closeDevice();
-
-		bool checkTAPUseKey(LaunchProc launchProc, RequestProc requestProc, void* args, const int& request, const ulong& delay = 0U);
 
 		bool checkUSBByJson(const QString& url = "http://172.19.1.2:20001/info");
 	protected:
@@ -962,62 +1086,6 @@ namespace Dt {
 		} while (false);
 		return result;
 	}
-}
-
-/*Capture card*/
-namespace Cc {
-	/*MIL采集卡线程*/
-	class Mil : public QThread {
-		Q_OBJECT
-	private:
-		/*父线程指针*/
-		Dt::Function* m_function = nullptr;
-
-		/*MIL定义*/
-		MIL_ID MilApplication = 0, MilSystem = 0, MilDisplay = 0;
-		MIL_ID MilDigitizer = 0, MilImage = 0, MilImage0 = 0, MilImage2D = 0;
-
-		/*保存错误信息*/
-		QString m_lastError = "No Error";
-
-		bool m_capture = true;
-
-		bool m_quit = false;
-
-		int m_channel[2] = { M_CH0,M_CH1 };
-	protected:
-		/*重写run*/
-		virtual void run();
-
-		/*设置错误*/
-		void setLastError(const QString& err);
-	public:
-		/*构造*/
-		Mil(QObject* parent = nullptr);
-
-		/*析构*/
-		~Mil();
-
-		/*打开MIL设备驱动*/
-		bool open(const QString& name, const int& channel);
-
-		/*关闭MIL设备驱动*/
-		void close();
-
-		/*开始采集*/
-		void startCapture();
-
-		/*结束采集*/
-		void endCapture();
-
-		/*获取错误信息*/
-		const QString& getLastError();
-	};
-
-	typedef class CMV800Mgr Mv800;
-
-	/*MV800采集卡线程*/
-	void WINAPI Mv800Proc(const uchar* head, const uchar* bits, LPVOID param);
 }
 
 /*Network transmission*/

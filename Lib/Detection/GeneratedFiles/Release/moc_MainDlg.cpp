@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_MainDlg_t {
-    QByteArrayData data[32];
-    char stringdata0[399];
+    QByteArrayData data[33];
+    char stringdata0[418];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -60,7 +60,8 @@ QT_MOC_LITERAL(27, 336, 7), // "logItem"
 QT_MOC_LITERAL(28, 344, 17), // "clearListItemSlot"
 QT_MOC_LITERAL(29, 362, 15), // "updateImageSlot"
 QT_MOC_LITERAL(30, 378, 5), // "image"
-QT_MOC_LITERAL(31, 384, 14) // "coordinateSlot"
+QT_MOC_LITERAL(31, 384, 14), // "coordinateSlot"
+QT_MOC_LITERAL(32, 399, 18) // "usageRateTimerSlot"
 
     },
     "MainDlg\0setScanCodeDlgSlot\0\0show\0"
@@ -74,7 +75,7 @@ QT_MOC_LITERAL(31, 384, 14) // "coordinateSlot"
     "setTestResultSlot\0BaseTypes::TestResult\0"
     "addListItemSlot\0item\0logItem\0"
     "clearListItemSlot\0updateImageSlot\0"
-    "image\0coordinateSlot"
+    "image\0coordinateSlot\0usageRateTimerSlot"
 };
 #undef QT_MOC_LITERAL
 
@@ -84,7 +85,7 @@ static const uint qt_meta_data_MainDlg[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-      16,   14, // methods
+      17,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -92,22 +93,23 @@ static const uint qt_meta_data_MainDlg[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    1,   94,    2, 0x0a /* Public */,
-       4,    1,   97,    2, 0x0a /* Public */,
-       5,    2,  100,    2, 0x0a /* Public */,
-       9,    0,  105,    2, 0x0a /* Public */,
-      10,    0,  106,    2, 0x0a /* Public */,
-      11,    0,  107,    2, 0x0a /* Public */,
-      12,    2,  108,    2, 0x0a /* Public */,
-      15,    3,  113,    2, 0x0a /* Public */,
-      17,    4,  120,    2, 0x0a /* Public */,
-      19,    4,  129,    2, 0x0a /* Public */,
-      20,    2,  138,    2, 0x0a /* Public */,
-      23,    1,  143,    2, 0x0a /* Public */,
-      25,    2,  146,    2, 0x0a /* Public */,
-      28,    0,  151,    2, 0x0a /* Public */,
-      29,    1,  152,    2, 0x0a /* Public */,
-      31,    1,  155,    2, 0x0a /* Public */,
+       1,    1,   99,    2, 0x0a /* Public */,
+       4,    1,  102,    2, 0x0a /* Public */,
+       5,    2,  105,    2, 0x0a /* Public */,
+       9,    0,  110,    2, 0x0a /* Public */,
+      10,    0,  111,    2, 0x0a /* Public */,
+      11,    0,  112,    2, 0x0a /* Public */,
+      12,    2,  113,    2, 0x0a /* Public */,
+      15,    3,  118,    2, 0x0a /* Public */,
+      17,    4,  125,    2, 0x0a /* Public */,
+      19,    4,  134,    2, 0x0a /* Public */,
+      20,    2,  143,    2, 0x0a /* Public */,
+      23,    1,  148,    2, 0x0a /* Public */,
+      25,    2,  151,    2, 0x0a /* Public */,
+      28,    0,  156,    2, 0x0a /* Public */,
+      29,    1,  157,    2, 0x0a /* Public */,
+      31,    1,  160,    2, 0x0a /* Public */,
+      32,    0,  163,    2, 0x0a /* Public */,
 
  // slots: parameters
     QMetaType::Void, QMetaType::Bool,    3,
@@ -126,6 +128,7 @@ static const uint qt_meta_data_MainDlg[] = {
     QMetaType::Void,
     QMetaType::Void, QMetaType::QImage,   30,
     QMetaType::Void, QMetaType::QPoint,   16,
+    QMetaType::Void,
 
        0        // eod
 };
@@ -152,6 +155,7 @@ void MainDlg::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, voi
         case 13: _t->clearListItemSlot(); break;
         case 14: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
         case 15: _t->coordinateSlot((*reinterpret_cast< const QPoint(*)>(_a[1]))); break;
+        case 16: _t->usageRateTimerSlot(); break;
         default: ;
         }
     }
@@ -182,13 +186,13 @@ int MainDlg::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 16)
+        if (_id < 17)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 16;
+        _id -= 17;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 16)
+        if (_id < 17)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 16;
+        _id -= 17;
     }
     return _id;
 }

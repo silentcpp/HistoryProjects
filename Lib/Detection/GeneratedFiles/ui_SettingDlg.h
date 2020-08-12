@@ -56,21 +56,22 @@ public:
     QGridLayout *gridLayout;
     QLabel *label_2;
     QLineEdit *canFrameId;
-    QComboBox *canFrameType;
-    QLabel *label_4;
     QLineEdit *canDataEdit;
-    QLabel *label_6;
+    QLabel *label_4;
+    QComboBox *canFrameType;
+    QPushButton *canBaseStop;
     QLabel *label_3;
+    QLineEdit *canSendDelay;
+    QLabel *label_6;
     QPushButton *canBaseSend;
     QComboBox *canFrameFormat;
-    QLineEdit *canSendDelay;
-    QPushButton *canBaseStop;
     QLineEdit *canSendCount;
-    QLabel *label_7;
-    QLabel *label_5;
-    QSpacerItem *verticalSpacer_3;
-    QSpacerItem *horizontalSpacer_2;
     QSpacerItem *horizontalSpacer_3;
+    QSpacerItem *verticalSpacer_3;
+    QLabel *label_5;
+    QLabel *label_7;
+    QSpacerItem *horizontalSpacer_2;
+    QPushButton *canStartup;
     QWidget *tab_5;
     QVBoxLayout *verticalLayout_6;
     QGroupBox *groupBox_2;
@@ -102,13 +103,28 @@ public:
     QSpacerItem *verticalSpacer;
     QWidget *tab_3;
     QVBoxLayout *verticalLayout_4;
+    QLabel *label_13;
     QLabelEx *label;
+    QHBoxLayout *horizontalLayout_4;
+    QPushButton *startCapture;
+    QPushButton *stopCapture;
+    QPushButton *saveCoord;
+    QSpacerItem *horizontalSpacer_4;
+    QWidget *tab_7;
+    QGroupBox *groupBox_4;
+    QGridLayout *gridLayout_3;
+    QLabel *label_11;
+    QLabel *frameVersion;
+    QLabel *label_12;
+    QLabel *fileVersion;
+    QLabel *label_14;
+    QLabel *appVersion;
 
     void setupUi(QWidget *SettingDlg)
     {
         if (SettingDlg->objectName().isEmpty())
             SettingDlg->setObjectName(QStringLiteral("SettingDlg"));
-        SettingDlg->resize(895, 648);
+        SettingDlg->resize(762, 591);
         verticalLayout = new QVBoxLayout(SettingDlg);
         verticalLayout->setSpacing(6);
         verticalLayout->setContentsMargins(11, 11, 11, 11);
@@ -243,30 +259,41 @@ public:
 
         gridLayout->addWidget(canFrameId, 0, 3, 1, 1);
 
-        canFrameType = new QComboBox(groupBox);
-        canFrameType->setObjectName(QStringLiteral("canFrameType"));
+        canDataEdit = new QLineEdit(groupBox);
+        canDataEdit->setObjectName(QStringLiteral("canDataEdit"));
 
-        gridLayout->addWidget(canFrameType, 0, 1, 1, 1);
+        gridLayout->addWidget(canDataEdit, 0, 5, 1, 2);
 
         label_4 = new QLabel(groupBox);
         label_4->setObjectName(QStringLiteral("label_4"));
 
         gridLayout->addWidget(label_4, 0, 2, 1, 1);
 
-        canDataEdit = new QLineEdit(groupBox);
-        canDataEdit->setObjectName(QStringLiteral("canDataEdit"));
+        canFrameType = new QComboBox(groupBox);
+        canFrameType->setObjectName(QStringLiteral("canFrameType"));
 
-        gridLayout->addWidget(canDataEdit, 0, 5, 1, 2);
+        gridLayout->addWidget(canFrameType, 0, 1, 1, 1);
 
-        label_6 = new QLabel(groupBox);
-        label_6->setObjectName(QStringLiteral("label_6"));
+        canBaseStop = new QPushButton(groupBox);
+        canBaseStop->setObjectName(QStringLiteral("canBaseStop"));
+        canBaseStop->setIcon(icon2);
 
-        gridLayout->addWidget(label_6, 0, 4, 1, 1);
+        gridLayout->addWidget(canBaseStop, 1, 7, 1, 1);
 
         label_3 = new QLabel(groupBox);
         label_3->setObjectName(QStringLiteral("label_3"));
 
         gridLayout->addWidget(label_3, 1, 0, 1, 1);
+
+        canSendDelay = new QLineEdit(groupBox);
+        canSendDelay->setObjectName(QStringLiteral("canSendDelay"));
+
+        gridLayout->addWidget(canSendDelay, 1, 6, 1, 1);
+
+        label_6 = new QLabel(groupBox);
+        label_6->setObjectName(QStringLiteral("label_6"));
+
+        gridLayout->addWidget(label_6, 0, 4, 1, 1);
 
         canBaseSend = new QPushButton(groupBox);
         canBaseSend->setObjectName(QStringLiteral("canBaseSend"));
@@ -279,43 +306,40 @@ public:
 
         gridLayout->addWidget(canFrameFormat, 1, 1, 1, 1);
 
-        canSendDelay = new QLineEdit(groupBox);
-        canSendDelay->setObjectName(QStringLiteral("canSendDelay"));
-
-        gridLayout->addWidget(canSendDelay, 1, 6, 1, 1);
-
-        canBaseStop = new QPushButton(groupBox);
-        canBaseStop->setObjectName(QStringLiteral("canBaseStop"));
-        canBaseStop->setIcon(icon2);
-
-        gridLayout->addWidget(canBaseStop, 1, 7, 1, 1);
-
         canSendCount = new QLineEdit(groupBox);
         canSendCount->setObjectName(QStringLiteral("canSendCount"));
 
         gridLayout->addWidget(canSendCount, 1, 3, 1, 1);
 
-        label_7 = new QLabel(groupBox);
-        label_7->setObjectName(QStringLiteral("label_7"));
+        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        gridLayout->addWidget(label_7, 1, 4, 1, 2);
+        gridLayout->addItem(horizontalSpacer_3, 1, 8, 1, 1);
+
+        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        gridLayout->addItem(verticalSpacer_3, 3, 3, 1, 1);
 
         label_5 = new QLabel(groupBox);
         label_5->setObjectName(QStringLiteral("label_5"));
 
         gridLayout->addWidget(label_5, 1, 2, 1, 1);
 
-        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+        label_7 = new QLabel(groupBox);
+        label_7->setObjectName(QStringLiteral("label_7"));
 
-        gridLayout->addItem(verticalSpacer_3, 2, 3, 1, 1);
+        gridLayout->addWidget(label_7, 1, 4, 1, 2);
 
         horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         gridLayout->addItem(horizontalSpacer_2, 0, 8, 1, 1);
 
-        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        canStartup = new QPushButton(groupBox);
+        canStartup->setObjectName(QStringLiteral("canStartup"));
+        QIcon icon5;
+        icon5.addFile(QStringLiteral(":/images/Resources/images/bird.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        canStartup->setIcon(icon5);
 
-        gridLayout->addItem(horizontalSpacer_3, 1, 8, 1, 1);
+        gridLayout->addWidget(canStartup, 2, 7, 1, 1);
 
 
         verticalLayout_3->addWidget(groupBox);
@@ -484,10 +508,15 @@ public:
         tab_3 = new QWidget();
         tab_3->setObjectName(QStringLiteral("tab_3"));
         verticalLayout_4 = new QVBoxLayout(tab_3);
-        verticalLayout_4->setSpacing(0);
+        verticalLayout_4->setSpacing(6);
         verticalLayout_4->setContentsMargins(11, 11, 11, 11);
         verticalLayout_4->setObjectName(QStringLiteral("verticalLayout_4"));
-        verticalLayout_4->setContentsMargins(0, 0, 0, 0);
+        label_13 = new QLabel(tab_3);
+        label_13->setObjectName(QStringLiteral("label_13"));
+        label_13->setStyleSheet(QStringLiteral("color: rgb(255, 0, 255);"));
+
+        verticalLayout_4->addWidget(label_13);
+
         label = new QLabelEx(tab_3);
         label->setObjectName(QStringLiteral("label"));
         QSizePolicy sizePolicy3(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -500,14 +529,79 @@ public:
 
         verticalLayout_4->addWidget(label);
 
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setSpacing(6);
+        horizontalLayout_4->setObjectName(QStringLiteral("horizontalLayout_4"));
+        startCapture = new QPushButton(tab_3);
+        startCapture->setObjectName(QStringLiteral("startCapture"));
+
+        horizontalLayout_4->addWidget(startCapture);
+
+        stopCapture = new QPushButton(tab_3);
+        stopCapture->setObjectName(QStringLiteral("stopCapture"));
+
+        horizontalLayout_4->addWidget(stopCapture);
+
+        saveCoord = new QPushButton(tab_3);
+        saveCoord->setObjectName(QStringLiteral("saveCoord"));
+
+        horizontalLayout_4->addWidget(saveCoord);
+
+        horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_4->addItem(horizontalSpacer_4);
+
+
+        verticalLayout_4->addLayout(horizontalLayout_4);
+
         tabWidget->addTab(tab_3, QString());
+        tab_7 = new QWidget();
+        tab_7->setObjectName(QStringLiteral("tab_7"));
+        groupBox_4 = new QGroupBox(tab_7);
+        groupBox_4->setObjectName(QStringLiteral("groupBox_4"));
+        groupBox_4->setGeometry(QRect(10, 40, 201, 131));
+        gridLayout_3 = new QGridLayout(groupBox_4);
+        gridLayout_3->setSpacing(6);
+        gridLayout_3->setContentsMargins(11, 11, 11, 11);
+        gridLayout_3->setObjectName(QStringLiteral("gridLayout_3"));
+        label_11 = new QLabel(groupBox_4);
+        label_11->setObjectName(QStringLiteral("label_11"));
+
+        gridLayout_3->addWidget(label_11, 0, 0, 1, 1);
+
+        frameVersion = new QLabel(groupBox_4);
+        frameVersion->setObjectName(QStringLiteral("frameVersion"));
+
+        gridLayout_3->addWidget(frameVersion, 0, 1, 1, 1);
+
+        label_12 = new QLabel(groupBox_4);
+        label_12->setObjectName(QStringLiteral("label_12"));
+
+        gridLayout_3->addWidget(label_12, 1, 0, 1, 1);
+
+        fileVersion = new QLabel(groupBox_4);
+        fileVersion->setObjectName(QStringLiteral("fileVersion"));
+
+        gridLayout_3->addWidget(fileVersion, 1, 1, 1, 1);
+
+        label_14 = new QLabel(groupBox_4);
+        label_14->setObjectName(QStringLiteral("label_14"));
+
+        gridLayout_3->addWidget(label_14, 2, 0, 1, 1);
+
+        appVersion = new QLabel(groupBox_4);
+        appVersion->setObjectName(QStringLiteral("appVersion"));
+
+        gridLayout_3->addWidget(appVersion, 2, 1, 1, 1);
+
+        tabWidget->addTab(tab_7, QString());
 
         verticalLayout->addWidget(tabWidget);
 
 
         retranslateUi(SettingDlg);
 
-        tabWidget->setCurrentIndex(1);
+        tabWidget->setCurrentIndex(0);
         tabWidget_2->setCurrentIndex(0);
 
 
@@ -542,26 +636,27 @@ public:
         groupBox->setTitle(QApplication::translate("SettingDlg", "\345\237\272\346\234\254\346\223\215\344\275\234", 0));
         label_2->setText(QApplication::translate("SettingDlg", "\345\270\247\347\261\273\345\236\213:", 0));
         canFrameId->setText(QApplication::translate("SettingDlg", "000", 0));
+        canDataEdit->setText(QApplication::translate("SettingDlg", "00 00 00 00 00 00 00 00", 0));
+        label_4->setText(QApplication::translate("SettingDlg", "\345\270\247ID(HEX):", 0));
         canFrameType->clear();
         canFrameType->insertItems(0, QStringList()
          << QApplication::translate("SettingDlg", "\346\240\207\345\207\206\345\270\247", 0)
          << QApplication::translate("SettingDlg", "\346\213\223\345\261\225\345\270\247", 0)
         );
-        label_4->setText(QApplication::translate("SettingDlg", "\345\270\247ID(HEX):", 0));
-        canDataEdit->setText(QApplication::translate("SettingDlg", "00 00 00 00 00 00 00 00", 0));
-        label_6->setText(QApplication::translate("SettingDlg", "\346\225\260\346\215\256(HEX):", 0));
+        canBaseStop->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242", 0));
         label_3->setText(QApplication::translate("SettingDlg", "\345\270\247\346\240\274\345\274\217:", 0));
+        canSendDelay->setText(QApplication::translate("SettingDlg", "0", 0));
+        label_6->setText(QApplication::translate("SettingDlg", "\346\225\260\346\215\256(HEX):", 0));
         canBaseSend->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201", 0));
         canFrameFormat->clear();
         canFrameFormat->insertItems(0, QStringList()
          << QApplication::translate("SettingDlg", "\346\225\260\346\215\256\345\270\247", 0)
          << QApplication::translate("SettingDlg", "\350\277\234\347\250\213\345\270\247", 0)
         );
-        canSendDelay->setText(QApplication::translate("SettingDlg", "0", 0));
-        canBaseStop->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242", 0));
         canSendCount->setText(QApplication::translate("SettingDlg", "1", 0));
-        label_7->setText(QApplication::translate("SettingDlg", "\346\257\217\346\254\241\345\217\221\351\200\201\351\227\264\351\232\224(ms):", 0));
         label_5->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201\346\254\241\346\225\260:", 0));
+        label_7->setText(QApplication::translate("SettingDlg", "\346\257\217\346\254\241\345\217\221\351\200\201\351\227\264\351\232\224(ms):", 0));
+        canStartup->setText(QApplication::translate("SettingDlg", "\345\220\257\345\212\250", 0));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_4), QApplication::translate("SettingDlg", "\345\237\272\346\234\254\346\223\215\344\275\234", 0));
         groupBox_2->setTitle(QApplication::translate("SettingDlg", "\351\253\230\347\272\247\346\223\215\344\275\234", 0));
         QTableWidgetItem *___qtablewidgetitem8 = tableWidget->horizontalHeaderItem(0);
@@ -589,8 +684,20 @@ public:
         checkBox_5->setText(QApplication::translate("SettingDlg", "\350\275\254\346\216\245\346\235\277", 0));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_6), QApplication::translate("SettingDlg", "\347\241\254\344\273\266\346\223\215\344\275\234", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_2), QApplication::translate("SettingDlg", "CAN", 0));
+        label_13->setText(QApplication::translate("SettingDlg", "\345\217\213\346\203\205\346\217\220\347\244\272:\346\211\200\347\224\273\345\233\276\345\203\217\351\241\272\345\272\217\344\276\235\346\254\241\344\270\272:\345\211\215\345\220\216\345\267\246\345\217\263,\345\246\202\346\236\234\347\224\273\347\232\204\344\270\215\346\273\241\346\204\217,\351\274\240\346\240\207\345\217\263\351\224\256\346\222\244\351\224\200.", 0));
         label->setText(QString());
+        startCapture->setText(QApplication::translate("SettingDlg", "\345\274\200\345\247\213\346\212\223\345\233\276", 0));
+        stopCapture->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242\346\212\223\345\233\276", 0));
+        saveCoord->setText(QApplication::translate("SettingDlg", "\344\277\235\345\255\230\345\235\220\346\240\207", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("SettingDlg", "\347\224\273\345\233\276", 0));
+        groupBox_4->setTitle(QApplication::translate("SettingDlg", "\347\211\210\346\234\254\344\277\241\346\201\257", 0));
+        label_11->setText(QApplication::translate("SettingDlg", "\346\241\206\346\236\266\347\211\210\346\234\254:", 0));
+        frameVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        label_12->setText(QApplication::translate("SettingDlg", "\346\226\207\344\273\266\347\211\210\346\234\254:", 0));
+        fileVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        label_14->setText(QApplication::translate("SettingDlg", "\347\250\213\345\272\217\347\211\210\346\234\254:", 0));
+        appVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        tabWidget->setTabText(tabWidget->indexOf(tab_7), QApplication::translate("SettingDlg", "\345\205\263\344\272\216", 0));
     } // retranslateUi
 
 };

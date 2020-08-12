@@ -1436,12 +1436,17 @@ bool Dt::Base::udsEncodeConvert(VersonConfig* config)
 	return bRet;
 }
 
+const char* Dt::Base::getAdvice()
+{
+	return reinterpret_cast<const char*>(BaseTypes::others);
+}
+
 /************************************************************************/
 /* Dt::Hardware realize                                                     */
 /************************************************************************/
 Dt::Hardware::Hardware(QObject* parent)
 {
-
+	m_detectionType = BaseTypes::DetectionType::DT_HARDWARE;
 }
 
 Dt::Hardware::~Hardware()
@@ -1475,7 +1480,7 @@ Dt::Function::~Function()
 	}
 	else
 	{
-		SAFE_DELETE(m_mil);
+		m_mil.closeDevice();
 	}
 }
 
@@ -1503,8 +1508,7 @@ bool Dt::Function::initInstance()
 		}
 		else
 		{
-			m_mil = NO_THROW_NEW Cc::Mil(this);
-			RUN_BREAK(!m_mil, "Cc::Mil分配内存失败");
+			connect(&m_mil, (CVIMAGE)&MilCC::getChannelImageSignal, this, &Dt::Function::getChannelImageSlot);
 		}
 		result = true;
 	} while (false);
@@ -1523,21 +1527,49 @@ bool Dt::Function::openDevice()
 
 		if (m_cardConfig.name == "MV800")
 		{
-			if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, Cc::Mv800Proc, m_cardConfig.channel, this))
+			if (m_cardConfig.channelCount == 1)
 			{
-				setLastError("打开MV800采集卡失败," + G_TO_Q_STR(m_mv800.GetLastError()), false, true);
+				if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, 
+					Cc::Mv800Proc, m_cardConfig.channelId, this))
+				{
+					setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(m_cardConfig.channelId)
+						.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
+				}
+				setMv800ChannelId(m_cardConfig.channelId);
+			}
+			else
+			{
+				for (int i = 0; i < m_cardConfig.channelCount; ++i)
+				{
+					if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, 
+						Cc::Mv800Proc, i, this))
+					{
+						setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(i)
+							.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
+					}
+				}
 			}
 		}
 		else
 		{
-			QString&& dcfFile = QString("Config/%1/ntsc.dcf").arg(DCF_FILE_VER);
+			QString&& dcfFile = QString("Config/DcfFile_%1/ntsc.dcf").arg(DCF_FILE_VER);
 			if (!QFileInfo(dcfFile).exists())
 			{
 				setLastError("MOR采集卡丢失DCF配置文件", false, true);
 			}
 			else
 			{
-				m_mil->open(dcfFile, m_cardConfig.channel) ? m_mil->startCapture() : setLastError("打开MOR采集卡失败," + m_mil->getLastError(), false, true);
+				if (m_cardConfig.channelCount == 1)
+				{
+					m_mil.openDevice(dcfFile, m_cardConfig.channelId) ? m_mil.startCapture() 
+						: setLastError("打开MOR采集卡失败," + m_mil.getLastError(), false, true);
+					setMilChannelId(m_cardConfig.channelId);
+				}
+				else
+				{
+					m_mil.openDevices(dcfFile, m_cardConfig.channelCount) ? m_mil.startCapture()
+						: setLastError("打开MOR采集卡失败," + m_mil.getLastError(), false, true);
+				}
 			}
 		}
 		result = true;
@@ -1554,7 +1586,7 @@ bool Dt::Function::closeDevice()
 		{
 			break;
 		}
-		m_cardConfig.name == "MV800" ? m_mv800.DisConnect() : m_mil->close();
+		m_cardConfig.name == "MV800" ? m_mv800.DisConnect() : m_mil.closeDevice();
 		result = true;
 	} while (false);
 	return result;
@@ -1697,21 +1729,22 @@ bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, const ulong& delay, co
 
 void Dt::Function::setCaptureCardAttribute()
 {
-	m_cardConfig.name = m_defConfig->device.captureName;
-	m_cardConfig.channel = m_defConfig->device.captureChannel.toInt();
+	m_cardConfig.name = m_defConfig->device.cardName;
+	m_cardConfig.channelCount = m_defConfig->device.cardChannelCount.toInt();
+	m_cardConfig.channelId = m_defConfig->device.cardChannelId.toInt();
 	m_cardConfig.width = (m_cardConfig.name == "MV800") ? 720 : 640;
 	m_cardConfig.height = 480;
 	m_cardConfig.size = m_cardConfig.width * m_cardConfig.height * 3;
 }
 
-void Dt::Function::startCaptureCard()
+bool Dt::Function::startCaptureCard()
 {
-	m_cardConfig.name == "MV800" ? m_mv800.StartCapture() : m_mil->startCapture();
+	return (m_cardConfig.name == "MV800" ? m_mv800.StartCapture() : m_mil.startCapture());
 }
 
-void Dt::Function::endCaptureCard()
+bool Dt::Function::endCaptureCard()
 {
-	m_cardConfig.name == "MV800" ? m_mv800.EndCapture() : m_mil->endCapture();
+	return (m_cardConfig.name == "MV800" ? m_mv800.EndCapture() : m_mil.stopCapture());
 }
 
 bool Dt::Function::cycleCapture()
@@ -1771,29 +1804,25 @@ bool Dt::Function::saveAnalyzeImage(const QString& name, const IplImage* image, 
 	return result;
 }
 
-inline void Dt::Function::drawRectOnImage(IplImage* cvImage)
+inline void Dt::Function::drawRectOnImage()
 {
 	if (m_defConfig->image.showBig && (m_rectType == FcTypes::RT_FRONT_BIG))
 	{
 		auto rect = m_defConfig->image.bigRect;
-		cvRectangleR(cvImage, cvRect(rect[0].startX, rect[0].startY, rect[0].width, rect[0].height), CV_RGB(255, 0, 0), 2);
+		cvRectangleR(m_cvPainting, cvRect(rect[0].startX, rect[0].startY, rect[0].width, rect[0].height), CV_RGB(255, 0, 0), 2);
 	}
 	else if (m_defConfig->image.showBig && (m_rectType == FcTypes::RT_REAR_BIG))
 	{
 		auto rect = m_defConfig->image.bigRect;
-		cvRectangleR(cvImage, cvRect(rect[1].startX, rect[1].startY, rect[1].width, rect[1].height), CV_RGB(255, 0, 0), 2);
+		cvRectangleR(m_cvPainting, cvRect(rect[1].startX, rect[1].startY, rect[1].width, rect[1].height), CV_RGB(255, 0, 0), 2);
 	}
 	else if (m_defConfig->image.showSmall && (m_rectType == FcTypes::RT_SMALL))
 	{
 		auto rect = m_defConfig->image.smallRect;
 		for (int i = 0; i < 4; i++)
 		{
-			cvRectangleR(cvImage, cvRect(rect[i].startX, rect[i].startY, rect[i].width, rect[i].height), CV_RGB(0, 255, 0), 2);
+			cvRectangleR(m_cvPainting, cvRect(rect[i].startX, rect[i].startY, rect[i].width, rect[i].height), CV_RGB(0, 255, 0), 2);
 		}
-	}
-	else
-	{
-
 	}
 	return;
 }
@@ -2003,6 +2032,65 @@ void Dt::Function::setCanId(const int& id)
 	m_canId = id;
 }
 
+void Dt::Function::setMilChannelId(const int& id)
+{
+	m_milChannelId = id;
+}
+
+void Dt::Function::setMv800ChannelId(const int& id)
+{
+	m_mv800ChannelId = id;
+}
+
+void Dt::Function::getChannelImageSlot(const int& channelID, const IplImage* cvimage)
+{
+	if (m_milChannelId == channelID)
+	{
+		if (m_capture)
+		{
+			memcpy(m_cvAnalyze->imageData, cvimage->imageData, m_cardConfig.size);
+			m_capture = false;
+		}
+		memcpy(m_cvPainting->imageData, cvimage->imageData, m_cardConfig.size);
+		drawRectOnImage();
+		QImage qimage;
+		m_mil.cvImageToQtImage(m_cvPainting, qimage);
+		updateImage(qimage);
+	}
+}
+
+void Dt::Function::autoRecycle(const QStringList& path,const QStringList& suffixName,const int& month)
+{
+	do 
+	{
+		if (!m_autoRecycle)
+		{
+			break;
+		}
+
+		auto&& current = QDate::currentDate();
+		for (int i = 0; i < path.size(); i++)
+		{
+			auto&& fileList = Misc::getFileListBySuffixName(path[i],
+				m_recycleSuffixName.isEmpty() ? suffixName : m_recycleSuffixName);
+			for (auto& x : fileList)
+			{
+				QFileInfo fi(x);
+				auto& date = fi.created().date();
+				int newYear = current.year() - date.year();
+				int interval = (current.month() + newYear * 12) - date.month();
+#ifdef QT_DEBUG
+				qDebug() << "interval:" << interval << "file:" << x << endl;
+#endif
+				if (interval >= ((m_recycleIntervalMonth == -1) ? month : m_recycleIntervalMonth))
+				{
+					QFile::remove(x);
+				}
+			}
+		}
+	} while (false);
+	return;
+}
 
 /************************************************************************/
 /* Dt::Avm realize                                                          */
@@ -2044,9 +2132,11 @@ void Dt::Avm::setLedLight(bool _switch)
 	msleep(300);
 }
 
-bool Dt::Avm::checkAVMUseMsg(const MsgNode& msg, const size_t& delay, bool(*judgeProc)(void*), void* args)
+bool Dt::Avm::checkAVMUseMsg(const MsgNode& msg, const ulong& delay, const int& id, const int& req, MsgProc msgProc)
 {
-	return false;
+	m_canSender.AddMsg(msg, delay);
+	m_canSender.Start();
+	return autoProcessCanMsg(id, req, msgProc);
 }
 
 bool Dt::Avm::checkAVMUseKey(LaunchProc launchProc, RequestProc requestProc, void* args, const int& request, const ulong& delay)
@@ -2421,6 +2511,8 @@ Dt::Dvr::~Dvr()
 	SAFE_DELETE(m_dvrClient);
 
 	SAFE_DELETE(m_sfrServer);
+
+	autoRecycle({ m_videoPath,m_photoPath });
 }
 
 bool Dt::Dvr::initInstance()
@@ -2678,7 +2770,7 @@ bool Dt::Dvr::crcVerify(const uchar* data, const size_t& length, const size_t& o
 	return (oldCrc == crc32Algorithm((uchar*)data, length, oldCrc));
 }
 
-bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const char* ip, const ushort& port)
+bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const QString& address, const ushort& port)
 {
 	bool result = false;
 	do
@@ -2687,7 +2779,7 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const
 		int tryAgainCount = 0;
 
 		const size_t sendLen = 0x10;
-		if (!m_dvrClient->connectServer(ip, port))
+		if (!m_dvrClient->connectServer(Q_TO_C_STR(address), port))
 		{
 			setLastError("连接到服务器失败");
 			break;
@@ -2808,7 +2900,7 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const
 			break;
 		}
 
-		url.sprintf("http://%s:%d/%s%s", ip, 8080, dvrPath[pathId], dvrType[typeId]);
+		url.sprintf("http://%s:%d/%s%s", Q_TO_C_STR(address), 8080, dvrPath[pathId], dvrType[typeId]);
 		/*此处要减去时差*/
 		time_t dvrSecond = dvrFileList.fileInfo[flag].date - 8 * 60 * 60;
 
@@ -2835,12 +2927,20 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const
 	return result;
 }
 
+bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath)
+{
+	return getFileUrl(url, filePath, m_address, m_port);
+}
+
 bool Dt::Dvr::downloadFile(const QString& url, const QString& dirName, bool isVideo)
 {
 	bool result = false;
 	float networkSpeed = 0.0;
 	do
 	{
+		RUN_BREAK(isVideo ? (dirName != m_videoPath) : (dirName != m_photoPath),
+			"目录不匹配,无法进行自动回收缓存,请使用bool downloadFile(const QString&,const DvrTypes::FileType&)函数");
+
 		QString path = QString("%1/%2/%3").arg(Misc::getCurrentDir(), dirName, Misc::getCurrentDate());
 		if (!QDir(path).exists())
 		{
@@ -2850,27 +2950,6 @@ bool Dt::Dvr::downloadFile(const QString& url, const QString& dirName, bool isVi
 
 		QString destFile = path + url.mid(url.lastIndexOf("/"));
 
-		//QNetworkAccessManager nam;
-		//QUrl qurl(url);
-		//QNetworkRequest nr(qurl);
-		//QNetworkReply* reply = nam.get(nr);
-		//
-		//QEventLoop loop;
-		//connect(&nam, &QNetworkAccessManager::finished, &loop, &QEventLoop::quit);
-		//loop.exec(QEventLoop::ExcludeUserInputEvents);
-
-		//QByteArray bytes = reply->readAll();
-		//QFile file(destFile);
-		//if (!file.open(QFile::WriteOnly))
-		//{
-		//	setLastError(QString("写入%1文件失败,%2").arg(destFile, file.errorString()));
-		//	break;
-		//}
-		//file.write(bytes);
-		//file.close();
-		//reply->deleteLater();
-		//reply = nullptr;
-		//return true;
 		DeleteUrlCacheEntry(Q_TO_WC_STR(url));
 		size_t startDownloadTime = GetTickCount();
 		HRESULT downloadResult = URLDownloadToFileA(NULL, Q_TO_C_STR(url), Q_TO_C_STR(destFile), NULL, NULL);
@@ -2910,6 +2989,17 @@ bool Dt::Dvr::downloadFile(const QString& url, const QString& dirName, bool isVi
 		WRITE_LOG("%s 网速 %.2f", OK_NG(result), networkSpeed);
 	}
 	return result;
+}
+
+bool Dt::Dvr::downloadFile(const QString& url, const DvrTypes::FileType& types)
+{
+	bool isVideo = (types == DvrTypes::FT_VIDEO);
+	return downloadFile(url, isVideo ? m_videoPath : m_photoPath, isVideo);
+}
+
+void Dt::Dvr::setDownloadFileDir(const DvrTypes::FileType& types, const QString& dirName)
+{
+	(types == DvrTypes::FT_VIDEO) ? m_videoPath = dirName : m_photoPath = dirName;
 }
 
 bool Dt::Dvr::checkRayAxis(const QString& url, const QString& dirName)
@@ -3028,6 +3118,49 @@ bool Dt::Dvr::checkSfr(const QString& url, const QString& dirName)
 	return result;
 }
 
+bool Dt::Dvr::checkRayAxisSfr(const MsgNode& msg, const int& delay, const SendType& st, const int& count,
+	const int& id, const int& req, MsgProc proc)
+{
+	setCurrentStatus("检测光轴及解析度");
+	bool result = false, success = false;
+	do
+	{
+		addListItem("DVR正在进行拍照,请等待...");
+		m_canSender.AddMsg(msg, delay, st, count);
+		success = autoProcessCanMsg(id, req, proc);
+		m_canSender.DeleteOneMsg(msg.id);
+
+		addListItem(Q_SPRINTF("DVR拍照 %s", OK_NG(success)));
+		WRITE_LOG("%s 拍照", OK_NG(success));
+		RUN_BREAK(!success, "DVR拍照失败");
+
+		addListItem("获取照片文件路径");
+		QString url;
+		success = getFileUrl(url, DvrTypes::FP_PHO);
+		addListItem("获取照片文件路径:" + success ? url : "无效路径");
+		RUN_BREAK(!success, "获取照片文件路径失败");
+
+		addListItem("下载DVR照片,请耐心等待...");
+		success = downloadFile(url, "PHODownload", false);
+		addListItem(Q_SPRINTF("下载DVR照片 %s", OK_NG(success)));
+		RUN_BREAK(!success, "下载DVR照片失败");
+
+		addListItem("检测光轴");
+		success = checkRayAxis(url, "PHODownload");
+		addListItem(Q_SPRINTF("检测光轴 %s", OK_NG(success)));
+		RUN_BREAK(!success, "检测光轴失败");
+
+		addListItem("检测解像度");
+		success = checkSfr(url, "PHODownload");
+		addListItem(Q_SPRINTF("检测解像度 %s", OK_NG(success)));
+		RUN_BREAK(!success, "检测解像度失败");
+
+		result = true;
+	} while (false);
+	addListItem(Q_SPRINTF("检测光轴及解析度 %s", OK_NG(result)), false);
+	return result;
+}
+
 bool Dt::Dvr::formatSdCard(const DvrTypes::FormatSdCard& flag)
 {
 	setCurrentStatus("格式化SD卡");
@@ -3036,7 +3169,7 @@ bool Dt::Dvr::formatSdCard(const DvrTypes::FormatSdCard& flag)
 	{
 		if (flag == DvrTypes::FSC_BY_NETWORK)
 		{
-			if (!m_dvrClient->connectServer("10.0.0.10", 2000))
+			if (!m_dvrClient->connectServer(Q_TO_C_STR(m_address), m_port))
 			{
 				setLastError("连接服务器失败");
 				break;
@@ -3125,6 +3258,12 @@ bool Dt::Dvr::formatSdCard(const DvrTypes::FormatSdCard& flag)
 	return result;
 }
 
+void Dt::Dvr::setAddressPort(const QString& address, const ushort& port)
+{
+	m_address = address;
+	m_port = port;
+}
+
 bool Dt::Dvr::writeNetLog(const char* name, const char* data, const size_t& size)
 {
 	bool result = false;
@@ -3163,187 +3302,43 @@ bool Dt::Dvr::writeNetLog(const char* name, const char* data, const size_t& size
 	return result;
 }
 
-
-/************************************************************************/
-/* Mc::Mil realize                                                          */
-/************************************************************************/
-void Cc::Mil::run()
-{
-	static QImage image;
-	IplImage* currentImage = cvCreateImage(cvSize(m_function->m_cardConfig.width, m_function->m_cardConfig.height), 8, 3);
-	if (!currentImage)
-	{
-		setLastError("currentImage分配内存失败");
-		return;
-	}
-
-	while (!m_quit)
-	{
-		if (m_function->m_connect && m_capture)
-		{
-			MbufGetColor(MilImage, M_PACKED + M_BGR24, M_ALL_BANDS, currentImage->imageData);
-			MbufClear(MilImage, 0);
-
-			if (m_function->m_capture)
-			{
-				memcpy(m_function->m_cvAnalyze->imageData, currentImage->imageData, m_function->m_cardConfig.size);
-				m_function->m_capture = false;
-			}
-
-			m_function->drawRectOnImage(currentImage);
-
-			if (Misc::cvImageToQtImage(currentImage, &image))
-			{
-				m_function->updateImage(image);
-			}
-		}
-		msleep(40);
-	}
-	cvReleaseImage(&currentImage);
-	quit();
-}
-
-void Cc::Mil::setLastError(const QString& err)
-{
-#ifdef QT_DEBUG
-	qDebug() << err << endl;
-#endif
-	m_lastError = err;
-}
-
-Cc::Mil::Mil(QObject* parent)
-{
-	m_function = reinterpret_cast<Dt::Function*>(parent);
-}
-
-Cc::Mil::~Mil()
-{
-	m_quit = true;
-
-	if (isRunning())
-	{
-		wait(5000);
-	}
-	m_function = nullptr;
-}
-
-bool Cc::Mil::open(const QString& name,const int& channel)
-{
-	bool result = false;
-	do
-	{
-		m_quit = false;
-
-		if (channel < 0 || channel > 1)
-		{
-			setLastError(QString("MOR采集卡通道编号为%1,不支持的通道编号").arg(channel));
-			break;
-		}
-
-		if (!MappAlloc(M_DEFAULT, &MilApplication))
-		{
-			setLastError("MappAlloc失败");
-			break;
-		}
-
-		if (!MsysAlloc(M_SYSTEM_MORPHIS, M_DEF_SYSTEM_NUM, M_SETUP, &MilSystem))
-		{
-			setLastError("MsysAlloc失败");
-			break;
-		}
-
-		if (!MdigAllocA(MilSystem, M_DEFAULT, name.toLocal8Bit().data(), M_DEFAULT, &MilDigitizer))
-		{
-			setLastError("MdigAlloc失败");
-			break;
-		}
-
-		MIL_INT miX = MdigInquire(MilDigitizer, M_SIZE_X, M_NULL);
-		MIL_INT miY = MdigInquire(MilDigitizer, M_SIZE_Y, M_NULL);
-		MIL_INT miBand = MdigInquire(MilDigitizer, M_SIZE_BAND, M_NULL);
-		MbufAllocColor(MilSystem, miBand, miX, miY, 8L + M_UNSIGNED, M_IMAGE + M_BASIC_BUFFER_PURPOSE, &MilImage);
-		MdigControl(MilDigitizer, M_GRAB_MODE, M_SYNCHRONOUS);
-		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_ENABLE);
-
-		MdigControl(MilDigitizer, M_GRAB_AUTOMATIC_INPUT_GAIN, M_DISABLE);
-		MdigControl(MilDigitizer, M_GRAB_INPUT_GAIN, 50);
-
-		MappControl(M_ERROR, M_PRINT_DISABLE);
-
-		MbufClear(MilImage, 0);
-
-		if (!MilDigitizer)
-		{
-			setLastError("MilDigitizer失败");
-			break;
-		}
-		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_DISABLE);
-		MdigControl(MilDigitizer, M_CHANNEL, m_channel[channel]);
-		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_ENABLE);
-		MdigGrabContinuous(MilDigitizer, MilImage);
-		result = true;
-	} while (false);
-	return result;
-}
-
-void Cc::Mil::close()
-{
-	m_quit = true;
-	MdigHalt(MilDigitizer);
-	MbufFree(MilImage);
-	MdigFree(MilDigitizer);
-	MsysFree(MilSystem);
-	MappFree(MilApplication);
-}
-
-void Cc::Mil::startCapture()
-{
-	if (!this->isRunning())
-	{
-		this->start();
-	}
-	m_capture = true;
-}
-
-void Cc::Mil::endCapture()
-{
-	m_capture = false;
-}
-
-const QString& Cc::Mil::getLastError()
-{
-	return m_lastError;
-}
-
 void WINAPI Cc::Mv800Proc(const uchar* head, const uchar* bits, LPVOID param)
 {
-	static QImage image;
-	Dt::Function* function = reinterpret_cast<Dt::Function*>((static_cast<VideoSteamParam*>(param))->pArgs);
-	if (!function)
+	do 
 	{
-		return;
-	}
-
-	if (function->m_connect)
-	{
-		function->m_cvPainting->imageData = (char*)bits;
-		if (function->m_capture)
+		static QImage image;
+		Dt::Function* function = reinterpret_cast<Dt::Function*>((static_cast<VideoSteamParam*>(param))->pArgs);
+		if (!function)
 		{
-			memcpy(function->m_cvAnalyze->imageData, bits, function->m_cardConfig.size);
-			cvFlip(function->m_cvAnalyze, function->m_cvAnalyze, 0);
-			function->m_capture = false;
+			break;
 		}
 
-		/*将镜像视图转为正常视图*/
-		cvFlip(function->m_cvPainting, function->m_cvPainting, 0);
-
-		function->drawRectOnImage(function->m_cvPainting);
-
-		if (Misc::cvImageToQtImage(function->m_cvPainting, &image))
+		if (*static_cast<VideoSteamParam*>(param)->piChannelID != function->m_mv800ChannelId)
 		{
-			function->updateImage(image);
+			break;
 		}
-	}
+
+		if (function->m_connect)
+		{
+			function->m_cvPainting->imageData = (char*)bits;
+			if (function->m_capture)
+			{
+				memcpy(function->m_cvAnalyze->imageData, bits, function->m_cardConfig.size);
+				cvFlip(function->m_cvAnalyze, function->m_cvAnalyze, 0);
+				function->m_capture = false;
+			}
+
+			/*将镜像视图转为正常视图*/
+			cvFlip(function->m_cvPainting, function->m_cvPainting, 0);
+
+			function->drawRectOnImage();
+
+			if (Misc::cvImageToQtImage(function->m_cvPainting, &image))
+			{
+				function->updateImage(image);
+			}
+		}
+	} while (false);
 	return;
 }
 
@@ -3971,6 +3966,11 @@ void Misc::setAppAppendName(const QString& name)
 	Misc::Var::appendName = name;
 }
 
+const QString Misc::getAppAppendName()
+{
+	return Misc::Var::appendName;
+}
+
 bool Misc::renameAppByVersion(QWidget* widget)
 {
 	bool result = false;
@@ -3984,7 +3984,7 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		}
 		QString title, newName;
 		title = newName = QString("%1%2检测[%3]").arg(device.modelName, device.detectionName, getAppVersion());
-		title = QString("%1[%2][权限:%3]").arg(title, JSON_FILE_VER, user);
+		title = QString("%1[权限:%3]").arg(title, user);
 
 		widget->setWindowTitle(title);
 
@@ -4067,6 +4067,50 @@ const QString Misc::getCurrentDateTime(bool fileFormat)
 		return dateTime.remove('-').remove(':').remove('.');
 	}
 	return dateTime;
+}
+
+void Misc::getFileListByPath(const QString& path, QStringList& fileList)
+{
+	QString p;
+	WIN32_FIND_DATAW wfd;
+	HANDLE handle;
+	if ((handle = FindFirstFileW(Q_TO_WC_STR((p = path).append("\\*")), &wfd)) != INVALID_HANDLE_VALUE)
+	{
+		do 
+		{
+			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (wcscmp(wfd.cFileName, L".") != 0 && wcscmp(wfd.cFileName, L"..") != 0)
+				{
+					getFileListByPath((p = path).append("\\").append(WC_TO_Q_STR(wfd.cFileName)), fileList);
+				}
+			}
+			else
+			{
+				fileList.push_back((p = path).append("\\").append(WC_TO_Q_STR(wfd.cFileName)));
+			}
+		} while (FindNextFileW(handle, &wfd));
+		FindClose(handle);
+	}
+	return;
+}
+
+const QStringList Misc::getFileListBySuffixName(const QString& path, const QStringList& suffix)
+{
+	QStringList src,dst;
+	getFileListByPath(path, src);
+	int pos;
+	for (auto& x : src)
+	{
+		for (int i = 0; i < suffix.size(); ++i)
+		{
+			if ((pos = x.lastIndexOf(".")) != -1 && x.mid(pos).toLower() == suffix[i])
+			{
+				dst.push_back(x);
+			}
+		}
+	}
+	return dst;
 }
 
 Dt::Tap::Tap(QObject* parent)

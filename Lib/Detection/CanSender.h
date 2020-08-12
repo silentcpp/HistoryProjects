@@ -35,7 +35,7 @@ public:
 
 	bool SetMsgData(const int& ID, const UCHAR* const ucData);
 
-	bool AddMsg(const MsgNode& msg, const int& iCycle, const SendType& emST = ST_Period, const int& iSendCount = 0);
+	bool AddMsg(const MsgNode& msg, const int& iDelay, const SendType& emST = ST_Period, const int& iSendCount = 0);
 
 	bool AddMsg(const CanMsg& msg);
 

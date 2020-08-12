@@ -734,8 +734,8 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 	bool result = false, success = true;
 	do
 	{
-		QString jsonPath = folderName + "/" + JSON_FILE_VER;
-		QString dcfPath = folderName + "/" + DCF_FILE_VER;
+		QString jsonPath = QString("%1/JsonFile_%2").arg(folderName, JSON_FILE_VER);
+		QString dcfPath = QString("%1/DcfFile_%2").arg(folderName, DCF_FILE_VER);
 
 		QStringList pathList = { jsonPath,dcfPath };
 		for (int i = 0; i < pathList.count(); i++)
@@ -807,6 +807,11 @@ const QStringList JsonTool::getAllMainKey()
 	static QStringList keys = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","图像配置","按键电压配置","电压配置",
 	"电流配置","电阻配置","静态电流配置","版本配置","诊断故障码配置","启用配置" };
 	return keys;
+}
+
+const QString JsonTool::getLibrayVersion()
+{
+	return LIBRARY_VER;
 }
 
 const QString JsonTool::getJsonFileVersion()
@@ -1227,7 +1232,6 @@ bool JsonTool::readUdsJsonFile(const QString& name)
 	return result;
 }
 
-
 bool JsonTool::writeUdsJsonFile(const QString& name)
 {
 	bool result = false;
@@ -1376,7 +1380,7 @@ const QString JsonTool::getDeviceConfigValue(const QString& key)
 	return m_deviceConfigObj[key].toString();
 }
 
-const QStringList JsonTool::getDeviceConfigKeyList()
+const QStringList& JsonTool::getDeviceConfigKeyList()
 {
 	return m_deviceConfigKeyList;
 }
@@ -1396,7 +1400,7 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 	bool result = false, convert = false;
 	do 
 	{
-		if (key == "条码长度" || key == "采集卡通道")
+		if (key == "条码长度" || key == "采集卡通道数" || key == "采集卡通道号")
 		{
 			int number = value.toInt(&convert);
 			if (!convert)
@@ -1405,11 +1409,20 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 				break;
 			}
 
-			if (key == "采集卡通道")
+			if (key == "采集卡通道数")
+			{
+				if (number <= 0 || number > 2)
+				{
+					setLastError(getDeviceConfigValue("采集卡名称") + key + ",最大支持2个通道同时开启");
+					break;
+				}
+			}
+
+			if (key == "采集卡通道号")
 			{
 				if (number < 0 || number > 1)
 				{
-					setLastError(getDeviceConfigValue("采集卡名称") + key + "仅支持0或者1通道");
+					setLastError(getDeviceConfigValue("采集卡名称") + key + ",仅支持0或者1通道");
 					break;
 				}
 			}
@@ -1434,10 +1447,12 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getDeviceConfigExplain()
+const QStringList& JsonTool::getDeviceConfigExplain()
 {
-	return QStringList{ "界面标题", "车厂UDS协议", "支持CAN卡[ZLG ADV KVASER PORT]", "支持采集卡[MOR MV800]", "支持0~1通道,[MV800,AV1是1,AV2是0通道]","支持检测[硬件 功能]"
-		, "表示前N位为当前字符串", "整个条码的总长度" };
+	static QStringList explain = { "界面标题", "车厂UDS协议", "支持CAN卡[ZLG ADV KVASER PORT]",
+		"支持采集卡[MOR MV800]","最多支持2个通道同时启用,此处大于1,通道号将失效", "支持0~1通道编号,[MV800,AV1是1,AV2是0通道]",
+		"支持检测[硬件 功能]","表示前N位为当前字符串", "整个条码的总长度" };
+	return explain;
 }
 
 const QString JsonTool::getHardwareConfigValue(const QString& key)
@@ -1450,7 +1465,7 @@ const int JsonTool::getHardwareConfigCount()
 	return m_hardwareConfigObj.count();
 }
 
-const QStringList JsonTool::getHardwareConfigKeyList()
+const QStringList& JsonTool::getHardwareConfigKeyList()
 {
 	return m_hardwareConfigKeyList;
 }
@@ -1484,11 +1499,12 @@ bool JsonTool::setHardwareConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getHardwareConfigExplain()
+const QStringList& JsonTool::getHardwareConfigExplain()
 {
-	return QStringList{ "电源串口编号","波特率默认[19200]","系统电压","继电器串口编号","波特率默认[19200]","电压表串口编号",
+	static QStringList explain = { "电源串口编号","波特率默认[19200]","系统电压","继电器串口编号","波特率默认[19200]","电压表串口编号",
 			"波特率默认[9600]","静态电流表串口编号","波特率默认[9600]","预留拓展","预留拓展","预留拓展","预留拓展",
 	"预留拓展","预留拓展","预留拓展","预留拓展" };
+	return explain;
 }
 
 const QString JsonTool::getRelayConfigValue(const QString& key)
@@ -1506,7 +1522,7 @@ const relayConfig_t& JsonTool::getParsedRelayConfig()
 	return m_defConfig.relay;
 }
 
-const QStringList JsonTool::getRelayConfigKeyList()
+const QStringList& JsonTool::getRelayConfigKeyList()
 {
 	return m_relayConfigKeyList;
 }
@@ -1534,10 +1550,11 @@ bool JsonTool::setRelayConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getRelayConfigExplain()
+const QStringList& JsonTool::getRelayConfigExplain()
 {
-	return QStringList{ "地线","自适应巡航控制电源","用于检测静态电流","用于检测硬按键电压","用于采集全景出画","用于紧急录制",
+	static QStringList explain = { "地线","自适应巡航控制电源","用于检测静态电流","用于检测硬按键电压","用于采集全景出画","用于紧急录制",
 			"用于播放音乐" };
+	return explain;
 }
 
 const QString JsonTool::getUserConfigValue(const QString& key)
@@ -1568,7 +1585,7 @@ const int JsonTool::getRangeConfigCount()
 	return m_rangeConfigObj.count();
 }
 
-const QStringList JsonTool::getRangeConfigKeyList()
+const QStringList& JsonTool::getRangeConfigKeyList()
 {
 	return m_rangeConfigKeyList;
 }
@@ -1616,9 +1633,10 @@ bool JsonTool::setRangeConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getRangeConfigExplain()
+const QStringList& JsonTool::getRangeConfigExplain()
 {
-	return QStringList{ "单位:MB(兆字节)","单位:MM(毫米)","单位:MM(毫米)","单位:°(度)","单位:PX(像素)" };
+	static QStringList explain = { "单位:MB(兆字节)","单位:MM(毫米)","单位:MM(毫米)","单位:°(度)","单位:PX(像素)" };
+	return explain;
 }
 
 const QString JsonTool::getThresholdConfigValue(const QString& key)
@@ -1631,7 +1649,7 @@ const int JsonTool::getThresholdConfigCount()
 	return m_thresholdConfigObj.count();
 }
 
-const QStringList JsonTool::getThresholdConfigKeyList()
+const QStringList& JsonTool::getThresholdConfigKeyList()
 {
 	return m_thresholdKeyList;
 }
@@ -1664,9 +1682,10 @@ bool JsonTool::setThresholdConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getThresholdConfigExplain()
+const QStringList& JsonTool::getThresholdConfigExplain()
 {
-	return QStringList{ "单位:A(安培)","单位:A(安培)" };
+	static QStringList explain = { "单位:A(安培)","单位:A(安培)" };
+	return explain;
 }
 
 const imageConfig_t& JsonTool::getParsedImageConfig()
@@ -1694,7 +1713,7 @@ const QStringList JsonTool::getChildImageKeyList(const int& id)
 	return m_childImageKeyList[id];
 }
 
-const QStringList JsonTool::getChildImageKeyList()
+const QStringList& JsonTool::getChildImageKeyList()
 {
 	return m_childImageKeyList[m_childImageSubscript];
 }
@@ -1740,22 +1759,30 @@ bool JsonTool::setImageConfigValue(const QString& parentKey, const QString& chil
 
 const QStringList JsonTool::getImageConfigExplain(const int& i)
 {
+	static QStringList explain0 = { "1启用,0禁用,启用将R,G,B,误差参数判断失效,颜色参数判断生效","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
+	static QStringList explain1 = { "判断语法,!=黑色(不等于黑色),==黑色(等于黑色)",
+		"三原色:Red(红色)","三原色:Green(绿色)","三原色:Blue(蓝色)","单位:PX(像素)",
+		"单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)" };
+
 	if (i == getImageConfigCount() - 1)
 	{
-		return { "1启用,0禁用,启用将R,G,B,误差参数判断失效,颜色参数判断生效","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
+		return explain0;
 	}
-	return { "判断语法,!=黑色(不等于黑色),==黑色(等于黑色)","三原色:Red(红色)","三原色:Green(绿色)","三原色:Blue(蓝色)","单位:PX(像素)",
-			"单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)" };
+	return explain1;
 }
 
-const QStringList JsonTool::getImageConfigExplain()
+const QStringList& JsonTool::getImageConfigExplain()
 {
+	static QStringList explain0 = { "1启用,0禁用,启用将R,G,B,误差参数判断失效,颜色参数判断生效","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
+	static QStringList explain1 = { "判断语法,!=黑色(不等于黑色),==黑色(等于黑色)",
+		"三原色:Red(红色)","三原色:Green(绿色)","三原色:Blue(蓝色)","单位:PX(像素)",
+			"单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)" };
+
 	if (m_childImageSubscript == getImageConfigCount() - 1)
 	{
-		return { "1启用,0禁用,启用将R,G,B,误差参数判断失效,颜色参数判断生效","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
+		return explain0;
 	}
-	return { "判断语法,!=黑色(不等于黑色),==黑色(等于黑色)","三原色:Red(红色)","三原色:Green(绿色)","三原色:Blue(蓝色)","单位:PX(像素)",
-			"单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)" };
+	return explain1;
 }
 
 const int JsonTool::getEnableConfigCount()
@@ -1763,7 +1790,7 @@ const int JsonTool::getEnableConfigCount()
 	return m_enableConfigKeyList.count();
 }
 
-const QStringList JsonTool::getEnableConfigKeyList()
+const QStringList& JsonTool::getEnableConfigKeyList()
 {
 	return m_enableConfigKeyList;
 }
@@ -1807,9 +1834,10 @@ bool JsonTool::setEnableConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getEnableConfigExplain()
+const QStringList& JsonTool::getEnableConfigExplain()
 {
-	return { "0禁用,1启用","0禁用,1启用", "0禁用,1启用", "0禁用,1启用", "0禁用,1启用" ,"0禁用,1启用" };
+	static QStringList explain = { "0禁用,1启用","0禁用,1启用", "0禁用,1启用", "0禁用,1启用", "0禁用,1启用" ,"0禁用,1启用" };
+	return explain;
 }
 
 DefConfig* JsonTool::getParsedDefConfig()
@@ -1822,14 +1850,16 @@ const int JsonTool::getVoltageConfigCount()
 	return m_voltageConfigObj.count();
 }
 
-const QStringList JsonTool::getChildVoltageConfigKeyList()
+const QStringList& JsonTool::getChildVoltageConfigKeyList()
 {
-	return { "上限","下限","继电器IO" };
+	static QStringList keys = { "上限","下限","继电器IO" };
+	return keys;
 }
-
-const QStringList JsonTool::getChildVoltageConfigValueList()
+//631156
+const QStringList& JsonTool::getChildVoltageConfigValueList()
 {
-	return { "1.8", "1.0", "1" };
+	static QStringList explain = { "1.8", "1.0", "1" };
+	return explain;
 }
 
 const QStringList JsonTool::getParentVoltageConfigKeyList()
@@ -1906,9 +1936,10 @@ QJsonObject& JsonTool::getVoltageConfigObj()
 	return m_voltageConfigObj;
 }
 
-const QStringList JsonTool::getVoltageConfigExplain()
+const QStringList& JsonTool::getVoltageConfigExplain()
 {
-	return QStringList{ "单位:V(伏)","单位:V(伏)","继电器接口编号" };
+	static QStringList explain = { "单位:V(伏)","单位:V(伏)","继电器接口编号" };
+	return explain;
 }
 
 const int JsonTool::getKeyVolConfigCount()
@@ -1916,9 +1947,10 @@ const int JsonTool::getKeyVolConfigCount()
 	return m_keyVolConfigObj.count();
 }
 
-const QStringList JsonTool::getKeyVolConfigKeyList()
+const QStringList& JsonTool::getKeyVolConfigKeyList()
 {
-	return { "高电平上限","高电平下限","低电平上限","低电平下限" };
+	static QStringList keys = { "高电平上限","高电平下限","低电平上限","低电平下限" };
+	return keys;
 }
 
 const QStringList JsonTool::getKeyVolConfigValueList()
@@ -1954,9 +1986,10 @@ bool JsonTool::setKeyVolConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getKeyVolConfigExplain()
+const QStringList& JsonTool::getKeyVolConfigExplain()
 {
-	return QStringList{ "单位:V(伏)","单位:V(伏)","单位:V(伏)","单位:V(伏)" };
+	static QStringList explain = { "单位:V(伏)","单位:V(伏)","单位:V(伏)","单位:V(伏)" };
+	return explain;
 }
 
 const int JsonTool::getCurrentConfigCount()
@@ -1969,14 +2002,16 @@ const QStringList JsonTool::getParentCurrentConfigKeyList()
 	return m_currentConfigObj.keys();
 }
 
-const QStringList JsonTool::getChildCurrentConfigKeyList()
+const QStringList& JsonTool::getChildCurrentConfigKeyList()
 {
-	return { "上限","下限","电压" };
+	static QStringList keys = { "上限","下限","电压" };
+	return keys;
 }
 
-const QStringList JsonTool::getChildCurrentConfigValueList()
+const QStringList& JsonTool::getChildCurrentConfigValueList()
 {
-	return { "0.0","0.0","0.0" };
+	static QStringList keys = { "0.0","0.0","0.0" };
+	return keys;
 }
 
 const QStringList JsonTool::getChildCurrentConfigValueList(const int& i)
@@ -2041,9 +2076,10 @@ QJsonObject& JsonTool::getCurrentConfigObj()
 	return m_currentConfigObj;
 }
 
-const QStringList JsonTool::getCurrentConfigExplain()
+const QStringList& JsonTool::getCurrentConfigExplain()
 {
-	return QStringList{ "单位:A(安培)", "单位:A(安培)", "单位:V(伏)" };
+	static QStringList explain = { "单位:A(安培)", "单位:A(安培)", "单位:V(伏)" };
+	return explain;
 }
 
 const int JsonTool::getStaticConfigCount()
@@ -2051,9 +2087,10 @@ const int JsonTool::getStaticConfigCount()
 	return m_staticConfigObj.count();
 }
 
-const QStringList JsonTool::getStaticConfigKeyList()
+const QStringList& JsonTool::getStaticConfigKeyList()
 {
-	return { "上限","下限" };
+	static QStringList keys = { "上限","下限" };
+	return keys;
 }
 
 const QStringList JsonTool::getStaticConfigValueList()
@@ -2089,9 +2126,10 @@ bool JsonTool::setStaticConfigValue(const QString& key, const QString& value)
 	return result;
 }
 
-const QStringList JsonTool::getStaticConfigExplain()
+const QStringList& JsonTool::getStaticConfigExplain()
 {
-	return { "单位:μA(微安)","单位:μA(微安)" };
+	static QStringList explain = { "单位:μA(微安)","单位:μA(微安)" };
+	return explain;
 }
 
 const QStringList JsonTool::getParentResConfigKeyList()
@@ -2099,14 +2137,16 @@ const QStringList JsonTool::getParentResConfigKeyList()
 	return m_resConfigObj.keys();
 }
 
-const QStringList JsonTool::getChildResConfigKeyList()
+const QStringList& JsonTool::getChildResConfigKeyList()
 {
-	return { "上限","下限","继电器IO" };
+	static QStringList keys = { "上限","下限","继电器IO" };
+	return keys;
 }
 
-const QStringList JsonTool::getChildResConfigValueList()
+const QStringList& JsonTool::getChildResConfigValueList()
 {
-	return { "8000","5000","5" };
+	static QStringList keys = { "8000","5000","5" };
+	return keys;
 }
 
 const int JsonTool::getResConfigCount()
@@ -2183,9 +2223,10 @@ QJsonObject& JsonTool::getResConfigObj()
 	return m_resConfigObj;
 }
 
-const QStringList JsonTool::getResConfigExplain()
+const QStringList& JsonTool::getResConfigExplain()
 {
-	return QStringList{ "单位:Ω(欧姆)","单位:Ω(欧姆)","继电器接口编号" };
+	static QStringList explain = { "单位:Ω(欧姆)","单位:Ω(欧姆)","继电器接口编号" };
+	return explain;
 }
 
 HwdConfig* JsonTool::getParsedHwdConfig()
@@ -2203,14 +2244,16 @@ const QStringList JsonTool::getParentVerConfigKeyList()
 	return m_verConfigObj.keys();
 }
 
-const QStringList JsonTool::getChildVerConfigKeyList()
+const QStringList& JsonTool::getChildVerConfigKeyList()
 {
-	return { "DID","编码","值" };
+	static QStringList keys = { "DID","编码","值" };
+	return keys;
 }
 
-const QStringList JsonTool::getChildVerConfigValueList()
+const QStringList& JsonTool::getChildVerConfigValueList()
 {
-	return { "0xFFFF","ASCII","00000000" };
+	static QStringList keys = { "0xFFFF","ASCII","00000000" };
+	return keys;
 }
 
 const QString JsonTool::getVerConfigValue(const QString& parentKey, const QString& childKey)
@@ -2305,11 +2348,11 @@ QJsonObject& JsonTool::getVerConfigObj()
 	return m_verConfigObj;
 }
 
-const QStringList JsonTool::getVerConfigExplain()
+const QStringList& JsonTool::getVerConfigExplain()
 {
-	return { "数据标识符","支持编码[ASCII ASCR4 INT USN BIN BCD]","标识符数据" };
+	static QStringList explain = { "数据标识符","支持编码[ASCII ASCR4 INT USN BIN BCD]","标识符数据" };
+	return explain;
 }
-
 
 const int JsonTool::getDtcConfigCount()
 {
@@ -2321,14 +2364,16 @@ const QStringList JsonTool::getParentDtcConfigKeyList()
 	return m_dtcConfigObj.keys();
 }
 
-const QStringList JsonTool::getChildDtcConfigKeyList()
+const QStringList& JsonTool::getChildDtcConfigKeyList()
 {
-	return { "DTC","忽略" };
+	static QStringList keys = { "DTC","忽略" };
+	return keys;
 }
 
-const QStringList JsonTool::getChildDtcConfigValueList()
+const QStringList& JsonTool::getChildDtcConfigValueList()
 {
-	return { "U100000","0" };
+	static QStringList keys = { "U100000","0" };
+	return keys;
 }
 
 const QString JsonTool::getDtcConfigValue(const QString& parentKey, const QString& childKey)
@@ -2399,9 +2444,10 @@ QJsonObject& JsonTool::getDtcConfigObj()
 	return m_dtcConfigObj;
 }
 
-const QStringList JsonTool::getDtcConfigExplain()
+const QStringList& JsonTool::getDtcConfigExplain()
 {
-	return { "诊断故障码","1启用,0禁用" };
+	static QStringList explain =  { "诊断故障码","1启用,0禁用" };
+	return explain;
 }
 
 UdsConfig* JsonTool::getParsedUdsConfig()
@@ -2467,6 +2513,4 @@ QJsonObject& JsonTool::getCanMsgObj()
 {
 	return m_canMsgObj;
 }
-
-
 

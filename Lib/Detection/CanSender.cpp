@@ -119,7 +119,7 @@ bool CanSender::Init(IConnMgr* pIConnMgr)
 	return bRet;
 }
 
-bool CanSender::AddMsg(const MsgNode& msg, const int& iCycle, const SendType& emST, const int& iSendCount)
+bool CanSender::AddMsg(const MsgNode& msg, const int& iDelay, const SendType& emST, const int& iSendCount)
 {
 	bool bRet = false;
 	do
@@ -133,7 +133,7 @@ bool CanSender::AddMsg(const MsgNode& msg, const int& iCycle, const SendType& em
 				if (m_msgs[i].msg.id == msg.id)
 				{
 					memcpy(&m_msgs[i].msg, &msg, sizeof(MsgNode));
-					m_msgs[i].iCycle = iCycle;
+					m_msgs[i].iCycle = iDelay;
 					m_msgs[i].iSendCount = iSendCount;
 					m_msgs[i].emST = emST;
 					bFind = true;
@@ -151,7 +151,7 @@ bool CanSender::AddMsg(const MsgNode& msg, const int& iCycle, const SendType& em
 					memcpy(&m_msgs[i].msg, &msg, sizeof(MsgNode));
 					m_msgs[i].iSendCount = iSendCount;
 					m_msgs[i].emST = emST;
-					m_msgs[i].iCycle = iCycle;
+					m_msgs[i].iCycle = iDelay;
 					m_msgs[i].bValid = true;
 					m_msgs[i].iTime = 0;
 

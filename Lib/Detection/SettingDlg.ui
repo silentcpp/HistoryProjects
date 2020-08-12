@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>895</width>
-    <height>648</height>
+    <width>762</width>
+    <height>591</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -197,6 +197,20 @@
                 </property>
                </widget>
               </item>
+              <item row="0" column="5" colspan="2">
+               <widget class="QLineEdit" name="canDataEdit">
+                <property name="text">
+                 <string>00 00 00 00 00 00 00 00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QLabel" name="label_4">
+                <property name="text">
+                 <string>帧ID(HEX):</string>
+                </property>
+               </widget>
+              </item>
               <item row="0" column="1">
                <widget class="QComboBox" name="canFrameType">
                 <item>
@@ -211,24 +225,14 @@
                 </item>
                </widget>
               </item>
-              <item row="0" column="2">
-               <widget class="QLabel" name="label_4">
+              <item row="1" column="7">
+               <widget class="QPushButton" name="canBaseStop">
                 <property name="text">
-                 <string>帧ID(HEX):</string>
+                 <string>停止</string>
                 </property>
-               </widget>
-              </item>
-              <item row="0" column="5" colspan="2">
-               <widget class="QLineEdit" name="canDataEdit">
-                <property name="text">
-                 <string>00 00 00 00 00 00 00 00</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="4">
-               <widget class="QLabel" name="label_6">
-                <property name="text">
-                 <string>数据(HEX):</string>
+                <property name="icon">
+                 <iconset resource="Resource.qrc">
+                  <normaloff>:/images/Resources/images/del.ico</normaloff>:/images/Resources/images/del.ico</iconset>
                 </property>
                </widget>
               </item>
@@ -236,6 +240,20 @@
                <widget class="QLabel" name="label_3">
                 <property name="text">
                  <string>帧格式:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="6">
+               <widget class="QLineEdit" name="canSendDelay">
+                <property name="text">
+                 <string>0</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="4">
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>数据(HEX):</string>
                 </property>
                </widget>
               </item>
@@ -264,24 +282,6 @@
                 </item>
                </widget>
               </item>
-              <item row="1" column="6">
-               <widget class="QLineEdit" name="canSendDelay">
-                <property name="text">
-                 <string>0</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="7">
-               <widget class="QPushButton" name="canBaseStop">
-                <property name="text">
-                 <string>停止</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="Resource.qrc">
-                  <normaloff>:/images/Resources/images/del.ico</normaloff>:/images/Resources/images/del.ico</iconset>
-                </property>
-               </widget>
-              </item>
               <item row="1" column="3">
                <widget class="QLineEdit" name="canSendCount">
                 <property name="text">
@@ -289,21 +289,20 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="4" colspan="2">
-               <widget class="QLabel" name="label_7">
-                <property name="text">
-                 <string>每次发送间隔(ms):</string>
+              <item row="1" column="8">
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
                 </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QLabel" name="label_5">
-                <property name="text">
-                 <string>发送次数:</string>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
                 </property>
-               </widget>
+               </spacer>
               </item>
-              <item row="2" column="3">
+              <item row="3" column="3">
                <spacer name="verticalSpacer_3">
                 <property name="orientation">
                  <enum>Qt::Vertical</enum>
@@ -315,6 +314,20 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item row="1" column="2">
+               <widget class="QLabel" name="label_5">
+                <property name="text">
+                 <string>发送次数:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="4" colspan="2">
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>每次发送间隔(ms):</string>
+                </property>
+               </widget>
               </item>
               <item row="0" column="8">
                <spacer name="horizontalSpacer_2">
@@ -329,18 +342,16 @@
                 </property>
                </spacer>
               </item>
-              <item row="1" column="8">
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+              <item row="2" column="7">
+               <widget class="QPushButton" name="canStartup">
+                <property name="text">
+                 <string>启动</string>
                 </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
+                <property name="icon">
+                 <iconset resource="Resource.qrc">
+                  <normaloff>:/images/Resources/images/bird.ico</normaloff>:/images/Resources/images/bird.ico</iconset>
                 </property>
-               </spacer>
+               </widget>
               </item>
              </layout>
             </widget>
@@ -568,21 +579,16 @@
        <string>画图</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
+       <item>
+        <widget class="QLabel" name="label_13">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(255, 0, 255);</string>
+         </property>
+         <property name="text">
+          <string>友情提示:所画图像顺序依次为:前后左右,如果画的不满意,鼠标右键撤销.</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="QLabelEx" name="label">
          <property name="sizePolicy">
@@ -605,7 +611,107 @@
          </property>
         </widget>
        </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QPushButton" name="startCapture">
+           <property name="text">
+            <string>开始抓图</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stopCapture">
+           <property name="text">
+            <string>停止抓图</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="saveCoord">
+           <property name="text">
+            <string>保存坐标</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
       </layout>
+     </widget>
+     <widget class="QWidget" name="tab_7">
+      <attribute name="title">
+       <string>关于</string>
+      </attribute>
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>40</y>
+         <width>201</width>
+         <height>131</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>版本信息</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>框架版本:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="frameVersion">
+          <property name="text">
+           <string>0.0.0.0</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>文件版本:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="fileVersion">
+          <property name="text">
+           <string>0.0.0.0</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_14">
+          <property name="text">
+           <string>程序版本:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="appVersion">
+          <property name="text">
+           <string>0.0.0.0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
    </item>

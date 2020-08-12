@@ -50,10 +50,10 @@ void QLabelEx::mouseReleaseEvent(QMouseEvent* event)
 		m_endX = event->pos().x();
 		m_endY = event->pos().y();
 		QApplication::restoreOverrideCursor();
-		if (m_endX - m_startX <= 10 || m_endY - m_startY <= 10)
-		{
-			return;
-		}
+		//if (m_endX - m_startX <= 10 || m_endY - m_startY <= 10)
+		//{
+		//	return;
+		//}
 		m_startCoord.push_back(QPoint(m_startX, m_startY));
 		m_endCoord.push_back(QPoint(m_endX, m_endY));
 

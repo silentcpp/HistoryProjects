@@ -9,7 +9,6 @@
 #ifndef UI_MAINDLG_H
 #define UI_MAINDLG_H
 
-#include <Detection/QLabelEx.h>
 #include <QtCore/QVariant>
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
@@ -31,7 +30,7 @@ class Ui_MainDlgClass
 public:
     QHBoxLayout *horizontalLayout_3;
     QVBoxLayout *verticalLayout_2;
-    QLabelEx *imageLabel;
+    QLabel *imageLabel;
     QListWidget *recordList;
     QVBoxLayout *verticalLayout;
     QLabel *resultLabel;
@@ -72,7 +71,7 @@ public:
         verticalLayout_2 = new QVBoxLayout();
         verticalLayout_2->setSpacing(6);
         verticalLayout_2->setObjectName(QStringLiteral("verticalLayout_2"));
-        imageLabel = new QLabelEx(MainDlgClass);
+        imageLabel = new QLabel(MainDlgClass);
         imageLabel->setObjectName(QStringLiteral("imageLabel"));
         QSizePolicy sizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         sizePolicy.setHorizontalStretch(0);

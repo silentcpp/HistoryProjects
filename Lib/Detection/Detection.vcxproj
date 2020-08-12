@@ -123,7 +123,6 @@
     <ClCompile Include="AuthDlg.cpp" />
     <ClCompile Include="CanMatrix.cpp" />
     <ClCompile Include="Detection.cpp" />
-    <ClCompile Include="DVRNP.cpp" />
     <ClCompile Include="jqcpumonitor.cpp" />
     <ClCompile Include="MainDlg.cpp" />
     <ClCompile Include="JsonTool.cpp" />
@@ -154,7 +153,6 @@
     </QtMoc>
     <ClInclude Include="Types.h" />
     <QtMoc Include="Detection.h" />
-    <ClInclude Include="DVRNP.h" />
     <ClInclude Include="CanSender.h" />
     <QtMoc Include="UnlockDlg.h" />
     <QtMoc Include="ScanCodeDlg.h" />

@@ -13,9 +13,11 @@
 #include <memory>
 #include <Common/Types.h>
 
-#define JSON_FILE_VER "JsonFile_1.0.0.0"
+#define LIBRARY_VER "1.0.0.1"
 
-#define DCF_FILE_VER "DcfFile_1.0.0.0"
+#define JSON_FILE_VER "1.0.0.1"
+
+#define DCF_FILE_VER "1.0.0.0"
 
 #define Q_TO_C_STR(X) X.toStdString().c_str()
 
@@ -50,10 +52,13 @@ typedef struct DeviceConfig
 	QString canName;
 
 	/*采集卡名称*/
-	QString captureName;
+	QString cardName;
 
-	/*采集卡通道*/
-	QString captureChannel;
+	/*采集卡通道数*/
+	QString cardChannelCount;
+
+	/*采集卡通道号*/
+	QString cardChannelId;
 
 	/*检测名称*/
 	QString detectionName;
@@ -467,6 +472,7 @@ struct CanMsg {
 
 	SendType emST;
 
+	/*循环周期,ms*/
 	int iCycle;
 
 	MsgNode msg;
@@ -562,7 +568,8 @@ protected:
 		"UDS名称",//0
 		"CAN名称",//1
 		"采集卡名称",
-		"采集卡通道",
+		"采集卡通道数",
+		"采集卡通道号",
 		"检测名称",
 		"条码判断",
 		"条码长度"
@@ -574,6 +581,7 @@ protected:
 		"GuangQiA56",//0
 		"ZLG",//1
 		"MV800",
+		"1",
 		"1",
 		"功能",
 		"ABC",
@@ -836,6 +844,9 @@ public:
 	/*获取所有主键*/
 	const QStringList getAllMainKey();
 	
+	/*获取库版本*/
+	const QString getLibrayVersion();
+
 	/*获取JSON文件版本*/
 	const QString getJsonFileVersion();
 
@@ -905,7 +916,7 @@ public:
 	const QString getDeviceConfigValue(const QString& key);
 
 	/*获取设备对象键*/
-	const QStringList getDeviceConfigKeyList();
+	const QStringList& getDeviceConfigKeyList();
 
 	/*获取已解析的设备配置*/
 	const deviceConfig_t& getParsedDeviceConfig();
@@ -917,7 +928,7 @@ public:
 	bool setDeviceConfigValue(const QString& key, const QString& value);
 
 	/*获取设备说明*/
-	const QStringList getDeviceConfigExplain();
+	const QStringList& getDeviceConfigExplain();
 	/************************************************************************/
 	/* 硬件配置操作                                                         */
 	/************************************************************************/
@@ -929,7 +940,7 @@ public:
 	const int getHardwareConfigCount();
 
 	/*获取硬件对象键*/
-	const QStringList getHardwareConfigKeyList();
+	const QStringList& getHardwareConfigKeyList();
 
 	/*获取已解析的硬件配置*/
 	const hardwareConfig_t& getParseHardwareConfig();
@@ -938,7 +949,7 @@ public:
 	bool setHardwareConfigValue(const QString& key, const QString& value);
 
 	/*获取硬件说明*/
-	const QStringList getHardwareConfigExplain();
+	const QStringList& getHardwareConfigExplain();
 	/************************************************************************/
 	/* 继电器配置操作                                                       */
 	/************************************************************************/
@@ -952,13 +963,13 @@ public:
 	const relayConfig_t& getParsedRelayConfig();
 
 	/*获取继电器对象键*/
-	const QStringList getRelayConfigKeyList();
+	const QStringList& getRelayConfigKeyList();
 
 	/*设置继电器配置值*/
 	bool setRelayConfigValue(const QString& key, const QString& value);
 
 	/*获取继电器说明*/
-	const QStringList getRelayConfigExplain();
+	const QStringList& getRelayConfigExplain();
 	/************************************************************************/
 	/* 用户配置操作                                                         */
 	/************************************************************************/
@@ -979,7 +990,7 @@ public:
 	const int getRangeConfigCount();
 
 	/*获取范围键*/
-	const QStringList getRangeConfigKeyList();
+	const QStringList& getRangeConfigKeyList();
 
 	/*获取已解析的范围配置*/
 	const rangeConfig_t& getParsedRangeConfig();
@@ -988,7 +999,7 @@ public:
 	bool setRangeConfigValue(const QString& key, const QString& value);
 
 	/*获取范围配置说明*/
-	const QStringList getRangeConfigExplain();
+	const QStringList& getRangeConfigExplain();
 	/************************************************************************/
 	/* 阈值配置操作                                                         */
 	/************************************************************************/
@@ -999,7 +1010,7 @@ public:
 	const int getThresholdConfigCount();
 
 	/*阈值键*/
-	const QStringList getThresholdConfigKeyList();
+	const QStringList& getThresholdConfigKeyList();
 
 	/*获取已解析的阈值配置*/
 	const thresholdConfig_t& getParsedThresholdConfig();
@@ -1008,7 +1019,7 @@ public:
 	bool setThresholdConfigValue(const QString& key, const QString& value);
 
 	/*获取阈值配置说明*/
-	const QStringList getThresholdConfigExplain();
+	const QStringList& getThresholdConfigExplain();
 	/************************************************************************/
 	/* 图像配置操作                                                         */
 	/************************************************************************/
@@ -1026,7 +1037,7 @@ public:
 	/*获取子图像键列表*/
 	const QStringList getChildImageKeyList(const int& id);
 
-	const QStringList getChildImageKeyList();
+	const QStringList& getChildImageKeyList();
 
 	/*获取子图像配置值*/
 	const QString getImageConfigValue(const QString& parentKey, const QString& childKey);
@@ -1040,7 +1051,7 @@ public:
 	/*获取图像配置说明*/
 	const QStringList getImageConfigExplain(const int& i);
 
-	const QStringList getImageConfigExplain();
+	const QStringList& getImageConfigExplain();
 	/************************************************************************/
 	/* 启用配置操作                                                         */
 	/************************************************************************/
@@ -1048,7 +1059,7 @@ public:
 	const int getEnableConfigCount();
 
 	/*获取启用配置键列表*/
-	const QStringList getEnableConfigKeyList();
+	const QStringList& getEnableConfigKeyList();
 
 	/*获取启用配置值列表*/
 	const QStringList getEnableConfigValueList();
@@ -1060,7 +1071,7 @@ public:
 	bool setEnableConfigValue(const QString& key, const QString& value);
 
 	/*获取启用配置说明*/
-	const QStringList getEnableConfigExplain();
+	const QStringList& getEnableConfigExplain();
 
 	/************************************************************************/
 	/* 获取以上总配置                                                       */
@@ -1074,10 +1085,10 @@ public:
 	const int getVoltageConfigCount();
 
 	/*获取子电压配置键*/
-	const QStringList getChildVoltageConfigKeyList();
+	const QStringList& getChildVoltageConfigKeyList();
 
 	/*获取子电压配置默认值*/
-	const QStringList getChildVoltageConfigValueList();
+	const QStringList& getChildVoltageConfigValueList();
 
 	/*获取父电压配置键*/
 	const QStringList getParentVoltageConfigKeyList();
@@ -1095,7 +1106,7 @@ public:
 	QJsonObject& getVoltageConfigObj();
 
 	/*获取电压配置说明*/
-	const QStringList getVoltageConfigExplain();
+	const QStringList& getVoltageConfigExplain();
 
 	/************************************************************************/
 	/* 按键电压配置操作                                                     */
@@ -1104,7 +1115,7 @@ public:
 	const int getKeyVolConfigCount();
 
 	/*获取按键电压配置键*/
-	const QStringList getKeyVolConfigKeyList();
+	const QStringList& getKeyVolConfigKeyList();
 
 	/*获取按键电压配置值*/
 	const QStringList getKeyVolConfigValueList();
@@ -1116,7 +1127,7 @@ public:
 	bool setKeyVolConfigValue(const QString& key, const QString& value);
 
 	/*获取按键电压配置说明*/
-	const QStringList getKeyVolConfigExplain();
+	const QStringList& getKeyVolConfigExplain();
 
 	/*按键电压*/
 	/************************************************************************/
@@ -1126,10 +1137,10 @@ public:
 	const QStringList getParentCurrentConfigKeyList();
 
 	/*获取子电流配置键列表*/
-	const QStringList getChildCurrentConfigKeyList();
+	const QStringList& getChildCurrentConfigKeyList();
 	
 	/*获取电流配置值列表*/
-	const QStringList getChildCurrentConfigValueList();
+	const QStringList& getChildCurrentConfigValueList();
 
 	/*获取电流配置值列表*/
 	const QStringList getChildCurrentConfigValueList(const int& i);
@@ -1150,7 +1161,7 @@ public:
 	QJsonObject& getCurrentConfigObj();
 
 	/*获取电流配置说明*/
-	const QStringList getCurrentConfigExplain();
+	const QStringList& getCurrentConfigExplain();
 	/************************************************************************/
 	/* 静态电流配置操作                                                     */
 	/************************************************************************/
@@ -1159,7 +1170,7 @@ public:
 	const int getStaticConfigCount();
 
 	/*静态电流配置键列表*/
-	const QStringList getStaticConfigKeyList();
+	const QStringList& getStaticConfigKeyList();
 
 	/*静态电流配置值列表*/
 	const QStringList getStaticConfigValueList();
@@ -1171,7 +1182,7 @@ public:
 	bool setStaticConfigValue(const QString& key, const QString& value);
 
 	/*获取静态电流说明*/
-	const QStringList getStaticConfigExplain();
+	const QStringList& getStaticConfigExplain();
 
 	/************************************************************************/
 	/* 电阻配置操作                                                         */
@@ -1180,10 +1191,10 @@ public:
 	const QStringList getParentResConfigKeyList();
 
 	/*获取子电阻配置键*/
-	const QStringList getChildResConfigKeyList();
+	const QStringList& getChildResConfigKeyList();
 
 	/*获取电阻配置值*/
-	const QStringList getChildResConfigValueList();
+	const QStringList& getChildResConfigValueList();
 
 	/*获取电阻配置数量*/
 	const int getResConfigCount();
@@ -1201,7 +1212,7 @@ public:
 	QJsonObject& getResConfigObj();
 
 	/*获取电阻配置说明*/
-	const QStringList getResConfigExplain();
+	const QStringList& getResConfigExplain();
 
 	/************************************************************************/
 	/* 获取以上总配置                                                       */
@@ -1219,10 +1230,10 @@ public:
 	const QStringList getParentVerConfigKeyList();
 
 	/*获取子版本配置键*/
-	const QStringList getChildVerConfigKeyList();
+	const QStringList& getChildVerConfigKeyList();
 
 	/*获取子版本配置值*/
-	const QStringList getChildVerConfigValueList();
+	const QStringList& getChildVerConfigValueList();
 
 	/*获取版本配置值*/
 	const QString getVerConfigValue(const QString& parentKey, const QString& childKey);
@@ -1237,7 +1248,7 @@ public:
 	QJsonObject& getVerConfigObj();
 
 	/*获取版本配置说明*/
-	const QStringList getVerConfigExplain();
+	const QStringList& getVerConfigExplain();
 
 	/************************************************************************/
 	/* 诊断故障码配置操作                                                   */
@@ -1249,10 +1260,10 @@ public:
 	const QStringList getParentDtcConfigKeyList();
 
 	/*获取子故障码键*/
-	const QStringList getChildDtcConfigKeyList();
+	const QStringList& getChildDtcConfigKeyList();
 
 	/*获取子故障码值*/
-	const QStringList getChildDtcConfigValueList();
+	const QStringList& getChildDtcConfigValueList();
 
 	/*获取故障码值*/
 	const QString getDtcConfigValue(const QString& parentKey, const QString& childKey);
@@ -1267,7 +1278,7 @@ public:
 	QJsonObject& getDtcConfigObj();
 
 	/*获取诊断故障码说明*/
-	const QStringList getDtcConfigExplain();
+	const QStringList& getDtcConfigExplain();
 
 
 	/************************************************************************/

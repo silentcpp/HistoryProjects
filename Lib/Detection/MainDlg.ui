@@ -17,7 +17,7 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="QLabelEx" name="imageLabel">
+      <widget class="QLabel" name="imageLabel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -332,13 +332,6 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>QLabelEx</class>
-   <extends>QLabel</extends>
-   <header location="global">Detection/QLabelEx.h</header>
-  </customwidget>
- </customwidgets>
  <resources>
   <include location="Resource.qrc"/>
  </resources>

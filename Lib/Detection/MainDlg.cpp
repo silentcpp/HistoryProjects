@@ -109,7 +109,7 @@ bool MainDlg::initInstance()
 
 		connect(m_base, &Base::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
 
-		connect(ui.imageLabel, &QLabelEx::coordinateSignal, this, &MainDlg::coordinateSlot);
+		//connect(ui.imageLabel, &QLabelEx::coordinateSignal, this, &MainDlg::coordinateSlot);
 
 		if (m_base->getDetectionType() == BaseTypes::DT_DVR)
 		{
@@ -179,7 +179,12 @@ void MainDlg::settingButtonSlot()
 		}
 
 		connect(settingDlg, &SettingDlg::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
-		settingDlg->setAppName(this->windowTitle());
+		settingDlg->setBasePointer(m_base);
+		settingDlg->setAppName(this->windowTitle().mid(0, this->windowTitle().indexOf(']') + 1));
+		if (!settingDlg->initInstance())
+		{
+			QMessageBoxEx::warning(this, "´íÎó", settingDlg->getLastError());
+		}
 		settingDlg->show();
 	} while (false);
 	return;

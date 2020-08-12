@@ -6,10 +6,6 @@ SettingDlg::SettingDlg(QWidget* parent)
 {
 	this->ui.setupUi(this);
 	this->setAttribute(Qt::WA_DeleteOnClose);
-	if (!this->initInstance())
-	{
-		QMessageBoxEx::warning(this, "错误", getLastError());
-	}
 }
 
 SettingDlg::~SettingDlg()
@@ -35,7 +31,7 @@ bool SettingDlg::initInstance()
 	bool result = false;
 	do
 	{
-		AUTO_RESIZE(this);
+		//AUTO_RESIZE(this);
 
 		ui.configAdd->setEnabled(false);
 		ui.configDel->setEnabled(false);
@@ -45,6 +41,10 @@ bool SettingDlg::initInstance()
 		connect(ui.configDel, &QPushButton::clicked, this, &SettingDlg::configDelNode);
 		connect(ui.configSave, &QPushButton::clicked, this, &SettingDlg::configSaveData);
 		connect(ui.configExit, &QPushButton::clicked, this, &SettingDlg::configExitDlg);
+		connect(ui.canStartup, &QPushButton::clicked, this, &SettingDlg::canStartupSlot);
+		connect(ui.startCapture, &QPushButton::clicked, this, &SettingDlg::startCaptureSlot);
+		connect(ui.stopCapture, &QPushButton::clicked, this, &SettingDlg::stopCaptureSlot);
+		connect(ui.saveCoord, &QPushButton::clicked, this, &SettingDlg::saveCoordSlot);
 
 		m_jsonTool = JsonTool::getInstance();
 		if (!m_jsonTool)
@@ -53,12 +53,21 @@ bool SettingDlg::initInstance()
 			break;
 		}
 
+		auto& device = m_jsonTool->getParsedDefConfig()->device;
+		QString&& newTitle = QString("%1%2%3设置[%4]").arg(device.modelName,
+			Misc::getAppAppendName(),
+			device.detectionName,
+			Misc::getAppVersion());
+
+		setWindowTitle(newTitle);
 		if (!initConfigTreeWidget())
 		{
 			break;
 		}
 
 		initCanTableWidget();
+
+		initAboutWidget();
 		result = true;
 	} while (false);
 	return result;
@@ -100,7 +109,7 @@ void SettingDlg::configAddNode()
 			QString("XXXX诊断配置[%1]").arg(m_jsonTool->getDtcConfigCount())
 		};
 
-		const QStringList(JsonTool:: * childKeyListFnc[])() = {
+		const QStringList&(JsonTool:: * childKeyListFnc[])() = {
 			&JsonTool::getChildVoltageConfigKeyList,
 			&JsonTool::getChildCurrentConfigKeyList,
 			&JsonTool::getChildResConfigKeyList,
@@ -108,7 +117,7 @@ void SettingDlg::configAddNode()
 			&JsonTool::getChildDtcConfigKeyList
 		};
 
-		const QStringList(JsonTool:: * childValueListFnc[])() = {
+		const QStringList&(JsonTool:: * childValueListFnc[])() = {
 			&JsonTool::getChildVoltageConfigValueList,
 			&JsonTool::getChildCurrentConfigValueList,
 			&JsonTool::getChildResConfigValueList,
@@ -116,7 +125,7 @@ void SettingDlg::configAddNode()
 			&JsonTool::getChildDtcConfigValueList
 		};
 
-		const QStringList(JsonTool:: * explainListFnc[])() = {
+		const QStringList&(JsonTool:: * explainListFnc[])() = {
 			&JsonTool::getVoltageConfigExplain,
 			&JsonTool::getCurrentConfigExplain,
 			&JsonTool::getResConfigExplain,
@@ -250,6 +259,11 @@ void SettingDlg::configSaveData()
 void SettingDlg::configExitDlg()
 {
 	close();
+}
+
+void SettingDlg::setBasePointer(void* pointer)
+{
+	m_basePointer = pointer;
 }
 
 void SettingDlg::configTreeItemPressedSlot(QTreeWidgetItem* item, int column)
@@ -498,6 +512,61 @@ void SettingDlg::canBaseStopSlot()
 	}
 }
 
+void SettingDlg::updateImageSlot(const QImage& image)
+{
+	ui.label->setPixmap(QPixmap::fromImage(image));
+}
+
+void SettingDlg::canStartupSlot()
+{
+	if (!m_canThreadStart)
+	{
+		ui.canStartup->setText("停止");
+		Dt::Base::getCanConnect()->StartReceiveThread();
+	}
+	else
+	{
+		ui.canStartup->setText("开始");
+		Dt::Base::getCanConnect()->EndReceiveThread();
+	}
+	m_canThreadStart = !m_canThreadStart;
+}
+
+void SettingDlg::startCaptureSlot()
+{
+	if (m_startCapture) return;
+	m_startCapture = true;
+	connect(static_cast<Dt::Base*>(m_basePointer), &Dt::Base::updateImageSignal, this, &SettingDlg::updateImageSlot);
+}
+
+void SettingDlg::stopCaptureSlot()
+{
+	if (!m_startCapture) return;
+	m_startCapture = false;
+	disconnect(static_cast<Dt::Base*>(m_basePointer), &Dt::Base::updateImageSignal, this, &SettingDlg::updateImageSlot);
+}
+
+void SettingDlg::saveCoordSlot()
+{
+	QVector<QPoint> start, end;
+	ui.label->getCoordinate(&start, &end);
+	if (start.size() != 4 || end.size() != 4)
+	{
+		QMessageBoxEx::warning(this, "提示", "坐标数量必须为4个坐标");
+		return;
+	}
+
+	QStringList smallRectList = { "前小图矩形框","后小图矩形框","左小图矩形框","右小图矩形框" };
+	for (int i = 0; i < SMALL_RECT_; i++)
+	{
+		m_jsonTool->setImageConfigValue(smallRectList[i], "X坐标", QString::number(start[i].x()));
+		m_jsonTool->setImageConfigValue(smallRectList[i], "Y坐标", QString::number(start[i].y()));
+		m_jsonTool->setImageConfigValue(smallRectList[i], "宽", QString::number(end[i].x() - start[i].x()));
+		m_jsonTool->setImageConfigValue(smallRectList[i], "高", QString::number(end[i].y() - start[i].y()));
+	}
+	QMessageBoxEx::information(this, "提示", QString("保存%1").arg(m_jsonTool->initInstance(true) ? "成功" : "失败"));
+}
+
 void SettingDlg::setLastError(const QString& error)
 {
 	m_lastError = error;
@@ -567,6 +636,7 @@ bool SettingDlg::initConfigTreeWidget()
 		/************************************************************************/
 		/* Function1                                                            */
 		/************************************************************************/
+		/*返回临时变量*/
 		const int(JsonTool:: * getCount1Fnc[])() = {
 			&JsonTool::getDeviceConfigCount,
 			&JsonTool::getHardwareConfigCount,
@@ -578,7 +648,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getEnableConfigCount
 		};
 
-		const QStringList(JsonTool:: * getKey1Fnc[])() = {
+		const QStringList&(JsonTool:: * getKey1Fnc[])() = {
 			&JsonTool::getDeviceConfigKeyList,
 			&JsonTool::getHardwareConfigKeyList,
 			&JsonTool::getRelayConfigKeyList,
@@ -589,6 +659,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getEnableConfigKeyList
 		};
 
+		/*返回临时变量*/
 		const QString(JsonTool:: * getValue1Fnc[])(const QString & key) = {
 			&JsonTool::getDeviceConfigValue,
 			&JsonTool::getHardwareConfigValue,
@@ -600,7 +671,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getEnableConfigValue
 		};
 
-		const QStringList(JsonTool:: * getExplain1Fnc[])() = {
+		const QStringList&(JsonTool:: * getExplain1Fnc[])() = {
 			&JsonTool::getDeviceConfigExplain,
 			&JsonTool::getHardwareConfigExplain,
 			&JsonTool::getRelayConfigExplain,
@@ -658,6 +729,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getDtcConfigCount
 		};
 
+		/*返回临时遍历主键*/
 		const QStringList(JsonTool:: * getParentKey2Fnc[])() = {
 			&JsonTool::getParentImageKeyList,
 			&JsonTool::getParentVoltageConfigKeyList,
@@ -667,7 +739,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getParentDtcConfigKeyList
 		};
 
-		const QStringList(JsonTool:: * getChildKey2Fnc[])() = {
+		const QStringList&(JsonTool:: * getChildKey2Fnc[])() = {
 			&JsonTool::getChildImageKeyList,
 			&JsonTool::getChildVoltageConfigKeyList,
 			&JsonTool::getChildCurrentConfigKeyList,
@@ -676,6 +748,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getChildDtcConfigKeyList
 		};
 
+		/*返回临时变量*/
 		const QString(JsonTool:: * getValue2Fnc[])(const QString & key, const QString & value) = {
 			&JsonTool::getImageConfigValue,
 			&JsonTool::getVoltageConfigValue,
@@ -685,7 +758,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getDtcConfigValue
 		};
 
-		const QStringList(JsonTool:: * getExplain2Fnc[])() = {
+		const QStringList&(JsonTool:: * getExplain2Fnc[])() = {
 			&JsonTool::getImageConfigExplain,
 			&JsonTool::getVoltageConfigExplain,
 			&JsonTool::getCurrentConfigExplain,
@@ -743,7 +816,6 @@ bool SettingDlg::initCanTableWidget()
 	connect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
 	ui.canTable->verticalHeader()->setHidden(true);
 
-	Dt::Base::getCanConnect()->StartReceiveThread();
 	Dt::Base::getCanConnect()->SetDynamicDisplay([&](const char* type, const MsgNode& msg)->void {emit addCanTableItemSignal(type, msg); Sleep(10); });
 
 	connect(ui.canBaseSend, &QPushButton::clicked, this, &SettingDlg::canBaseSendSlot);
@@ -752,5 +824,13 @@ bool SettingDlg::initCanTableWidget()
 
 	connect(&m_canBaseSendTimer, &QTimer::timeout, this, [&]()->void {ui.canBaseSend->setEnabled(true); m_canBaseSendTimer.stop(); });
 
+	return true;
+}
+
+bool SettingDlg::initAboutWidget()
+{
+	ui.frameVersion->setText(m_jsonTool->getLibrayVersion());
+	ui.fileVersion->setText(m_jsonTool->getJsonFileVersion());
+	ui.appVersion->setText(Misc::getAppVersion());
 	return true;
 }

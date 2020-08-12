@@ -36,6 +36,8 @@ public:
 	void configSaveData();
 
 	void configExitDlg();
+
+	void setBasePointer(void* pointer);
 public slots:
 	/*≈‰÷√“≥øÿº˛*/
 	void configTreeItemPressedSlot(QTreeWidgetItem* item, int column);
@@ -50,12 +52,24 @@ public slots:
 	void canBaseSendSlot();
 
 	void canBaseStopSlot();
+
+	void updateImageSlot(const QImage& image);
+
+	void canStartupSlot();
+
+	void startCaptureSlot();
+
+	void stopCaptureSlot();
+
+	void saveCoordSlot();
 protected:
 	void setLastError(const QString& error);
 
 	bool initConfigTreeWidget();
 
 	bool initCanTableWidget();
+
+	bool initAboutWidget();
 signals:
 	void setAuthDlgSignal(bool* result, const int& flag);
 
@@ -87,4 +101,10 @@ private:
 	MsgNode m_msg;
 
 	QTimer m_canBaseSendTimer;
+
+	bool m_startCapture = false;
+
+	void* m_basePointer = nullptr;
+
+	bool m_canThreadStart = false;
 };

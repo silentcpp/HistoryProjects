@@ -41,12 +41,6 @@
     <Filter Include="Source Files\Algorithm">
       <UniqueIdentifier>{63de00b0-21f4-410c-a51c-f2aa02ef3852}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Protocol">
-      <UniqueIdentifier>{b8ecc413-9ecd-41e7-843e-aa9b80727f8d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Protocol">
-      <UniqueIdentifier>{95eb3b70-21b7-46a0-983b-0b700a01e0f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Manage">
       <UniqueIdentifier>{42b7cbcb-c393-4b18-a5e8-dc83912da5c2}</UniqueIdentifier>
     </Filter>
@@ -58,6 +52,12 @@
     </Filter>
     <Filter Include="Source Files\Control">
       <UniqueIdentifier>{5119c713-4929-4b14-96a4-243bbc25459f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Network">
+      <UniqueIdentifier>{b8ecc413-9ecd-41e7-843e-aa9b80727f8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Network">
+      <UniqueIdentifier>{95eb3b70-21b7-46a0-983b-0b700a01e0f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -81,9 +81,6 @@
     </ClCompile>
     <ClCompile Include="QLabelEx.cpp">
       <Filter>Source Files\Control</Filter>
-    </ClCompile>
-    <ClCompile Include="DVRNP.cpp">
-      <Filter>Source Files\Protocol</Filter>
     </ClCompile>
     <ClCompile Include="CanSender.cpp">
       <Filter>Source Files\Manage</Filter>
@@ -110,9 +107,6 @@
     </ClInclude>
     <ClInclude Include="RayAxis.h">
       <Filter>Header Files\Algorithm</Filter>
-    </ClInclude>
-    <ClInclude Include="DVRNP.h">
-      <Filter>Header Files\Protocol</Filter>
     </ClInclude>
     <ClInclude Include="CanSender.h">
       <Filter>Header Files\Manage</Filter>

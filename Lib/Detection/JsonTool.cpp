@@ -2513,4 +2513,3 @@ QJsonObject& JsonTool::getCanMsgObj()
 {
 	return m_canMsgObj;
 }
-

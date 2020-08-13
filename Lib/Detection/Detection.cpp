@@ -4285,10 +4285,6 @@ void Dt::Tap::screenUartHandler(const QString& port, const QByteArray& bytes)
 		{
 			for (int i = 0; i < 2; i++)
 			{
-				//if (m_dataResult[i].portName == portName)
-				//{
-				//	m_dataResult[i].isValid = true;
-				//}
 			}
 		}
 	} while (false);

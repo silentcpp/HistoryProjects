@@ -39,7 +39,7 @@
      </property>
      <property name="font">
       <font>
-       <family>Adobe 楷体 Std R</family>
+       <family>华文楷体</family>
        <pointsize>30</pointsize>
       </font>
      </property>
@@ -169,6 +169,10 @@
        <property name="text">
         <string>确认</string>
        </property>
+       <property name="icon">
+        <iconset resource="Resource.qrc">
+         <normaloff>:/images/Resources/images/connect.ico</normaloff>:/images/Resources/images/connect.ico</iconset>
+       </property>
       </widget>
      </item>
      <item>
@@ -191,6 +195,10 @@
       <widget class="QPushButton" name="exit">
        <property name="text">
         <string>退出</string>
+       </property>
+       <property name="icon">
+        <iconset resource="Resource.qrc">
+         <normaloff>:/images/Resources/images/disconnect.ico</normaloff>:/images/Resources/images/disconnect.ico</iconset>
        </property>
       </widget>
      </item>
@@ -215,6 +223,8 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="Resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

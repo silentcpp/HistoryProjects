@@ -48,7 +48,7 @@ public:
         QFont font;
         font.setPointSize(30);
         titleLabel->setFont(font);
-        titleLabel->setStyleSheet(QStringLiteral("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(255, 0, 0, 255), stop:0.166 rgba(255, 255, 0, 255), stop:0.333 rgba(0, 255, 0, 255), stop:0.5 rgba(0, 255, 255, 255), stop:0.666 rgba(0, 0, 255, 255), stop:0.833 rgba(255, 0, 255, 255), stop:1 rgba(255, 0, 0, 255));"));
+        titleLabel->setStyleSheet(QStringLiteral("background-color: rgb(0, 170, 255);"));
         titleLabel->setAlignment(Qt::AlignCenter);
 
         verticalLayout->addWidget(titleLabel);

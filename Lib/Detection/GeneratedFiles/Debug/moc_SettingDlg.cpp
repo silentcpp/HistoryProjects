@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_SettingDlg_t {
-    QByteArrayData data[26];
-    char stringdata0[347];
+    QByteArrayData data[35];
+    char stringdata0[501];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -46,15 +46,24 @@ QT_MOC_LITERAL(13, 141, 4), // "item"
 QT_MOC_LITERAL(14, 146, 6), // "column"
 QT_MOC_LITERAL(15, 153, 31), // "configTreeItemDoubleClickedSlot"
 QT_MOC_LITERAL(16, 185, 25), // "configTreeItemChangedSlot"
-QT_MOC_LITERAL(17, 211, 19), // "addCanTableItemSlot"
-QT_MOC_LITERAL(18, 231, 15), // "canBaseSendSlot"
-QT_MOC_LITERAL(19, 247, 15), // "canBaseStopSlot"
-QT_MOC_LITERAL(20, 263, 15), // "updateImageSlot"
-QT_MOC_LITERAL(21, 279, 5), // "image"
-QT_MOC_LITERAL(22, 285, 14), // "canStartupSlot"
-QT_MOC_LITERAL(23, 300, 16), // "startCaptureSlot"
-QT_MOC_LITERAL(24, 317, 15), // "stopCaptureSlot"
-QT_MOC_LITERAL(25, 333, 13) // "saveCoordSlot"
+QT_MOC_LITERAL(17, 211, 16), // "powerConnectSlot"
+QT_MOC_LITERAL(18, 228, 16), // "powerControlSlot"
+QT_MOC_LITERAL(19, 245, 16), // "relayConnectSlot"
+QT_MOC_LITERAL(20, 262, 16), // "relayControlSlot"
+QT_MOC_LITERAL(21, 279, 7), // "checked"
+QT_MOC_LITERAL(22, 287, 18), // "currentConnectSlot"
+QT_MOC_LITERAL(23, 306, 19), // "currentGetValueSlot"
+QT_MOC_LITERAL(24, 326, 18), // "voltageConnectSlot"
+QT_MOC_LITERAL(25, 345, 19), // "voltageGetValueSlot"
+QT_MOC_LITERAL(26, 365, 19), // "addCanTableItemSlot"
+QT_MOC_LITERAL(27, 385, 15), // "canBaseSendSlot"
+QT_MOC_LITERAL(28, 401, 15), // "canBaseStopSlot"
+QT_MOC_LITERAL(29, 417, 14), // "canStartupSlot"
+QT_MOC_LITERAL(30, 432, 15), // "updateImageSlot"
+QT_MOC_LITERAL(31, 448, 5), // "image"
+QT_MOC_LITERAL(32, 454, 16), // "startCaptureSlot"
+QT_MOC_LITERAL(33, 471, 15), // "stopCaptureSlot"
+QT_MOC_LITERAL(34, 487, 13) // "saveCoordSlot"
 
     },
     "SettingDlg\0setAuthDlgSignal\0\0bool*\0"
@@ -62,9 +71,13 @@ QT_MOC_LITERAL(25, 333, 13) // "saveCoordSlot"
     "const char*\0type\0MsgNode\0msg\0"
     "configTreeItemPressedSlot\0QTreeWidgetItem*\0"
     "item\0column\0configTreeItemDoubleClickedSlot\0"
-    "configTreeItemChangedSlot\0addCanTableItemSlot\0"
+    "configTreeItemChangedSlot\0powerConnectSlot\0"
+    "powerControlSlot\0relayConnectSlot\0"
+    "relayControlSlot\0checked\0currentConnectSlot\0"
+    "currentGetValueSlot\0voltageConnectSlot\0"
+    "voltageGetValueSlot\0addCanTableItemSlot\0"
     "canBaseSendSlot\0canBaseStopSlot\0"
-    "updateImageSlot\0image\0canStartupSlot\0"
+    "canStartupSlot\0updateImageSlot\0image\0"
     "startCaptureSlot\0stopCaptureSlot\0"
     "saveCoordSlot"
 };
@@ -76,7 +89,7 @@ static const uint qt_meta_data_SettingDlg[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-      13,   14, // methods
+      21,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -84,21 +97,29 @@ static const uint qt_meta_data_SettingDlg[] = {
        2,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    2,   79,    2, 0x06 /* Public */,
-       6,    2,   84,    2, 0x06 /* Public */,
+       1,    2,  119,    2, 0x06 /* Public */,
+       6,    2,  124,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      11,    2,   89,    2, 0x0a /* Public */,
-      15,    2,   94,    2, 0x0a /* Public */,
-      16,    2,   99,    2, 0x0a /* Public */,
-      17,    2,  104,    2, 0x0a /* Public */,
-      18,    0,  109,    2, 0x0a /* Public */,
-      19,    0,  110,    2, 0x0a /* Public */,
-      20,    1,  111,    2, 0x0a /* Public */,
-      22,    0,  114,    2, 0x0a /* Public */,
-      23,    0,  115,    2, 0x0a /* Public */,
-      24,    0,  116,    2, 0x0a /* Public */,
-      25,    0,  117,    2, 0x0a /* Public */,
+      11,    2,  129,    2, 0x0a /* Public */,
+      15,    2,  134,    2, 0x0a /* Public */,
+      16,    2,  139,    2, 0x0a /* Public */,
+      17,    0,  144,    2, 0x0a /* Public */,
+      18,    0,  145,    2, 0x0a /* Public */,
+      19,    0,  146,    2, 0x0a /* Public */,
+      20,    1,  147,    2, 0x0a /* Public */,
+      22,    0,  150,    2, 0x0a /* Public */,
+      23,    0,  151,    2, 0x0a /* Public */,
+      24,    0,  152,    2, 0x0a /* Public */,
+      25,    0,  153,    2, 0x0a /* Public */,
+      26,    2,  154,    2, 0x0a /* Public */,
+      27,    0,  159,    2, 0x0a /* Public */,
+      28,    0,  160,    2, 0x0a /* Public */,
+      29,    0,  161,    2, 0x0a /* Public */,
+      30,    1,  162,    2, 0x0a /* Public */,
+      32,    0,  165,    2, 0x0a /* Public */,
+      33,    0,  166,    2, 0x0a /* Public */,
+      34,    0,  167,    2, 0x0a /* Public */,
 
  // signals: parameters
     QMetaType::Void, 0x80000000 | 3, QMetaType::Int,    4,    5,
@@ -108,11 +129,19 @@ static const uint qt_meta_data_SettingDlg[] = {
     QMetaType::Void, 0x80000000 | 12, QMetaType::Int,   13,   14,
     QMetaType::Void, 0x80000000 | 12, QMetaType::Int,   13,   14,
     QMetaType::Void, 0x80000000 | 12, QMetaType::Int,   13,   14,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::Bool,   21,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
     QMetaType::Void, 0x80000000 | 7, 0x80000000 | 9,    8,   10,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::QImage,   21,
     QMetaType::Void,
+    QMetaType::Void, QMetaType::QImage,   31,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -131,14 +160,22 @@ void SettingDlg::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 2: _t->configTreeItemPressedSlot((*reinterpret_cast< QTreeWidgetItem*(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
         case 3: _t->configTreeItemDoubleClickedSlot((*reinterpret_cast< QTreeWidgetItem*(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
         case 4: _t->configTreeItemChangedSlot((*reinterpret_cast< QTreeWidgetItem*(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
-        case 5: _t->addCanTableItemSlot((*reinterpret_cast< const char*(*)>(_a[1])),(*reinterpret_cast< const MsgNode(*)>(_a[2]))); break;
-        case 6: _t->canBaseSendSlot(); break;
-        case 7: _t->canBaseStopSlot(); break;
-        case 8: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
-        case 9: _t->canStartupSlot(); break;
-        case 10: _t->startCaptureSlot(); break;
-        case 11: _t->stopCaptureSlot(); break;
-        case 12: _t->saveCoordSlot(); break;
+        case 5: _t->powerConnectSlot(); break;
+        case 6: _t->powerControlSlot(); break;
+        case 7: _t->relayConnectSlot(); break;
+        case 8: _t->relayControlSlot((*reinterpret_cast< bool(*)>(_a[1]))); break;
+        case 9: _t->currentConnectSlot(); break;
+        case 10: _t->currentGetValueSlot(); break;
+        case 11: _t->voltageConnectSlot(); break;
+        case 12: _t->voltageGetValueSlot(); break;
+        case 13: _t->addCanTableItemSlot((*reinterpret_cast< const char*(*)>(_a[1])),(*reinterpret_cast< const MsgNode(*)>(_a[2]))); break;
+        case 14: _t->canBaseSendSlot(); break;
+        case 15: _t->canBaseStopSlot(); break;
+        case 16: _t->canStartupSlot(); break;
+        case 17: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
+        case 18: _t->startCaptureSlot(); break;
+        case 19: _t->stopCaptureSlot(); break;
+        case 20: _t->saveCoordSlot(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -186,13 +223,13 @@ int SettingDlg::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 13)
+        if (_id < 21)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 13;
+        _id -= 21;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 13)
+        if (_id < 21)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 13;
+        _id -= 21;
     }
     return _id;
 }

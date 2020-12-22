@@ -10,6 +10,7 @@ SettingDlg::SettingDlg(QWidget* parent)
 
 SettingDlg::~SettingDlg()
 {
+	*m_isExistDlg = false;
 	Dt::Base::getCanConnect()->SetDynamicDisplay();
 	Dt::Base::getCanConnect()->EndReceiveThread();
 }
@@ -31,43 +32,20 @@ bool SettingDlg::initInstance()
 	bool result = false;
 	do
 	{
-		//AUTO_RESIZE(this);
-
-		ui.configAdd->setEnabled(false);
-		ui.configDel->setEnabled(false);
-
-		connect(ui.configExpand, &QPushButton::clicked, this, &SettingDlg::configExpand);
-		connect(ui.configAdd, &QPushButton::clicked, this, &SettingDlg::configAddNode);
-		connect(ui.configDel, &QPushButton::clicked, this, &SettingDlg::configDelNode);
-		connect(ui.configSave, &QPushButton::clicked, this, &SettingDlg::configSaveData);
-		connect(ui.configExit, &QPushButton::clicked, this, &SettingDlg::configExitDlg);
-		connect(ui.canStartup, &QPushButton::clicked, this, &SettingDlg::canStartupSlot);
-		connect(ui.startCapture, &QPushButton::clicked, this, &SettingDlg::startCaptureSlot);
-		connect(ui.stopCapture, &QPushButton::clicked, this, &SettingDlg::stopCaptureSlot);
-		connect(ui.saveCoord, &QPushButton::clicked, this, &SettingDlg::saveCoordSlot);
-
 		m_jsonTool = JsonTool::getInstance();
-		if (!m_jsonTool)
-		{
-			setLastError("JSON工具初始化失败");
-			break;
-		}
+		RUN_BREAK(!m_jsonTool, "JSON工具初始化失败");
 
-		auto& device = m_jsonTool->getParsedDefConfig()->device;
-		QString&& newTitle = QString("%1%2%3设置[%4]").arg(device.modelName,
-			Misc::getAppAppendName(),
-			device.detectionName,
-			Misc::getAppVersion());
+		QString&& newTitle = QString("%1%2%3设置[%4]").arg(m_jsonTool->getParsedDefConfig()->device.modelName,
+			Misc::getAppAppendName(), Misc::getDetectionType(), Misc::getAppVersion());
 
 		setWindowTitle(newTitle);
-		if (!initConfigTreeWidget())
+
+		if (!initConfigTreeWidget() || !initHardwareWidget() || !initCanTableWidget() ||
+			!initPaintWidget()|| !initAboutWidget())
 		{
 			break;
 		}
 
-		initCanTableWidget();
-
-		initAboutWidget();
 		result = true;
 	} while (false);
 	return result;
@@ -78,6 +56,16 @@ void SettingDlg::setAppName(const QString& name)
 	m_name = name;
 }
 
+void SettingDlg::setIsExistDlg(bool* existDlg)
+{
+	m_isExistDlg = existDlg;
+	*m_isExistDlg = true;
+}
+
+void SettingDlg::setConnected(bool connected)
+{
+	m_connected = connected;
+}
 
 void SettingDlg::configExpand()
 {
@@ -221,11 +209,11 @@ void SettingDlg::configSaveData()
 {
 	do
 	{
-		if (!setAuthDlg())
-		{
-			QMessageBoxEx::warning(this, "提示", "认证失败,无法进行保存");
-			break;
-		}
+		//if (!setAuthDlg())
+		//{
+		//	QMessageBoxEx::warning(this, "提示", "认证失败,无法进行保存");
+		//	break;
+		//}
 
 		QStringList warn = { "配置已生效,无需重启应用程序","配置已生效,需重启应用重新,是否重启?","配置已生效,需重新连接应用程序","保存成功" };
 		const QString& title = m_jsonTool->initInstance(true) ? warn.value(m_updateWarn) : QString("保存失败,%1").arg(m_jsonTool->getLastError());
@@ -305,6 +293,11 @@ void SettingDlg::configTreeItemDoubleClickedSlot(QTreeWidgetItem* item, int colu
 		parentKey = ITEM_TO_STR(item->parent(), 0);
 	}
 
+	if (!item->parent() && currentValue.isEmpty())
+	{
+		return;
+	}
+
 	if ((!column || (column == 2)) && (!item->parent() ? true :
 		(parentKey != "电压配置" && parentKey != "电流配置"
 			&& parentKey != "电阻配置" && parentKey != "版本配置"
@@ -329,7 +322,7 @@ void SettingDlg::configTreeItemChangedSlot(QTreeWidgetItem* item, int column)
 	QString&& currentKey = ITEM_TO_STR(item, 0);
 	QString&& currentVal = ITEM_TO_STR(item, 1);
 
-	QStringList oneKeyList = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","按键电压配置","静态电流配置","启用配置" };
+	QStringList oneKeyList = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","按键电压配置","静态电流配置","启用配置","用户配置" };
 
 	QStringList twoKeyList = { "图像配置","电压配置","电流配置","电阻配置","版本配置","诊断故障码配置" };
 
@@ -337,7 +330,8 @@ void SettingDlg::configTreeItemChangedSlot(QTreeWidgetItem* item, int column)
 		&JsonTool::setDeviceConfigValue,&JsonTool::setHardwareConfigValue,
 		&JsonTool::setRelayConfigValue,&JsonTool::setRangeConfigValue,
 		&JsonTool::setThresholdConfigValue,&JsonTool::setKeyVolConfigValue,
-		&JsonTool::setStaticConfigValue,&JsonTool::setEnableConfigValue
+		&JsonTool::setStaticConfigValue,&JsonTool::setEnableConfigValue,
+		&JsonTool::setUserConfigValue
 	};
 
 	bool (JsonTool:: * setValue2Fnc[])(const QString&, const QString&, const QString&) = {
@@ -425,6 +419,213 @@ void SettingDlg::configTreeItemChangedSlot(QTreeWidgetItem* item, int column)
 	m_currentConfigItem = nullptr;
 }
 
+void SettingDlg::powerConnectSlot()
+{
+	do
+	{
+		auto&& hardware = m_jsonTool->getParsedDefConfig()->hardware;
+		auto device = Dt::Base::getPowerDevice();
+
+		bool convert = false;
+		int port = getComNumber(ui.powerCombo->currentText());
+		RUN_BREAK(port == -1, "电源串口转换编号失败");
+		float voltage = ui.powerVoltage->text().toFloat(&convert);
+		RUN_BREAK(!convert, "电源电压不为数字");
+		float current = ui.powerCurrent->text().toFloat(&convert);
+		RUN_BREAK(!convert, "电源电流不为数字");
+
+		if (!m_buttonList[DB_POWER_CONN])
+		{
+			if (!device->IsOpen())
+			{
+				if (!device->Open(port, hardware.powerBaud, voltage, current))
+				{
+					QMessageBoxEx::warning(this, "错误", "打开电源失败");
+					break;
+				}
+			}
+		}
+		else
+		{
+			device->Close();
+		}
+		ui.powerConnect->setText(!m_buttonList[DB_POWER_CONN] ? "断开" : "连接");
+		ui.powerCombo->setEnabled(m_buttonList[DB_POWER_CONN]);
+		m_buttonList[DB_POWER_CONN] = !m_buttonList[DB_POWER_CONN];
+	} while (false);
+	return;
+}
+
+void SettingDlg::powerControlSlot()
+{
+	do 
+	{
+		if (!Dt::Base::getPowerDevice()->IsOpen())
+		{
+			QMessageBoxEx::information(this, "提示", "请先连接电源");
+			break;
+		}
+
+		if (!Dt::Base::getPowerDevice()->Output(!m_buttonList[DB_POWER_CTRL]))
+		{
+			QMessageBoxEx::warning(this, "错误", "电源上电失败");
+			break;
+		}
+		ui.powerOn->setText(!m_buttonList[DB_POWER_CTRL] ? "关闭" : "开启");
+		m_buttonList[DB_POWER_CTRL] = !m_buttonList[DB_POWER_CTRL];
+	} while (false);
+	return;
+}
+
+void SettingDlg::relayConnectSlot()
+{
+	do 
+	{
+		int port = getComNumber(ui.relayCombo->currentText());
+		auto device = Dt::Base::getRelayDevice();
+		if (!device->IsOpen())
+		{
+			if (!device->Open(port, m_jsonTool->getParsedDefConfig()->hardware.relayBaud))
+			{
+				QMessageBoxEx::warning(this, "错误", "打开继电器失败");
+				break;
+			}
+		}
+		else
+		{
+			device->Close();
+		}
+		ui.relayCombo->setEnabled(m_buttonList[DB_RELAY_CONN]);
+		ui.relayConnect->setText(!m_buttonList[DB_RELAY_CONN] ? "断开" : "连接");
+		m_buttonList[DB_RELAY_CONN] = !m_buttonList[DB_RELAY_CONN];
+	} while (false);
+	return;
+}
+
+void SettingDlg::relayControlSlot(bool checked)
+{
+	bool convert = false;
+	do 
+	{
+		if (!Dt::Base::getRelayDevice()->IsOpen())
+		{
+			QMessageBoxEx::information(this, "提示", "请先连接继电器");
+			break;
+		}
+
+		QCheckBox* box = dynamic_cast<QCheckBox*>(QObject::sender());
+		RUN_BREAK(!box, "dynamic_cast<QCheckBox*>(QObject::sender())失败");
+		int io = box->objectName().mid(7).toInt(&convert);
+		RUN_BREAK(!convert, "无法控制IO,objectName转换失败");
+		if (!Dt::Base::getRelayDevice()->SetOneIO(io, checked))
+		{
+			QMessageBoxEx::warning(this, "错误", Q_SPRINTF("%s继电器IO%d失败", checked ? "打开" : "关闭", io));
+			break;
+		}
+	} while (false);
+	return;
+}
+
+void SettingDlg::currentConnectSlot()
+{
+	do 
+	{
+		int port = getComNumber(ui.currentCombo->currentText());
+		auto device = Dt::Base::getCurrentDevice();
+		if (!m_buttonList[DB_CURRE_CONN])
+		{
+			if (!device->isOpen())
+			{
+				if (!device->open(port, m_jsonTool->getParsedDefConfig()->hardware.staticBaud))
+				{
+					QMessageBoxEx::warning(this, "错误", "打开电流表失败");
+					break;
+				}
+			}
+		}
+		else
+		{
+			device->close();
+		}
+		ui.currentCombo->setEnabled(m_buttonList[DB_CURRE_CONN]);
+		ui.currentConnect->setText(!m_buttonList[DB_CURRE_CONN] ? "断开" : "连接");
+		m_buttonList[DB_CURRE_CONN] = !m_buttonList[DB_CURRE_CONN];
+	} while (false);
+	return;
+}
+
+void SettingDlg::currentGetValueSlot()
+{
+	do 
+	{
+		auto device = Dt::Base::getCurrentDevice();
+		if (!device->isOpen())
+		{
+			QMessageBoxEx::information(this, "提示", "请先连接电流表");
+			break;
+		}
+
+		float current = 0.0f;
+		if (!device->getStaticCurrent(current))
+		{
+			QMessageBoxEx::warning(this, "错误", "获取电流失败");
+			break;
+		}
+		ui.currentGetValue->setText(N_TO_Q_STR(current));
+	} while (false);
+	return;
+}
+
+void SettingDlg::voltageConnectSlot()
+{
+	do 
+	{
+		int port = getComNumber(ui.voltageCombo->currentText());
+		auto device = Dt::Base::getVoltageDevice();
+		if (!m_buttonList[DB_VOLTA_CONN])
+		{
+			if (!device->IsOpen())
+			{
+				if (!device->Open(port, m_jsonTool->getParsedDefConfig()->hardware.voltageBaud))
+				{
+					QMessageBoxEx::warning(this, "错误", "打开电压表失败");
+					break;
+				}
+			}
+		}
+		else
+		{
+			device->Close();
+		}
+		ui.voltageConnect->setText(!m_buttonList[DB_VOLTA_CONN] ? "断开" : "连接");
+		ui.voltageCombo->setEnabled(m_buttonList[DB_VOLTA_CONN]);
+		m_buttonList[DB_VOLTA_CONN] = !m_buttonList[DB_VOLTA_CONN];
+	} while (false);
+	return;
+}
+
+void SettingDlg::voltageGetValueSlot()
+{
+	do 
+	{
+		auto device = Dt::Base::getVoltageDevice();
+		if (!device->IsOpen())
+		{
+			QMessageBoxEx::information(this, "提示", "请先连接电压表");
+			break;
+		}
+
+		float voltage = 0.0f;
+		if (!device->ReadVol(&voltage))
+		{
+			QMessageBoxEx::warning(this, "错误", "读取电压失败");
+			break;
+		}
+		ui.voltageValue->setText(N_TO_Q_STR(voltage));
+	} while (false);
+	return;
+}
+
 void SettingDlg::addCanTableItemSlot(const char* type, const MsgNode& msg)
 {
 	static ulong number = 0;
@@ -435,22 +636,22 @@ void SettingDlg::addCanTableItemSlot(const char* type, const MsgNode& msg)
 	ui.canTable->setItem(rowCount, 2, new QTableWidgetItem({ Misc::getCurrentTime() }));
 	ui.canTable->setItem(rowCount, 3, new QTableWidgetItem({ QString::number(msg.id,16) }));
 	ui.canTable->setItem(rowCount, 4, new QTableWidgetItem({ "数据帧" }));
-	ui.canTable->setItem(rowCount, 5, new QTableWidgetItem({ msg.bExtFrame ? "拓展帧" : "标准帧" }));
-	ui.canTable->setItem(rowCount, 6, new QTableWidgetItem({ QString::number(msg.iDLC) }));
-	ui.canTable->setItem(rowCount, 7, new QTableWidgetItem({Q_SPRINTF("%02x %02x %02x %02x %02x %02x %02x %02x",
-	msg.ucData[0],msg.ucData[1],msg.ucData[2],msg.ucData[3],msg.ucData[4],msg.ucData[5],msg.ucData[6],msg.ucData[7])}));
+	ui.canTable->setItem(rowCount, 5, new QTableWidgetItem({ msg.extFrame ? "拓展帧" : "标准帧" }));
+	ui.canTable->setItem(rowCount, 6, new QTableWidgetItem({ QString::number(msg.dlc) }));
+	ui.canTable->setItem(rowCount, 7, new QTableWidgetItem({ Q_SPRINTF("%02x %02x %02x %02x %02x %02x %02x %02x",
+	msg.data[0],msg.data[1],msg.data[2],msg.data[3],msg.data[4],msg.data[5],msg.data[6],msg.data[7]) }));
 	ui.canTable->scrollToBottom();
 }
 
 void SettingDlg::canBaseSendSlot()
 {
-	do 
+	do
 	{
 		memset(&m_msg, 0x00, sizeof(MsgNode));
 		bool convert = false;
-		m_msg.iDLC = 8;
-		m_msg.bExtFrame = ui.canFrameType->currentText() == "拓展帧";
-		m_msg.bRemFrame = ui.canFrameFormat->currentText() == "远程帧";
+		m_msg.dlc = 8;
+		m_msg.extFrame = ui.canFrameType->currentText() == "拓展帧";
+		m_msg.remFrame = ui.canFrameFormat->currentText() == "远程帧";
 		m_msg.id = ui.canFrameId->text().toInt(&convert, 16);
 		if (!convert)
 		{
@@ -468,7 +669,7 @@ void SettingDlg::canBaseSendSlot()
 		int i = 0;
 		for (; i < datas.size(); i++)
 		{
-			m_msg.ucData[i] = datas[i].toInt(&convert, 16);
+			m_msg.data[i] = datas[i].toInt(&convert, 16);
 			if (!convert)
 			{
 				break;
@@ -512,11 +713,6 @@ void SettingDlg::canBaseStopSlot()
 	}
 }
 
-void SettingDlg::updateImageSlot(const QImage& image)
-{
-	ui.label->setPixmap(QPixmap::fromImage(image));
-}
-
 void SettingDlg::canStartupSlot()
 {
 	if (!m_canThreadStart)
@@ -530,6 +726,11 @@ void SettingDlg::canStartupSlot()
 		Dt::Base::getCanConnect()->EndReceiveThread();
 	}
 	m_canThreadStart = !m_canThreadStart;
+}
+
+void SettingDlg::updateImageSlot(const QImage& image)
+{
+	ui.label->setPixmap(QPixmap::fromImage(image));
 }
 
 void SettingDlg::startCaptureSlot()
@@ -569,14 +770,24 @@ void SettingDlg::saveCoordSlot()
 
 void SettingDlg::setLastError(const QString& error)
 {
+	DEBUG_INFO() << error;
 	m_lastError = error;
 }
 
 bool SettingDlg::initConfigTreeWidget()
 {
-	bool result = false;
+	bool result = false, success = true;
 	do
 	{
+		ui.configAdd->setEnabled(false);
+		ui.configDel->setEnabled(false);
+
+		connect(ui.configExpand, &QPushButton::clicked, this, &SettingDlg::configExpand);
+		connect(ui.configAdd, &QPushButton::clicked, this, &SettingDlg::configAddNode);
+		connect(ui.configDel, &QPushButton::clicked, this, &SettingDlg::configDelNode);
+		connect(ui.configSave, &QPushButton::clicked, this, &SettingDlg::configSaveData);
+		connect(ui.configExit, &QPushButton::clicked, this, &SettingDlg::configExitDlg);
+
 		ui.configTree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 		ui.configTree->setHeaderLabels(QStringList{ "键","值" ,"说明" });
 		ui.configTree->setColumnCount(3);
@@ -600,7 +811,8 @@ bool SettingDlg::initConfigTreeWidget()
 			* parentStaticConfig, 
 			* parentVersionConfig,
 			* parentDtcConfig,
-			* parentEnableConfig;
+			* parentEnableConfig,
+			* parentUserConfig;
 
 		treeRootList.append(&parentDeviceConfig);
 		treeRootList.append(&parentHardwareConfig);
@@ -616,6 +828,7 @@ bool SettingDlg::initConfigTreeWidget()
 		treeRootList.append(&parentVersionConfig);
 		treeRootList.append(&parentDtcConfig);
 		treeRootList.append(&parentEnableConfig);
+		treeRootList.append(&parentUserConfig);
 
 		QList<QTreeWidgetItem*> rootList;
 		for (int i = 0; i < treeRootList.size(); i++)
@@ -623,12 +836,16 @@ bool SettingDlg::initConfigTreeWidget()
 			*treeRootList[i] = new(std::nothrow) QTreeWidgetItem({ m_jsonTool->getAllMainKey()[i] });
 			if (!*treeRootList[i])
 			{
+				success = false;
 				setLastError(QString("%1,分配内存失败").arg(m_jsonTool->getAllMainKey()[i]));
 				break;
 			}
 			(*treeRootList[i])->setIcon(0, QIcon(":/images/Resources/images/store.ico"));
 			rootList.append(*treeRootList[i]);
 		}
+
+		if (!success)
+			break;
 
 		/*父级目录*/
 		ui.configTree->addTopLevelItems(rootList);
@@ -645,7 +862,8 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getThresholdConfigCount,
 			&JsonTool::getKeyVolConfigCount,
 			&JsonTool::getStaticConfigCount,
-			&JsonTool::getEnableConfigCount
+			&JsonTool::getEnableConfigCount,
+			&JsonTool::getUserConfigCount
 		};
 
 		const QStringList&(JsonTool:: * getKey1Fnc[])() = {
@@ -656,7 +874,8 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getThresholdConfigKeyList,
 			&JsonTool::getKeyVolConfigKeyList,
 			&JsonTool::getStaticConfigKeyList,
-			&JsonTool::getEnableConfigKeyList
+			&JsonTool::getEnableConfigKeyList,
+			&JsonTool::getUserConfigKeyList
 		};
 
 		/*返回临时变量*/
@@ -668,7 +887,8 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getThresholdConfigValue,
 			&JsonTool::getKeyVolConfigValue,
 			&JsonTool::getStaticConfigValue,
-			&JsonTool::getEnableConfigValue
+			&JsonTool::getEnableConfigValue,
+			&JsonTool::getUserConfigValue
 		};
 
 		const QStringList&(JsonTool:: * getExplain1Fnc[])() = {
@@ -679,7 +899,8 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getThresholdConfigExplain,
 			&JsonTool::getKeyVolConfigExplain,
 			&JsonTool::getStaticConfigExplain,
-			&JsonTool::getEnableConfigExplain
+			&JsonTool::getEnableConfigExplain,
+			&JsonTool::getUserConfigExplain
 		};
 
 		QList<QTreeWidgetItem*> getParent1List = {
@@ -690,7 +911,8 @@ bool SettingDlg::initConfigTreeWidget()
 			parentThresholdConfig,
 			parentKeyVolConfig,
 			parentStaticConfig,
-			parentEnableConfig
+			parentEnableConfig,
+			parentUserConfig
 		};
 
 		for (int i = 0; i < getParent1List.size(); i++)
@@ -704,6 +926,13 @@ bool SettingDlg::initConfigTreeWidget()
 				childList[j]->setIcon(2, QIcon(":/images/Resources/images/msg.ico"));
 				childList[j]->setText(1, (m_jsonTool->*getValue1Fnc[i])((m_jsonTool->*getKey1Fnc[i])().value(j)));
 				childList[j]->setText(2, (m_jsonTool->*getExplain1Fnc[i])().value(j));
+				if ((m_jsonTool->*getKey1Fnc[i])().value(j) == "UDS名称")
+				{
+					QStringList udsNameList;
+					const char** udsName = CUdsFactory::GetSupportUdsName();
+					while (*udsName) { udsNameList.append(*udsName++); }
+					childList[j]->setToolTip(2, udsNameList.join('\n'));
+				}
 			}
 			getParent1List[i]->addChildren(childList);
 		}
@@ -795,8 +1024,106 @@ bool SettingDlg::initConfigTreeWidget()
 	return result;
 }
 
+bool SettingDlg::initHardwareWidget()
+{
+	bool result = false;
+	do 
+	{
+		for (int i = 0; i < BUTTON_COUNT; i++)
+		{
+			m_buttonList.append(false);
+		}
+
+		//COMBOBOX配置
+		SerialPortTool serial;
+		auto&& portList = serial.getSerialPortList();
+		for (int i = 0; i < portList.size(); i++)
+		{
+			ui.powerCombo->addItem(QIcon(":/images/Resources/images/firefox.ico"), portList.at(i).portName());
+			ui.relayCombo->addItem(QIcon(":/images/Resources/images/firefox.ico"), portList.at(i).portName());
+			ui.voltageCombo->addItem(QIcon(":/images/Resources/images/firefox.ico"), portList.at(i).portName());
+			ui.currentCombo->addItem(QIcon(":/images/Resources/images/firefox.ico"), portList.at(i).portName());
+		}
+
+		auto&& hardware = m_jsonTool->getParsedDefConfig()->hardware;
+		ui.powerCombo->setCurrentText(Q_SPRINTF("COM%d", hardware.powerPort));
+		ui.relayCombo->setCurrentText(Q_SPRINTF("COM%d", hardware.relayPort));
+		ui.voltageCombo->setCurrentText(Q_SPRINTF("COM%d", hardware.voltagePort));
+		ui.currentCombo->setCurrentText(Q_SPRINTF("COM%d", hardware.staticPort));
+
+		//电源配置
+		ui.powerVoltage->setText(N_TO_Q_STR(hardware.powerVoltage));
+		ui.powerCurrent->setText(N_TO_Q_STR(hardware.powerCurrent));
+		connect(ui.powerConnect, &QPushButton::clicked, this, &SettingDlg::powerConnectSlot);
+		connect(ui.powerOn, &QPushButton::clicked, this, &SettingDlg::powerControlSlot);
+
+		ui.currentValue->setText("0.0");
+		ui.voltageValue->setText("0.0");
+
+		//继电器配置
+		connect(ui.relayConnect, &QPushButton::clicked, this, &SettingDlg::relayConnectSlot);
+
+		QList<QCheckBox*> boxList;
+		boxList.append(ui.relayIo0);
+		boxList.append(ui.relayIo1);
+		boxList.append(ui.relayIo2);
+		boxList.append(ui.relayIo3);
+		boxList.append(ui.relayIo4);
+		boxList.append(ui.relayIo5);
+		boxList.append(ui.relayIo6);
+		boxList.append(ui.relayIo7);
+		boxList.append(ui.relayIo8);
+		boxList.append(ui.relayIo9);
+		boxList.append(ui.relayIo10);
+		boxList.append(ui.relayIo11);
+		boxList.append(ui.relayIo12);
+		boxList.append(ui.relayIo13);
+		boxList.append(ui.relayIo14);
+		boxList.append(ui.relayIo15);
+		for (int i = 0; i < boxList.size(); i++)
+		{
+			connect(boxList[i], &QCheckBox::clicked, this, &SettingDlg::relayControlSlot);
+			for (int j = 0; j < m_jsonTool->getRelayConfigCount(); j++)
+			{
+				int value = m_jsonTool->getRelayConfigValue(m_jsonTool->getRelayConfigKeyList()[j]).toInt();
+				if (i == value)
+				{
+					boxList[i]->setText(QString("%1[%2]").arg(i).arg(m_jsonTool->getRelayConfigKeyList()[j]));
+					break;
+				}
+			}
+		}
+
+		//电流表
+		connect(ui.currentConnect, &QPushButton::clicked, this, &SettingDlg::currentConnectSlot);
+		connect(ui.currentGetValue, &QPushButton::clicked, this, &SettingDlg::currentGetValueSlot);
+
+		connect(ui.voltageConnect, &QPushButton::clicked, this, &SettingDlg::voltageConnectSlot);
+		connect(ui.voltageGetValue, &QPushButton::clicked, this, &SettingDlg::voltageGetValueSlot);
+
+		if (m_connected)
+		{
+			ui.powerCombo->setEnabled(false);
+			ui.powerConnect->setEnabled(false);
+
+			ui.relayCombo->setEnabled(false);
+			ui.relayConnect->setEnabled(false);
+
+			ui.voltageCombo->setEnabled(false);
+			ui.voltageConnect->setEnabled(false);
+
+			ui.currentCombo->setEnabled(false);
+			ui.currentConnect->setEnabled(false);
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
 bool SettingDlg::initCanTableWidget()
 {
+	connect(ui.canStartup, &QPushButton::clicked, this, &SettingDlg::canStartupSlot);
+
 	/*CAN表格初始化*/
 	ui.canTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 	ui.canTable->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
@@ -827,6 +1154,14 @@ bool SettingDlg::initCanTableWidget()
 	return true;
 }
 
+bool SettingDlg::initPaintWidget()
+{
+	connect(ui.startCapture, &QPushButton::clicked, this, &SettingDlg::startCaptureSlot);
+	connect(ui.stopCapture, &QPushButton::clicked, this, &SettingDlg::stopCaptureSlot);
+	connect(ui.saveCoord, &QPushButton::clicked, this, &SettingDlg::saveCoordSlot);
+	return true;
+}
+
 bool SettingDlg::initAboutWidget()
 {
 	ui.frameVersion->setText(m_jsonTool->getLibrayVersion());
@@ -834,3 +1169,11 @@ bool SettingDlg::initAboutWidget()
 	ui.appVersion->setText(Misc::getAppVersion());
 	return true;
 }
+
+const int SettingDlg::getComNumber(const QString& comName)
+{
+	bool convert = false;
+	int number = comName.mid(3).toInt(&convert);
+	return convert ? number : -1;
+}
+

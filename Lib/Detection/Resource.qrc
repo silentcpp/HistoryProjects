@@ -22,5 +22,10 @@
         <file>Resources/images/treeExit.ico</file>
         <file>Resources/images/key.ico</file>
         <file>Resources/images/store.ico</file>
+        <file>Resources/images/chrome.ico</file>
+        <file>Resources/images/dash.ico</file>
+        <file>Resources/images/firefox.ico</file>
+        <file>Resources/images/monitor.ico</file>
+        <file>Resources/images/activity.ico</file>
     </qresource>
 </RCC>

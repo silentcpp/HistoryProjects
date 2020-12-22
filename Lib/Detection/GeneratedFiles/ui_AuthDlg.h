@@ -64,7 +64,7 @@ public:
         sizePolicy.setHeightForWidth(label->sizePolicy().hasHeightForWidth());
         label->setSizePolicy(sizePolicy);
         QFont font;
-        font.setFamily(QString::fromUtf8("Adobe \346\245\267\344\275\223 Std R"));
+        font.setFamily(QString::fromUtf8("\345\215\216\346\226\207\346\245\267\344\275\223"));
         font.setPointSize(30);
         label->setFont(font);
         label->setStyleSheet(QStringLiteral(""));
@@ -129,6 +129,9 @@ public:
 
         affirm = new QPushButton(AuthDlg);
         affirm->setObjectName(QStringLiteral("affirm"));
+        QIcon icon;
+        icon.addFile(QStringLiteral(":/images/Resources/images/connect.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        affirm->setIcon(icon);
 
         horizontalLayout_3->addWidget(affirm);
 
@@ -138,6 +141,9 @@ public:
 
         exit = new QPushButton(AuthDlg);
         exit->setObjectName(QStringLiteral("exit"));
+        QIcon icon1;
+        icon1.addFile(QStringLiteral(":/images/Resources/images/disconnect.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        exit->setIcon(icon1);
 
         horizontalLayout_3->addWidget(exit);
 

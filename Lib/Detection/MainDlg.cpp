@@ -8,29 +8,36 @@ void MainDlg::closeEvent(QCloseEvent* event)
 		? event->accept() : event->ignore();
 }
 
-void MainDlg::setLastError(const QString& err)
+void MainDlg::setLastError(const QString& error)
 {
-#ifdef QT_DEBUG
-	qDebug() << err << endl;
-#endif
-	m_lastError = err;
+	DEBUG_INFO() << error;
+	m_lastError = error;
 }
 
 MainDlg::MainDlg(Dt::Base* thread, QWidget* parent)
 {
 	m_base = thread;
-	!initInstance() ? QMessageBox::warning(this, "初始化失败", getLastError()) : true;
+	if (!initInstance())
+	{
+		QMessageBox::warning(this, "初始化失败", getLastError());
+	}
 }
 
 MainDlg::~MainDlg()
 {
-	SAFE_DELETE(m_base);
+	if (m_isExistSettingDlg)
+	{
+		m_settingDlg->setAttribute(Qt::WA_DeleteOnClose, false);
+		SAFE_DELETE(m_settingDlg);
+	}
 
 	SAFE_DELETE(m_scanCodeDlg);
 
 	SAFE_DELETE(m_unlockDlg);
 
 	SAFE_DELETE(m_authDlg);
+
+	SAFE_DELETE(m_base);
 }
 
 bool MainDlg::initInstance()
@@ -59,31 +66,16 @@ bool MainDlg::initInstance()
 
 		m_scanCodeDlg = NO_THROW_NEW ScanCodeDlg;
 
-		if (!m_scanCodeDlg)
-		{
-			setLastError("m_scanCodeDlg分配内存失败");
-			break;
-		}
+		RUN_BREAK(!m_scanCodeDlg, "扫码对话框分配内存失败");
 
 		m_unlockDlg = NO_THROW_NEW UnlockDlg;
-		if (!m_unlockDlg)
-		{
-			setLastError("m_unlockDlg分配内存失败");
-			break;
-		}
+		RUN_BREAK(!m_unlockDlg, "解锁对话框分配内存失败");
 
 		m_authDlg = NO_THROW_NEW AuthDlg;
-		if (!m_authDlg)
-		{
-			setLastError("m_authDlg分配内存失败");
-			break;
-		}
+		RUN_BREAK(!m_authDlg, "认证对话框分配内存失败");
 
-		if (!m_base)
-		{
-			setLastError("m_base分配内存失败");
-			break;
-		}
+		RUN_BREAK(!m_base, "检测框架基类分配内存失败");
+
 
 		connect(m_base, &Base::setScanCodeDlgSignal, this, &MainDlg::setScanCodeDlgSlot);
 
@@ -109,34 +101,19 @@ bool MainDlg::initInstance()
 
 		connect(m_base, &Base::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
 
-		//connect(ui.imageLabel, &QLabelEx::coordinateSignal, this, &MainDlg::coordinateSlot);
-
 		if (m_base->getDetectionType() == BaseTypes::DT_DVR)
 		{
 			Dt::Dvr* dvr = nullptr;
-			if (dvr = dynamic_cast<Dt::Dvr*>(m_base))
-			{
-				dvr->setVlcMediaHwnd((HWND)ui.imageLabel->winId());
-			}
-			else
-			{
-				setLastError("基类不为Dt::Dvr,dynamic_cast返回一个nullptr,请检查继承基类是否错误");
-				break;
-			}
+			RUN_BREAK(!(dvr = dynamic_cast<Dt::Dvr*>(m_base)), "父类不为Dt::Dvr,设置VLC句柄失败");
+			dvr->setVlcMediaHwnd((HWND)ui.imageLabel->winId());
 		}
 
-		if (!m_base->initInstance())
-		{
-			setLastError(m_base->getLastError());
-			break;
-		}
-
-		Misc::renameAppByVersion(this);
+		RUN_BREAK(!m_base->initInstance(), m_base->getLastError());
 
 		m_base->start();
-
 		result = true;
 	} while (false);
+	Misc::renameAppByVersion(this);
 	return result;
 }
 
@@ -172,36 +149,50 @@ void MainDlg::settingButtonSlot()
 {
 	do
 	{
-		SettingDlg* settingDlg = NO_THROW_NEW SettingDlg;
-		if (!settingDlg)
+		bool result = false;
+		setAuthDlgSlot(&result, 1);
+		if (!result)
 		{
 			break;
 		}
 
-		connect(settingDlg, &SettingDlg::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
-		settingDlg->setBasePointer(m_base);
-		settingDlg->setAppName(this->windowTitle().mid(0, this->windowTitle().indexOf(']') + 1));
-		if (!settingDlg->initInstance())
+		if (m_isExistSettingDlg)
 		{
-			QMessageBoxEx::warning(this, "错误", settingDlg->getLastError());
+			m_settingDlg->isMaximized() ? m_settingDlg->showMaximized() : m_settingDlg->showNormal();
+			break;
 		}
-		settingDlg->show();
+
+		m_settingDlg = NO_THROW_NEW SettingDlg;
+		if (!m_settingDlg)
+		{
+			break;
+		}
+
+		//connect(m_settingDlg, &SettingDlg::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
+		m_settingDlg->setConnected(m_connected);
+		m_settingDlg->setIsExistDlg(&m_isExistSettingDlg);
+		m_settingDlg->setBasePointer(m_base);
+		m_settingDlg->setAppName(this->windowTitle().mid(0, this->windowTitle().indexOf(']') + 1));
+		if (!m_settingDlg->initInstance())
+		{
+			QMessageBoxEx::warning(this, "错误", m_settingDlg->getLastError());
+		}
+		m_settingDlg->show();
 	} while (false);
 	return;
 }
 
 void MainDlg::connectButtonSlot()
 {
-	static bool press = true;
 	ui.connectButton->setEnabled(false);
-	ui.connectButton->setIcon(press ? QIcon(":/images/Resources/images/disconnect.ico") :
+	ui.connectButton->setIcon(!m_connected ? QIcon(":/images/Resources/images/disconnect.ico") :
 		QIcon(":/images/Resources/images/connect.ico"));
-	press ? m_base->openDevice() : m_base->closeDevice();
+	!m_connected ? m_base->openDevice() : m_base->closeDevice();
 	ui.connectButton->setEnabled(true);
-	ui.exitButton->setEnabled(!press);
-	m_base->setTestSequence(press ? TS_SCAN_CODE : TS_NO);
-	ui.connectButton->setText(press ? "断开" : "连接");
-	press = !press;
+	ui.exitButton->setEnabled(m_connected);
+	m_base->setTestSequence(!m_connected ? TS_SCAN_CODE : TS_NO);
+	ui.connectButton->setText(!m_connected ? "断开" : "连接");
+	m_connected = !m_connected;
 }
 
 void MainDlg::exitButtonSlot()
@@ -317,7 +308,7 @@ void MainDlg::coordinateSlot(const QPoint& point)
 
 void MainDlg::usageRateTimerSlot()
 {
-	static MEMORYSTATUSEX memoryStatus;
+	static MEMORYSTATUSEX memoryStatus = { 0 };
 	memoryStatus.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&memoryStatus);
 

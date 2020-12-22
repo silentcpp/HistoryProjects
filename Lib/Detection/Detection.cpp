@@ -1,24 +1,25 @@
 #include "Detection.h"
-#include <process.h>
-#include <wincon.h>
-#include <WinInet.h>
-#pragma comment(lib,"wininet.lib")
 
 /*整体线程控制全局变量*/
 bool g_threadWait = false;
 
+/*调试信息全局变量*/
+int* g_debugInfo = nullptr;
+
 /*条码全局变量*/
 QString g_code = "";
-
-QString Dt::Base::m_lastError = "No error";
-
-QList<QString> Dt::Base::m_logList = {};
-
-bool Dt::Base::m_outputRunLog = false;
 
 IConnMgr* Dt::Base::m_canConnMgr = nullptr;
 
 CanSender Dt::Base::m_canSender = CanSender();
+
+CItechSCPIMgr Dt::Base::m_power = CItechSCPIMgr();
+
+CMRDO16KNMgr Dt::Base::m_relay = CMRDO16KNMgr();
+
+CVoltageTestMgr Dt::Base::m_voltage = CVoltageTestMgr();
+
+StaticCurrentMgr Dt::Base::m_current = StaticCurrentMgr();
 
 /************************************************************************/
 /* Dt::Base realize                                                         */
@@ -32,6 +33,8 @@ Dt::Base::Base(QObject* parent)
 
 Dt::Base::~Base()
 {
+	autoRecycle({ GET_DETECTION_DIR(m_detectionType) });
+
 	exitConsoleWindow();
 
 	JsonTool::deleteInstance();
@@ -45,7 +48,6 @@ const QString& Dt::Base::getLastError()
 {
 	return m_lastError;
 }
-
 
 void Dt::Base::setTestSequence(const int& testSequence)
 {
@@ -67,6 +69,10 @@ bool Dt::Base::initInstance()
 	bool result = false;
 	do
 	{
+		Misc::Var::detectionDir = GET_DETECTION_DIR(m_detectionType);
+
+		Misc::Var::detectionType = GET_DETECTION_TYPE(m_detectionType);
+
 		m_jsonTool = JsonTool::getInstance();
 
 		RUN_BREAK(!m_jsonTool, "m_jsonTool分配内存失败");
@@ -79,6 +85,8 @@ bool Dt::Base::initInstance()
 
 		m_udsConfig = m_jsonTool->getParsedUdsConfig();
 
+		g_debugInfo = &m_defConfig->enable.outputRunLog;
+
 		m_canConnMgr = m_canConnFactory.GetConnMgrInstance(m_defConfig->device.canName.toLatin1());
 
 		RUN_BREAK(!m_canConnMgr, "CAN通信初始化失败");
@@ -87,12 +95,9 @@ bool Dt::Base::initInstance()
 		m_canConnMgr->EnableDebugInfo(true);
 #endif
 
-		RUN_BREAK(!initConsoleWindow(), "初始化调试控制台失败");
+		RUN_BREAK(!initConsoleWindow(), getLastError());
 
-		if (m_defConfig->enable.saveCanLog)
-		{
-			saveCanLog(true);
-		}
+		saveCanLog(m_defConfig->enable.saveCanLog);
 
 		m_udsApplyMgr = m_udsFactory.GetConnMgrInstance(m_defConfig->device.udsName.toLatin1());
 
@@ -112,28 +117,31 @@ bool Dt::Base::initConsoleWindow()
 	bool result = false;
 	do 
 	{
-		m_outputRunLog = m_defConfig->enable.outputRunLog;
-
-		if (!m_outputRunLog)
+		if (!*g_debugInfo)
 		{
 			result = true;
 			break;
 		}
 
-		AllocConsole();
-		freopen("CONOUT$", "w", stdout);
+		RUN_BREAK(!AllocConsole(), "分配控制台失败");
+		SetConsoleTitleW(Q_TO_WC_STR(Q_SPRINTF("检测框架[%s]调试控制台", LIBRARY_VER)));
+		RUN_BREAK(!freopen("CONOUT$", "w", stderr), "重定向输出流stderr失败");
+
+		DEBUG_INFO() << "初始化控制台成功";
+		DEBUG_INFO() << "重定向stderr流成功";
+		RUN_BREAK(!freopen("CONOUT$", "w", stdout), "重定向输出流stdout失败");
+
+		DEBUG_INFO() << "重定向stdout流成功";
+		DEBUG_INFO() << "调试机种: " << m_defConfig->device.modelName;
+		DEBUG_INFO() << "UDS协议: " << m_defConfig->device.udsName;
 		result = true;
 	} while (false);
 	return result;
 }
 
-void Dt::Base::exitConsoleWindow()
+bool Dt::Base::exitConsoleWindow()
 {
-	if (!m_outputRunLog)
-	{
-		return;
-	}
-	FreeConsole();
+	return !*g_debugInfo ? true : FreeConsole() == TRUE;
 }
 
 bool Dt::Base::openDevice()
@@ -148,7 +156,7 @@ bool Dt::Base::openDevice()
 		}
 
 		auto& hardware = m_defConfig->hardware;
-		if (!m_power.Open(hardware.powerPort, hardware.powerBaud, hardware.powerVoltage))
+		if (!m_power.Open(hardware.powerPort, hardware.powerBaud, hardware.powerVoltage, hardware.powerCurrent))
 		{
 			setLastError("打开电源失败", false, true);
 		}
@@ -162,6 +170,12 @@ bool Dt::Base::openDevice()
 		{
 			setLastError("打开电压表失败", false, true);
 		}
+
+		if (!m_current.open(hardware.staticPort, hardware.staticBaud))
+		{
+			setLastError("打开电流表失败", false, true);
+		}
+
 		result = true;
 	} while (false);
 	return result;
@@ -184,8 +198,6 @@ bool Dt::Base::closeDevice()
 			setLastError("关闭电源失败", false, true);
 		}
 
-		Sleep(100);
-
 		if (!m_power.Close())
 		{
 			setLastError("关闭电源失败", false, true);
@@ -196,21 +208,29 @@ bool Dt::Base::closeDevice()
 			setLastError("关闭继电器失败", false, true);
 		}
 
-		m_voltage.Close();
+		if (!m_voltage.Close())
+		{
+			setLastError("关闭电压表失败", false, true);
+		}
+
+		if (!m_current.close())
+		{
+			setLastError("关闭电流表失败", false, true);
+		}
 
 		result = true;
 	} while (false);
 	return result;
 }
 
-bool Dt::Base::prepareTest(LaunchProc launchProc, void* args)
+bool Dt::Base::prepareTest(const ulong& delay)
 {
 	setCurrentStatus("准备测试");
 	setTestResult(BaseTypes::TestResult::TR_TS);
 	bool result = false, success = true;
 	do
 	{
-		setCanLogName(m_defConfig->device.detectionName, m_defConfig->device.modelName, g_code);
+		setCanLogName(m_defConfig->device.modelName, g_code);
 
 		clearListItem();
 
@@ -222,7 +242,7 @@ bool Dt::Base::prepareTest(LaunchProc launchProc, void* args)
 
 		addListItem("等待系统启动,请耐心等待...");
 
-		RUN_BREAK(!m_power.Output(true), "电源通讯失败,请检测连接");
+		RUN_BREAK(!m_power.Output(true), "电源上电失败,请检测连接");
 
 		msleep(300);
 
@@ -230,94 +250,36 @@ bool Dt::Base::prepareTest(LaunchProc launchProc, void* args)
 
 		if (m_detectionType == BaseTypes::DT_AVM)
 		{
-			const int portArray[] = {
-				m_defConfig->relay.acc
-				,m_defConfig->relay.gnd
-				,m_defConfig->relay.pinboard
-			};
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "打开ACC失败");
+			msleep(300);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.gnd, true), "打开GND失败");
+			msleep(300);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.pinboard, true), "打开转接板失败");
+			msleep(300);
 
-			bool success = true;
-			for (int i = 0; i < sizeof(portArray) / sizeof(int); i++)
+			if (m_defConfig->enable.signalLight)
 			{
-				if (!m_relay.SetOneIO(portArray[i], true))
-				{
-					success = false;
-					break;
-				}
+				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.white, true), "打开白色信号灯失败");
+				msleep(300);
+				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.red, false), "关闭红色信号灯失败");
+				msleep(300);
+				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.green, false), "关闭绿色信号灯失败");
 				msleep(300);
 			}
-			RUN_BREAK(!success, "继电器通讯失败,请检查连接");
 		}
 
 		if (m_detectionType != BaseTypes::DT_DVR)
 		{
 			size_t&& startTime = GetTickCount();
-			launchProc&& args ? (success = launchProc(args)) : msleep(m_startDelay);
+			msleep(delay);
 			setCurrentStatus(success ? "状态正常" : "状态异常", true);
 			addListItem(Q_SPRINTF("系统启动%s用时 %.2f秒", success ? "成功" : "失败", static_cast<float>(GetTickCount() - startTime) / 1000));
 			addListItem(Q_SPRINTF("系统启动 %s", OK_NG(success)), false);
 		}
-
-		RUN_BREAK(!success, "初始化系统异常");
-
-		result = true;
-	} while (false);
-	return result;
-}
-
-bool Dt::Base::prepareTest(LaunchProcEx lauProcEx, void* args, const int& request, MsgProc msgProc)
-{
-	setCurrentStatus("准备测试");
-	setTestResult(BaseTypes::TestResult::TR_TS);
-	bool result = false, success = true;
-	do
-	{
-		setCanLogName(m_defConfig->device.detectionName, m_defConfig->device.modelName, g_code);
-
-		clearListItem();
-
-		m_elapsedTime = GetTickCount();
-
-		addListItem(Q_SPRINTF("第%u块产品开始测试", m_total), false);
-
-		initDetectionLog();
-
-		addListItem("等待系统启动,请耐心等待...");
-
-		RUN_BREAK(!m_power.Output(true), "电源通讯失败,请检查连接");
-
-		msleep(300);
-
-		m_canSender.Start();
-
-		if (m_detectionType == BaseTypes::DT_AVM)
+		else
 		{
-			const int portArray[] = {
-				m_defConfig->relay.acc
-				,m_defConfig->relay.gnd
-				,m_defConfig->relay.pinboard
-			};
-
-			bool success = true;
-			for (int i = 0; i < sizeof(portArray) / sizeof(int); i++)
-			{
-				if (!m_relay.SetOneIO(portArray[i], true))
-				{
-					success = false;
-					break;
-				}
-				msleep(300);
-			}
-			RUN_BREAK(!success, "继电器通讯失败,请检查连接");
-		}
-
-		if (m_detectionType != BaseTypes::DT_DVR)
-		{
-			size_t&& startTime = GetTickCount();
-			success = lauProcEx(args, request, msgProc);
-			setCurrentStatus(success ? "状态正常" : "状态异常", true);
-			addListItem(Q_SPRINTF("系统启动%s用时 %.2f秒", success ? "成功" : "失败", static_cast<float>(GetTickCount() - startTime) / 1000));
-			addListItem(Q_SPRINTF("系统启动 %s", OK_NG(success)), false);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "继电器闭合失败,请检查连接");
+			msleep(300);
 		}
 
 		RUN_BREAK(!success, "初始化系统异常");
@@ -334,7 +296,7 @@ bool Dt::Base::prepareTest(const int& id, const ulong& delay, const int& req, Ms
 	bool result = false, success = true;
 	do
 	{
-		setCanLogName(m_defConfig->device.detectionName, m_defConfig->device.modelName, g_code);
+		setCanLogName(m_defConfig->device.modelName, g_code);
 
 		clearListItem();
 
@@ -346,7 +308,7 @@ bool Dt::Base::prepareTest(const int& id, const ulong& delay, const int& req, Ms
 
 		addListItem("等待系统启动,请耐心等待...");
 
-		RUN_BREAK(!m_power.Output(true), "电源通讯失败,请检查连接");
+		RUN_BREAK(!m_power.Output(true), "电源上电失败,请检查连接");
 
 		msleep(300);
 
@@ -354,23 +316,22 @@ bool Dt::Base::prepareTest(const int& id, const ulong& delay, const int& req, Ms
 
 		if (m_detectionType == BaseTypes::DT_AVM)
 		{
-			const int portArray[] = {
-				m_defConfig->relay.acc
-				,m_defConfig->relay.gnd
-				,m_defConfig->relay.pinboard
-			};
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "打开ACC失败");
+			msleep(300);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.gnd, true), "打开GND失败");
+			msleep(300);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.pinboard, true), "打开转接板失败");
+			msleep(300);
 
-			bool success = true;
-			for (int i = 0; i < sizeof(portArray) / sizeof(int); i++)
+			if (m_defConfig->enable.signalLight)
 			{
-				if (!m_relay.SetOneIO(portArray[i], true))
-				{
-					success = false;
-					break;
-				}
+				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.white, true), "打开白色信号灯失败");
+				msleep(300);
+				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.red, false), "关闭红色信号灯失败");
+				msleep(300);
+				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.green, false), "关闭绿色信号灯失败");
 				msleep(300);
 			}
-			RUN_BREAK(!success, "继电器通讯失败,请检查连接");
 		}
 
 		if (m_detectionType != BaseTypes::DT_DVR)
@@ -381,17 +342,17 @@ bool Dt::Base::prepareTest(const int& id, const ulong& delay, const int& req, Ms
 			addListItem(Q_SPRINTF("系统启动%s用时 %.2f秒", success ? "成功" : "失败", static_cast<float>(GetTickCount() - startTime) / 1000));
 			addListItem(Q_SPRINTF("系统启动 %s", OK_NG(success)), false);
 		}
+		else
+		{
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "打开ACC失败");
+			msleep(300);
+		}
 
 		RUN_BREAK(!success, "初始化系统异常," + getLastError());
 
 		result = true;
 	} while (false);
 	return result;
-}
-
-void Dt::Base::setStartDelay(const size_t& delay)
-{
-	m_startDelay = delay;
 }
 
 bool Dt::Base::finishTest(bool success)
@@ -412,33 +373,35 @@ bool Dt::Base::finishTest(bool success)
 
 		m_canSender.Stop();
 
-		RUN_BREAK(!m_power.Output(false), "电源通讯失败,请检查连接");
+		m_canSender.DeleteAllMsgs();
+
+		RUN_BREAK(!m_power.Output(false), "电源掉电失败,请检查连接");
 
 		msleep(300);
 
 		if (m_detectionType == BaseTypes::DT_AVM)
 		{
-			const int portArray[] = {
-			m_defConfig->relay.acc
-			,m_defConfig->relay.gnd
-			,m_defConfig->relay.pinboard
-			};
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, false), "关闭ACC失败");
+			msleep(300);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.gnd, false), "关闭GND失败");
+			msleep(300);
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.pinboard, false), "关闭转接板失败");
+			msleep(300);
 
-			bool success = true;
-			for (int i = 0; i < sizeof(portArray) / sizeof(int); i++)
+			if (m_defConfig->enable.signalLight)
 			{
-				if (!m_relay.SetOneIO(portArray[i], false))
-				{
-					success = false;
-					break;
-				}
-				msleep(300);
+				success ? m_relay.SetOneIO(m_defConfig->relay.green, true) :
+					m_relay.KeySimulate(m_defConfig->relay.red, 3000);
 			}
-			RUN_BREAK(!success, "继电器通讯失败,请检查连接");
 		}
-		else if (m_detectionType == BaseTypes::DT_AVM)
+		else if (m_detectionType == BaseTypes::DT_DVR)
 		{
-			RUN_BREAK(!m_relay.SetAllIO(false), "继电器通讯失败,请检查连接");
+			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, false), "关闭ACC失败");
+			msleep(300);
+		}
+		else if (m_detectionType == BaseTypes::DT_HARDWARE)
+		{
+			RUN_BREAK(!m_relay.SetAllIO(false), "继电器断开失败,请检查连接");
 		}
 		result = true;
 	} while (false);
@@ -467,7 +430,6 @@ bool Dt::Base::saveLog(bool success)
 		{
 			setUnlockDlg();
 		}
-
 		result = true;
 	} while (false);
 	return result;
@@ -511,7 +473,7 @@ bool Dt::Base::checkCurrent()
 	return result;
 }
 
-bool Dt::Base::checkStaticCurrent(const ulong& delay)
+bool Dt::Base::checkStaticCurrent(bool set16Vol, const ulong& delay)
 {
 	setCurrentStatus("检测静态电流");
 	bool result = false;
@@ -560,13 +522,15 @@ bool Dt::Base::checkStaticCurrent(const ulong& delay)
 
 		HardwareConfig& hardware = m_defConfig->hardware;
 
-		StaticCurrentMgr staticCurrent;
+		//StaticCurrentMgr staticCurrent;
 
-		RUN_BREAK(!staticCurrent.Open(hardware.staticPort, hardware.staticBaud), S_TO_Q_STR(staticCurrent.GetLastError()));
+		//RUN_BREAK(!staticCurrent.open(hardware.staticPort, hardware.staticBaud), G_TO_Q_STR(staticCurrent.getLastError()));
 
-		RUN_BREAK(!staticCurrent.GetStaticCurrent(info.read), S_TO_Q_STR(staticCurrent.GetLastError()));
+		//RUN_BREAK(!staticCurrent.getStaticCurrent(info.read), G_TO_Q_STR(staticCurrent.getLastError()));
 
-		staticCurrent.Close();
+		//staticCurrent.close();
+
+		RUN_BREAK(!m_current.getStaticCurrent(info.read), G_TO_Q_STR(m_current.getLastError()));
 
 		info.result = ((info.read >= info.low) && (info.read < info.high));
 
@@ -584,6 +548,10 @@ bool Dt::Base::checkStaticCurrent(const ulong& delay)
 
 		//RUN_BREAK(!m_relay.SetOneIO(relay.acc, true), "继电器ACC IO打开失败");
 		//msleep(300);
+		if (set16Vol)
+		{
+			RUN_BREAK(!m_power.SetVol(16.0f), "电源设置16V电压失败");
+		}
 		result = true;
 	} while (false);
 	addListItem(Q_SPRINTF("检测静态电流 %s", OK_NG(result)), false);
@@ -649,7 +617,7 @@ tryAngin:
 		auto info = m_udsConfig->ver;
 		for (int i = 0; i < m_jsonTool->getVerConfigCount(); i++)
 		{
-			if (!m_udsApplyMgr->ReadDataByIdentifier(info[i].did[0], info[i].did[1], &info[i].size, (UCHAR*)info[i].read))
+			if (!m_udsApplyMgr->ReadDataByIdentifier(info[i].did[0], info[i].did[1], &info[i].size, (uchar*)info[i].read))
 			{
 				strcpy(info[i].read, "读取失败");
 				success = info[i].result = false;
@@ -805,9 +773,9 @@ void Dt::Base::saveCanLog(bool enable)
 	m_canConnMgr->EnableSaveLog(enable);
 }
 
-void Dt::Base::setCanLogName(const QString& detectionName, const QString& modelName, const QString& code)
+void Dt::Base::setCanLogName(const QString& modelName, const QString& code)
 {
-	m_canConnMgr->SetDetectionData(GET_DETECTION_DIR(detectionName), Q_TO_C_STR(modelName), Q_TO_C_STR(code));
+	m_canConnMgr->SetDetectionData(GET_DETECTION_DIR(m_detectionType), Q_TO_C_STR(modelName), Q_TO_C_STR(code));
 }
 
 void Dt::Base::flushCanLogBuffer()
@@ -843,16 +811,15 @@ bool Dt::Base::autoProcessCanMsg(const int& id, const int& request, MsgProc msgP
 					if (msgProc == nullptr)
 					{
 						msleep(1000);
-						float current = 0.0f;
-						m_power.GetCurrent(&current);
+						m_power.GetCurrent(&m_rouseCurrent);
 
-						if (current < 0.1f)
+						if (m_rouseCurrent < 0.1f)
 						{
 							deviceFail = true;
 							break;
 						}
 
-						if (current >= m_defConfig->threshold.canRouse)
+						if (m_rouseCurrent >= m_defConfig->threshold.canRouse)
 						{
 							success = true;
 							break;
@@ -871,7 +838,69 @@ bool Dt::Base::autoProcessCanMsg(const int& id, const int& request, MsgProc msgP
 
 			RUN_BREAK(deviceFail, "电源未上电");
 
-			RUN_BREAK(success, "CAN报文处理成功");
+			if (success) break;
+
+			RUN_BREAK(GetTickCount() - startTime > delay, "CAN报文处理失败");
+		}
+
+		if (!success)
+		{
+			break;
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool Dt::Base::autoProcessCanMsgEx(IdList idList, ReqList reqList, MsgProc msgProc, const ulong& delay)
+{
+	bool result = false, success = false;
+	do
+	{
+		if (idList.size() != reqList.size())
+		{
+			setLastError("ID列表与请求列表大小不一致");
+			break;
+		}
+
+		QList<int> cmpList;
+		MsgNode msgNode[512] = { 0 };
+		clearCanRecvBuffer();
+		size_t&& startTime = GetTickCount();
+		while (true)
+		{
+			const int&& size = quickRecvCanMsg(msgNode, 512, 100);
+			for (int i = 0; i < size; i++)
+			{
+				for (int j = 0; j < idList.size(); j++)
+				{
+					if (msgNode[i].id == idList.begin()[j])
+					{
+						if (msgProc(reqList.begin()[j], msgNode[i]))
+						{
+							if (cmpList.size())
+							{
+								for (auto& cmp : cmpList)
+									if (cmp != idList.begin()[j])
+										cmpList.append(idList.begin()[j]);
+							}
+							else
+							{
+								cmpList.append(idList.begin()[j]);
+							}
+							break;
+						}
+					}
+				}
+
+				if (cmpList.size() == idList.size())
+				{
+					success = true;
+					break;
+				}
+			}
+
+			if (success) break;
 
 			RUN_BREAK(GetTickCount() - startTime > delay, "CAN报文处理失败");
 		}
@@ -902,11 +931,44 @@ bool Dt::Base::autoTemplateCanFnc(const char* name, const int& id, const int& re
 	} while (false);
 	if (msg.size() != 0)
 	{
-		m_canSender.DeleteOneMsg(msg.begin()[0].id);
+		m_canSender.DeleteOneMsg(msg.begin()[0]);
 	}
 	WRITE_LOG("%s %s", OK_NG(result), name);
 	addListItemEx(Q_SPRINTF("%s %s", name, OK_NG(result)));
 	return result;
+}
+
+void Dt::Base::autoRecycle(const QStringList& path, const QStringList& suffixName, const int& interval)
+{
+	do
+	{
+		if (!m_autoRecycle)
+		{
+			break;
+		}
+
+		auto&& currentDate = QDate::currentDate();
+		for (int i = 0; i < path.size(); i++)
+		{
+			auto&& fileList = Misc::getFileListBySuffixName(path[i],
+				m_recycleSuffixName.isEmpty() ? suffixName : m_recycleSuffixName);
+			for (auto& x : fileList)
+			{
+				QFileInfo fi(x);
+				auto& date = fi.created().date();
+				int newYear = currentDate.year() - date.year();
+				int current = (currentDate.month() + newYear * 12) - date.month();
+				bool recycle = current >= ((m_recycleIntervalMonth == -1) ? interval : m_recycleIntervalMonth);
+				DEBUG_INFO_EX("自动回收%s,%s间隔:%d个月,当前:%d个月,文件名:%s", SU_FA(recycle),
+					recycle ? "" : "条件不满足,", interval, current, Q_TO_C_STR(x));
+				if (recycle)
+				{
+					QFile::remove(x);
+				}
+			}
+		}
+	} while (false);
+	return;
 }
 
 IConnMgr* Dt::Base::getCanConnect()
@@ -919,14 +981,24 @@ CanSender* Dt::Base::getCanSender()
 	return &m_canSender;
 }
 
-const float& Dt::Base::getCanRouseCur() const
+CItechSCPIMgr* Dt::Base::getPowerDevice()
 {
-	return m_defConfig->threshold.canRouse;
+	return &m_power;
 }
 
-CItechSCPIMgr& Dt::Base::getPower()
+CMRDO16KNMgr* Dt::Base::getRelayDevice()
 {
-	return m_power;
+	return &m_relay;
+}
+
+CVoltageTestMgr* Dt::Base::getVoltageDevice()
+{
+	return &m_voltage;
+}
+
+StaticCurrentMgr* Dt::Base::getCurrentDevice()
+{
+	return &m_current;
 }
 
 void Dt::Base::setAccessLevel(const int& udsLevel)
@@ -1019,8 +1091,8 @@ bool Dt::Base::writeDataByDidEx(const uchar* routine, const uchar& did0, const u
 			break;
 		}
 
-		uchar routineData = 0x01;
-		if (!m_udsApplyMgr->RoutineControl(routine[0], routine[1], routine[2], 1, &routineData, 0, 0))
+		//EP30TAP 1 1
+		if (!m_udsApplyMgr->RoutineControl(routine[0], routine[1], routine[2], routine[3], (uchar*)&routine[4], 0, 0))
 		{
 			break;
 		}
@@ -1041,6 +1113,22 @@ bool Dt::Base::writeDataByDidEx(const uchar* routine, const uchar& did0, const u
 	{
 		setLastError(getUdsLastError());
 	}
+	return result;
+}
+
+bool Dt::Base::writeDataByDidEx(const std::initializer_list<uchar>& routine, const uchar& did0, const uchar& did1, const int& size, const uchar* data)
+{
+	bool result = false;
+	do 
+	{
+		RUN_BREAK(routine.size() < 5, "例程控制必须>=5个字节");
+
+		if (!writeDataByDidEx(routine.begin(), did0, did1, size, data))
+		{
+			break;
+		}
+		result = true;
+	} while (false);
 	return result;
 }
 
@@ -1195,7 +1283,7 @@ const QString Dt::Base::createLogFile(bool success)
 	{
 		QDir dir;
 		auto& device = m_defConfig->device;
-		QString logDirName(GET_DETECTION_DIR(m_defConfig->device.detectionName));
+		QString logDirName(GET_DETECTION_DIR(m_detectionType));
 		/*log/error/20200228/机种_条码_时分秒.csv*/
 		QString filePath = QString("./%1/%2/%3/").arg(logDirName, success ? "NOR" : "ERR", Misc::getCurrentDate(true));
 		if (!dir.exists(filePath))
@@ -1263,10 +1351,11 @@ void Dt::Base::threadQuit()
 	quit();
 }
 
-void Dt::Base::setScanCodeDlg(bool show)
+bool Dt::Base::setScanCodeDlg(bool show)
 {
 	emit setScanCodeDlgSignal(show);
 	show ? threadPause() : threadContinue();
+	return true;
 }
 
 void Dt::Base::setUnlockDlg(bool show)
@@ -1336,21 +1425,43 @@ bool Dt::Base::setAuthDlg(const int& flag)
 	return result;
 }
 
+bool Dt::Base::callPythonFnc()
+{
+	bool result = false;
+#if CALL_PYTHON_LIB
+	do
+	{
+		Py_Initialize();
+		if (!Py_IsInitialized())
+		{
+			setLastError("初始化Python失败");
+			break;
+		}
+
+		auto pyModule = PyImport_ImportModule("module");
+		RUN_BREAK(!pyModule, "加载module.py失败");
+		auto pyFnc = PyObject_GetAttrString(pyModule, "writeSN");
+		RUN_BREAK(!pyFnc, "未找到writeSN函数");
+		auto pyArgs = Py_BuildValue("si", Q_TO_C_STR(g_code), g_code.length());
+		auto pyRet = PyObject_CallObject(pyFnc, pyArgs);
+		Py_Finalize();
+	} while (false);
+#endif
+	return result;
+}
+
 void Dt::Base::setLastError(const QString& error)
 {
-#ifdef QT_DEBUG
-	qDebug() << error << endl;
-#endif
+	DEBUG_INFO() << error;
+	Misc::writeRunError(error);
 	m_lastError = error;
 }
 
 void Dt::Base::setLastError(const QString& error, bool addItem, bool msgBox)
 {
-#ifdef QT_DEBUG
-	qDebug() << error << endl;
-#endif
+	DEBUG_INFO() << error;
+	Misc::writeRunError(error);
 	m_lastError = error;
-
 	if (addItem)
 	{
 		addListItem(m_lastError);
@@ -1436,11 +1547,6 @@ bool Dt::Base::udsEncodeConvert(VersonConfig* config)
 	return bRet;
 }
 
-const char* Dt::Base::getAdvice()
-{
-	return reinterpret_cast<const char*>(BaseTypes::others);
-}
-
 /************************************************************************/
 /* Dt::Hardware realize                                                     */
 /************************************************************************/
@@ -1480,8 +1586,9 @@ Dt::Function::~Function()
 	}
 	else
 	{
-		m_mil.closeDevice();
+		SAFE_DELETE(m_mil);
 	}
+
 }
 
 bool Dt::Function::initInstance()
@@ -1508,7 +1615,8 @@ bool Dt::Function::initInstance()
 		}
 		else
 		{
-			connect(&m_mil, (CVIMAGE)&MilCC::getChannelImageSignal, this, &Dt::Function::getChannelImageSlot);
+			m_mil = NO_THROW_NEW Cc::Mil(this);
+			RUN_BREAK(!m_mil, "Cc::Mil分配内存失败");
 		}
 		result = true;
 	} while (false);
@@ -1535,7 +1643,6 @@ bool Dt::Function::openDevice()
 					setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(m_cardConfig.channelId)
 						.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
 				}
-				setMv800ChannelId(m_cardConfig.channelId);
 			}
 			else
 			{
@@ -1559,17 +1666,7 @@ bool Dt::Function::openDevice()
 			}
 			else
 			{
-				if (m_cardConfig.channelCount == 1)
-				{
-					m_mil.openDevice(dcfFile, m_cardConfig.channelId) ? m_mil.startCapture() 
-						: setLastError("打开MOR采集卡失败," + m_mil.getLastError(), false, true);
-					setMilChannelId(m_cardConfig.channelId);
-				}
-				else
-				{
-					m_mil.openDevices(dcfFile, m_cardConfig.channelCount) ? m_mil.startCapture()
-						: setLastError("打开MOR采集卡失败," + m_mil.getLastError(), false, true);
-				}
+				m_mil->open(dcfFile, m_cardConfig.channelId) ? m_mil->startCapture() : setLastError("打开MOR采集卡失败," + m_mil->getLastError(), false, true);
 			}
 		}
 		result = true;
@@ -1586,97 +1683,7 @@ bool Dt::Function::closeDevice()
 		{
 			break;
 		}
-		m_cardConfig.name == "MV800" ? m_mv800.DisConnect() : m_mil.closeDevice();
-		result = true;
-	} while (false);
-	return result;
-}
-
-bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, const ulong& delay, LaunchProc launchProc, void* args)
-{
-	bool result = false, success = false;
-	do
-	{
-		setCurrentStatus("检测CAN唤醒");
-		m_canSender.AddMsg(msg, delay);
-		m_canSender.Start();
-		success = launchProc(args);
-		m_canSender.DeleteOneMsg(msg.id);
-		WRITE_LOG("%s CAN唤醒", OK_NG(success));
-		addListItemEx(Q_SPRINTF("CAN唤醒 %s", OK_NG(success)));
-		RUN_BREAK(!success, "CAN唤醒失败");
-
-		success = false;
-		setCurrentStatus("检测CAN休眠");
-		size_t&& startTime = GetTickCount();
-		float current = 0.0f;
-		while (true)
-		{
-			m_power.GetCurrent(&current);
-
-			if (current <= m_defConfig->threshold.canSleep)
-			{
-				success = true;
-				break;
-			}
-
-			if (success || GetTickCount() - startTime >= 20000)
-			{
-				break;
-			}
-			msleep(300);
-		}
-
-		WRITE_LOG("%s CAN休眠", OK_NG(success));
-		addListItemEx(Q_SPRINTF("CAN休眠 %s", OK_NG(success)));
-		RUN_BREAK(!success, "CAN休眠失败");
-		m_relay.SetOneIO(m_defConfig->relay.acc, true);
-		msleep(300);
-		result = true;
-	} while (false);
-	return result;
-}
-
-bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, const ulong& delay, LaunchProcEx lauProcEx, void* args, const int& request, MsgProc msgProc)
-{
-	bool result = false, success = false;
-	do
-	{
-		setCurrentStatus("检测CAN唤醒");
-		m_canSender.AddMsg(msg, delay);
-		m_canSender.Start();
-		success = lauProcEx(args, request, msgProc);
-		m_canSender.DeleteOneMsg(msg.id);
-		WRITE_LOG("%s CAN唤醒", OK_NG(success));
-		addListItemEx(Q_SPRINTF("CAN唤醒 %s", OK_NG(success)));
-		RUN_BREAK(!success, "CAN唤醒失败");
-
-		success = false;
-		setCurrentStatus("检测CAN休眠");
-		size_t&& startTime = GetTickCount();
-		float current = 0.0f;
-		while (true)
-		{
-			m_power.GetCurrent(&current);
-
-			if (current <= m_defConfig->threshold.canSleep)
-			{
-				success = true;
-				break;
-			}
-
-			if (success || GetTickCount() - startTime >= 20000)
-			{
-				break;
-			}
-			msleep(300);
-		}
-
-		WRITE_LOG("%s CAN休眠", OK_NG(success));
-		addListItemEx(Q_SPRINTF("CAN休眠 %s", OK_NG(success)));
-		RUN_BREAK(!success, "CAN休眠失败");
-		m_relay.SetOneIO(m_defConfig->relay.acc, true);
-		msleep(300);
+		m_cardConfig.name == "MV800" ? m_mv800.DisConnect() : m_mil->close();
 		result = true;
 	} while (false);
 	return result;
@@ -1691,9 +1698,10 @@ bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, const ulong& delay, co
 		m_canSender.AddMsg(msg, delay);
 		m_canSender.Start();
 		success = autoProcessCanMsg(id, req, msgProc);
-		m_canSender.DeleteOneMsg(msg.id);
-		WRITE_LOG("%s CAN唤醒", OK_NG(success));
-		addListItemEx(Q_SPRINTF("CAN唤醒 %s", OK_NG(success)));
+		m_canSender.DeleteOneMsg(msg);
+		WRITE_LOG("%s CAN唤醒 %.3fA", OK_NG(success), m_rouseCurrent);
+		addListItem(Q_SPRINTF("CAN唤醒 %s %.3fA", OK_NG(success), m_rouseCurrent));
+		addListItem(Q_SPRINTF("CAN唤醒 %s", OK_NG(success)), false);
 		RUN_BREAK(!success, "CAN唤醒失败");
 
 		success = false;
@@ -1717,11 +1725,32 @@ bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, const ulong& delay, co
 			msleep(300);
 		}
 
-		WRITE_LOG("%s CAN休眠", OK_NG(success));
-		addListItemEx(Q_SPRINTF("CAN休眠 %s", OK_NG(success)));
+		WRITE_LOG("%s CAN休眠 %.3fA", OK_NG(success), current);
+		addListItem(Q_SPRINTF("CAN休眠 %s %.3fA", OK_NG(success), current));
+		addListItem(Q_SPRINTF("CAN休眠 %s", OK_NG(success)), false);
 		RUN_BREAK(!success, "CAN休眠失败");
 		m_relay.SetOneIO(m_defConfig->relay.acc, true);
 		msleep(300);
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool Dt::Function::checkCanRouseSleep(const int& id, const ulong& delay, const int& req, MsgProc msgProc)
+{
+	bool result = false;
+	do
+	{
+		MsgNode msg = { 0x100,8,{0} };
+		if (!checkCanRouseSleep(msg, 100, id, req, msgProc))
+		{
+			break;
+		}
+
+		if (delay)
+		{
+			msleep(delay);
+		}
 		result = true;
 	} while (false);
 	return result;
@@ -1737,14 +1766,14 @@ void Dt::Function::setCaptureCardAttribute()
 	m_cardConfig.size = m_cardConfig.width * m_cardConfig.height * 3;
 }
 
-bool Dt::Function::startCaptureCard()
+void Dt::Function::startCaptureCard()
 {
-	return (m_cardConfig.name == "MV800" ? m_mv800.StartCapture() : m_mil.startCapture());
+	return (m_cardConfig.name == "MV800" ? m_mv800.StartCapture() : m_mil->startCapture());
 }
 
-bool Dt::Function::endCaptureCard()
+void Dt::Function::endCaptureCard()
 {
-	return (m_cardConfig.name == "MV800" ? m_mv800.EndCapture() : m_mil.stopCapture());
+	return (m_cardConfig.name == "MV800" ? m_mv800.EndCapture() : m_mil->endCapture());
 }
 
 bool Dt::Function::cycleCapture()
@@ -1804,24 +1833,26 @@ bool Dt::Function::saveAnalyzeImage(const QString& name, const IplImage* image, 
 	return result;
 }
 
-inline void Dt::Function::drawRectOnImage()
+inline void Dt::Function::drawRectOnImage(IplImage* image)
 {
-	if (m_defConfig->image.showBig && (m_rectType == FcTypes::RT_FRONT_BIG))
+	if (m_rectType == FcTypes::RT_NO)
+	{
+		return;
+	}
+
+	if (m_defConfig->image.showBig)
 	{
 		auto rect = m_defConfig->image.bigRect;
-		cvRectangleR(m_cvPainting, cvRect(rect[0].startX, rect[0].startY, rect[0].width, rect[0].height), CV_RGB(255, 0, 0), 2);
+		const int i = static_cast<int>(m_rectType);
+		cvRectangleR(image, cvRect(rect[i].startX, rect[i].startY, rect[i].width, rect[i].height), CV_RGB(255, 0, 0), 2);
 	}
-	else if (m_defConfig->image.showBig && (m_rectType == FcTypes::RT_REAR_BIG))
-	{
-		auto rect = m_defConfig->image.bigRect;
-		cvRectangleR(m_cvPainting, cvRect(rect[1].startX, rect[1].startY, rect[1].width, rect[1].height), CV_RGB(255, 0, 0), 2);
-	}
-	else if (m_defConfig->image.showSmall && (m_rectType == FcTypes::RT_SMALL))
+
+	if (m_defConfig->image.showSmall)
 	{
 		auto rect = m_defConfig->image.smallRect;
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < SMALL_RECT_; i++)
 		{
-			cvRectangleR(m_cvPainting, cvRect(rect[i].startX, rect[i].startY, rect[i].width, rect[i].height), CV_RGB(0, 255, 0), 2);
+			cvRectangleR(image, cvRect(rect[i].startX, rect[i].startY, rect[i].width, rect[i].height), CV_RGB(0, 255, 0), 2);
 		}
 	}
 	return;
@@ -1829,7 +1860,7 @@ inline void Dt::Function::drawRectOnImage()
 
 bool Dt::Function::checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectConfig, QString& colorData)
 {
-	bool result = false, success = true;
+	bool result = false, success = false, syntaxError = false;
 	do
 	{
 		cvSetImageROI(cvImage, cvRect(rectConfig.startX, rectConfig.startY, rectConfig.width, rectConfig.height));
@@ -1918,20 +1949,43 @@ bool Dt::Function::checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectC
 
 			imageColor.remove(QRegExp("\\s"));
 
+			QStringList configColorList = imageColor.mid(2).split(",", QString::SkipEmptyParts);
 			if (imageColor.contains("!="))
 			{
-				success = (imageColor.mid(2, 4) != color);
+				for (auto& x : configColorList)
+				{
+					if (x != color)
+					{
+						success = true;
+					}
+					else
+					{
+						success = false;
+						break;
+					}
+				}
 			}
 			else if (imageColor.contains("=="))
 			{
-				success = (imageColor.mid(2, 4) == color);
+				for (auto& x : configColorList)
+				{
+					if (x == color)
+					{
+						success = true;
+					}
+					else
+					{
+						success = false;
+						break;
+					}
+				}
 			}
 			else
 			{
-				success = false;
+				syntaxError = true;
 			}
-			colorData.sprintf("色彩模型RGB[%03d,%03d,%03d]  配置语法[%s]  分析所得颜色[%s]  %s",
-				vec[2], vec[1], vec[0], Q_TO_C_STR(rectConfig.color), color, OK_NG(success));
+			colorData.sprintf("色彩模型RGB[%03d,%03d,%03d]  配置语法[%s%s]  分析所得颜色[%s]  %s", 
+				vec[2], vec[1], vec[0], Q_TO_C_STR(rectConfig.color), syntaxError ? ",语法错误" : "", color, OK_NG(success));
 		}
 		else
 		{
@@ -1965,23 +2019,24 @@ bool Dt::Function::checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectC
 			auto& image = m_defConfig->image;
 			if (m_rectType == FcTypes::RT_SMALL)
 			{
-				QStringList nameList = { "front","rear","left","right" };
+				QStringList nameList = { "frontSmall","rearSmall","leftSmall","rightSmall" };
 				for (int i = 0; i < SMALL_RECT_; i++)
 				{
 					if (!memcmp(&image.smallRect[i], &rectConfig, sizeof(RectConfig)))
 					{
-						saveAnalyzeImage(nameList[i], cvImage, cvSize(rectConfig.width, rectConfig.height));
+						saveAnalyzeImage(nameList.at(i), cvImage, cvSize(rectConfig.width, rectConfig.height));
 						break;
 					}
 				}
 			}
 			else
 			{
+				QStringList bigName = { "frontBig","rearBig","leftBig","rightBig" };
 				for (int i = 0; i < BIG_RECT_; i++)
 				{
 					if (!memcmp(&image.bigRect[i], &rectConfig, sizeof(RectConfig)))
 					{
-						saveAnalyzeImage(!i ? "frontBig" : "rearBig", cvImage, cvSize(rectConfig.width, rectConfig.height));
+						saveAnalyzeImage(bigName.at(i), cvImage, cvSize(rectConfig.width, rectConfig.height));
 						break;
 					}
 				}
@@ -2027,71 +2082,6 @@ void Dt::Function::showImage(const IplImage* image, const QString& name)
 #endif
 }
 
-void Dt::Function::setCanId(const int& id)
-{
-	m_canId = id;
-}
-
-void Dt::Function::setMilChannelId(const int& id)
-{
-	m_milChannelId = id;
-}
-
-void Dt::Function::setMv800ChannelId(const int& id)
-{
-	m_mv800ChannelId = id;
-}
-
-void Dt::Function::getChannelImageSlot(const int& channelID, const IplImage* cvimage)
-{
-	if (m_milChannelId == channelID)
-	{
-		if (m_capture)
-		{
-			memcpy(m_cvAnalyze->imageData, cvimage->imageData, m_cardConfig.size);
-			m_capture = false;
-		}
-		memcpy(m_cvPainting->imageData, cvimage->imageData, m_cardConfig.size);
-		drawRectOnImage();
-		QImage qimage;
-		m_mil.cvImageToQtImage(m_cvPainting, qimage);
-		updateImage(qimage);
-	}
-}
-
-void Dt::Function::autoRecycle(const QStringList& path,const QStringList& suffixName,const int& month)
-{
-	do 
-	{
-		if (!m_autoRecycle)
-		{
-			break;
-		}
-
-		auto&& current = QDate::currentDate();
-		for (int i = 0; i < path.size(); i++)
-		{
-			auto&& fileList = Misc::getFileListBySuffixName(path[i],
-				m_recycleSuffixName.isEmpty() ? suffixName : m_recycleSuffixName);
-			for (auto& x : fileList)
-			{
-				QFileInfo fi(x);
-				auto& date = fi.created().date();
-				int newYear = current.year() - date.year();
-				int interval = (current.month() + newYear * 12) - date.month();
-#ifdef QT_DEBUG
-				qDebug() << "interval:" << interval << "file:" << x << endl;
-#endif
-				if (interval >= ((m_recycleIntervalMonth == -1) ? month : m_recycleIntervalMonth))
-				{
-					QFile::remove(x);
-				}
-			}
-		}
-	} while (false);
-	return;
-}
-
 /************************************************************************/
 /* Dt::Avm realize                                                          */
 /************************************************************************/
@@ -2118,10 +2108,11 @@ bool Dt::Avm::initInstance()
 	return result;
 }
 
-void Dt::Avm::tiggerAVMByKey()
+void Dt::Avm::tiggerAVMByKey(const ulong& delay)
 {
+	//m_relay.KeySimulate(m_defConfig->relay.key, delay);
 	m_relay.SetOneIO(m_defConfig->relay.key, true);
-	msleep(300);
+	msleep(delay);
 	m_relay.SetOneIO(m_defConfig->relay.key, false);
 	msleep(300);
 }
@@ -2132,143 +2123,88 @@ void Dt::Avm::setLedLight(bool _switch)
 	msleep(300);
 }
 
-bool Dt::Avm::checkAVMUseMsg(const MsgNode& msg, const ulong& delay, const int& id, const int& req, MsgProc msgProc)
+bool Dt::Avm::checkVideoUseNot()
 {
-	m_canSender.AddMsg(msg, delay);
-	m_canSender.Start();
-	return autoProcessCanMsg(id, req, msgProc);
-}
-
-bool Dt::Avm::checkAVMUseKey(LaunchProc launchProc, RequestProc requestProc, void* args, const int& request, const ulong& delay)
-{
-	setCurrentStatus("检测AVM视频");
+	setCurrentStatus("检测视频出画");
 	bool result = false, success = true;
-	do
+	do 
 	{
-		if (launchProc)
-		{
-			RUN_BREAK(!launchProc(args), "启动失败");
-		}
-
-		if (delay)
-		{
-			msleep(delay);
-		}
-
-		/*此处增加检测按键电压*/
-		KeyVolConfig& keyVol = m_hwdConfig->keyVol;
-		RUN_BREAK(!m_voltage.ReadVol(&keyVol.lRead), "读取电压表失败");
-
-		(keyVol.lRead >= keyVol.lLLimit) && (keyVol.lRead <= keyVol.lULimit) ? keyVol.lResult = true : keyVol.lResult = success = false;
-
-		addListItem(Q_SPRINTF("按键低电平  %.3f  %s", keyVol.lRead, OK_NG(keyVol.lResult)));
-
-		tiggerAVMByKey();
-
-		RUN_BREAK(!requestProc(args, request), "进入全景失败");
-
 		setRectType(FcTypes::RT_SMALL);
-		msleep(3000);
 
-		RUN_BREAK(!m_voltage.ReadVol(&keyVol.hRead), "读取电压表失败");
-
-		(keyVol.hRead >= keyVol.hLLimit) && (keyVol.hRead <= keyVol.hULimit) ? keyVol.hResult = true : keyVol.hResult = success = false;
-
-		addListItem(Q_SPRINTF("按键高电平  %.3f  %s", keyVol.hRead, OK_NG(keyVol.hResult)));
-
-		RUN_BREAK(!success, "检测按键电压失败");
+		msleep(2000);
 
 		RUN_BREAK(!cycleCapture(), "抓图失败");
 
-		const char* name[] = { "前","后","左","右" };
+		QStringList viewName = { "前","后","左","右" };
 		QString colorData;
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < SMALL_RECT_; i++)
 		{
 			if (!checkRectOnImage(m_cvAnalyze, m_defConfig->image.smallRect[i], colorData))
 			{
 				success = false;
 			}
-			addListItem(QString("%1摄像头小图,%2").arg(name[i], colorData));
+			addListItem(QString("%1摄像头小图,%2").arg(viewName.at(i), colorData));
 		}
-		RUN_BREAK(!success, "检测AVM视频失败");
+		RUN_BREAK(!success, "检测视频出画失败");
 		result = true;
 	} while (false);
 	restoreRectType();
-	WRITE_LOG("%s 检测AVM视频", OK_NG(result));
-	addListItem(Q_SPRINTF("检测AVM视频 %s", OK_NG(result)), false);
+	WRITE_LOG("%s 检测视频出画", OK_NG(result));
+	addListItem(Q_SPRINTF("检测视频出画 %s", OK_NG(result)), false);
 	return result;
 }
 
-bool Dt::Avm::checkAVMUseKey(LaunchProcEx lauProcEx, void* args, ReqList lauList, MsgProc lauFnc,
-	RequestProcEx reqProcEx, ReqList reqList, MsgProc reqFnc, const ulong& delay)
+bool Dt::Avm::checkVideoUseMsg(const MsgNode& msg, const ulong& delay, const int& id, const int& req, MsgProc msgProc)
 {
-	setCurrentStatus("检测AVM视频");
+	return checkVideoUseMsgEx(msg, delay, id, req, msgProc, 1);
+}
+
+bool Dt::Avm::checkVideoUseMsgEx(const MsgNode& msg, const ulong& msgDelay, const int& id, const int& req0, MsgProc msgProc0, const ulong& delay, const int& req1, MsgProc msgProc1)
+{
+	setCurrentStatus("检测视频出画");
 	bool result = false, success = true;
-	do
+	do 
 	{
-		if (lauProcEx)
-		{
-			RUN_BREAK(!lauProcEx(args, lauList.begin()[0], lauFnc), "启动失败");
-		}
+		if (msgProc1) RUN_BREAK(!autoProcessCanMsg(id, req1, msgProc1, 20000), "启动失败") else msleep(delay);
 
-		if (delay)
-		{
-			msleep(delay);
-		}
+		m_canSender.AddMsg(msg, msgDelay);
+		m_canSender.Start();
 
-		/*此处增加检测按键电压*/
-		KeyVolConfig& keyVol = m_hwdConfig->keyVol;
-		RUN_BREAK(!m_voltage.ReadVol(&keyVol.lRead), "读取电压表失败");
-
-		(keyVol.lRead >= keyVol.lLLimit) && (keyVol.lRead <= keyVol.lULimit) ? keyVol.lResult = true : keyVol.lResult = success = false;
-
-		addListItem(Q_SPRINTF("按键低电平  %.3f  %s", keyVol.lRead, OK_NG(keyVol.lResult)));
-
-		tiggerAVMByKey();
-
-		RUN_BREAK(!reqProcEx(args, reqList.begin()[0], reqFnc), "进入全景失败");
+		RUN_BREAK(!autoProcessCanMsg(id, req0, msgProc0, 10000), "进入全景失败");
 
 		setRectType(FcTypes::RT_SMALL);
-		msleep(3000);
 
-		RUN_BREAK(!m_voltage.ReadVol(&keyVol.hRead), "读取电压表失败");
-
-		(keyVol.hRead >= keyVol.hLLimit) && (keyVol.hRead <= keyVol.hULimit) ? keyVol.hResult = true : keyVol.hResult = success = false;
-		addListItem(Q_SPRINTF("按键高电平  %.3f  %s", keyVol.hRead, OK_NG(keyVol.hResult)));
-
-		RUN_BREAK(!success, "检测按键电压失败");
+		msleep(2000);
 
 		RUN_BREAK(!cycleCapture(), "抓图失败");
 
-		const char* name[] = { "前","后","左","右" };
+		QStringList viewName = { "前","后","左","右" };
 		QString colorData;
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < SMALL_RECT_; i++)
 		{
 			if (!checkRectOnImage(m_cvAnalyze, m_defConfig->image.smallRect[i], colorData))
 			{
 				success = false;
 			}
-			addListItem(QString("%1摄像头小图,%2").arg(name[i], colorData));
+			addListItem(QString("%1摄像头小图,%2").arg(viewName.at(i), colorData));
 		}
-
-		RUN_BREAK(!success, "检测AVM视频失败");
+		RUN_BREAK(!success, "检测视频出画失败");
 		result = true;
 	} while (false);
+	m_canSender.DeleteOneMsg(msg);
 	restoreRectType();
-	WRITE_LOG("%s 检测AVM视频", OK_NG(result));
-	addListItem(Q_SPRINTF("检测AVM视频 %s", OK_NG(result)), false);
+	WRITE_LOG("%s 检测视频出画", OK_NG(result));
+	addListItem(Q_SPRINTF("检测视频出画 %s", OK_NG(result)), false);
 	return result;
 }
 
-bool Dt::Avm::checkAVMUseKey(const int& id, const int& req0, MsgProc msgProc0, const ulong& delay, const int& req1, MsgProc msgProc1)
+bool Dt::Avm::checkVideoUseKey(const int& id, const int& req0, MsgProc msgProc0, const ulong& delay, const int& req1, MsgProc msgProc1)
 {
-	setCurrentStatus("检测AVM视频");
+	setCurrentStatus("检测视频出画");
 	bool result = false, success = true;
 	do
 	{
-		RUN_BREAK(!autoProcessCanMsg(id, req0, msgProc0, 20000), "启动失败");
-
-		msleep(delay);
+		if (msgProc1) RUN_BREAK(!autoProcessCanMsg(id, req1, msgProc1, 20000), "启动失败") else msleep(delay);
 
 		/*此处增加检测按键电压*/
 		KeyVolConfig& keyVol = m_hwdConfig->keyVol;
@@ -2280,7 +2216,7 @@ bool Dt::Avm::checkAVMUseKey(const int& id, const int& req0, MsgProc msgProc0, c
 
 		tiggerAVMByKey();
 
-		RUN_BREAK(!autoProcessCanMsg(id, req1, msgProc1, 10000), "进入全景失败");
+		RUN_BREAK(!autoProcessCanMsg(id, req0, msgProc0, 10000), "进入全景失败");
 
 		setRectType(FcTypes::RT_SMALL);
 		msleep(3000);
@@ -2294,145 +2230,23 @@ bool Dt::Avm::checkAVMUseKey(const int& id, const int& req0, MsgProc msgProc0, c
 
 		RUN_BREAK(!cycleCapture(), "抓图失败");
 
-		const char* name[] = { "前","后","左","右" };
+		QStringList viewName = { "前","后","左","右" };
 		QString colorData;
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < SMALL_RECT_; i++)
 		{
 			if (!checkRectOnImage(m_cvAnalyze, m_defConfig->image.smallRect[i], colorData))
 			{
 				success = false;
 			}
-			addListItem(QString("%1摄像头小图,%2").arg(name[i], colorData));
+			addListItem(QString("%1摄像头小图,%2").arg(viewName.at(i), colorData));
 		}
 
-		RUN_BREAK(!success, "检测AVM视频失败");
+		RUN_BREAK(!success, "检测视频出画失败");
 		result = true;
 	} while (false);
 	restoreRectType();
-	WRITE_LOG("%s 检测AVM视频", OK_NG(result));
-	addListItem(Q_SPRINTF("检测AVM视频 %s", OK_NG(result)), false);
-	return result;
-}
-
-bool Dt::Avm::checkAVMFRView(MsgList msgList, const ulong& delay, RequestProc requestProc, void* args, const int& request)
-{
-	setCurrentStatus("检测前后视图");
-	bool result = false, success = true;
-	do
-	{
-		RUN_BREAK(msgList.size() != 2,"前后视图msg.size() != 2");
-
-		/*此处检测需要先切后再切前*/
-		const char* name[] = { "前","后","左","右" };
-		QString colorData;
-		int subscript = -1;
-		for (int i = 0; i < msgList.size(); i++)
-		{
-			subscript = abs(i - 1);
-
-			setRectType(static_cast<FcTypes::RectType>(subscript));
-
-			m_canSender.AddMsg(msgList.begin()[subscript], delay);
-
-			msleep(delay + 1000);
-
-			if (requestProc && !requestProc(args,request))
-			{
-				success = false;
-				setLastError(Q_SPRINTF("进入%s大视图失败", name[subscript]));
-				break;
-			}
-
-			if (!cycleCapture())
-			{
-				setLastError("抓图失败");
-				success = false;
-				break;
-			}
-
-			if (!checkRectOnImage(m_cvAnalyze, m_defConfig->image.bigRect[subscript], colorData))
-			{
-				success = false;
-				setLastError("检测前后视图失败");
-			}
-			addListItem(QString("%1摄像头大图,%2").arg(name[subscript], colorData));
-			m_canSender.DeleteOneMsg(msgList.begin()[subscript].id);
-		}
-
-		if (!success)
-		{
-			break;
-		}
-		msleep(1000);
-		result = true;
-	} while (false);
-	restoreRectType();
-	WRITE_LOG("%s 检测前后视图", OK_NG(result));
-	addListItem(Q_SPRINTF("检测前后视图 %s", OK_NG(result)), false);
-	return result;
-}
-
-bool Dt::Avm::checkAVMFRView(MsgList msgList, const ulong& delay, RequestProcEx requestProcEx, void* args, ReqList reqList, MsgProc reqFnc)
-{
-	setCurrentStatus("检测前后视图");
-	bool result = false, success = true;
-	do
-	{
-		if (msgList.size() != 2)
-		{
-			setLastError("前后视图msg.size() != 2");
-			break;
-		}
-
-		/*此处检测需要先切后再切前,提升效率,所以使用abs计算*/
-		const char* name[] = { "前","后","左","右" };
-		QString colorData;
-		int subscript = -1;
-		for (int i = 0; i < msgList.size(); i++)
-		{
-			subscript = abs(i - 1);
-
-			setRectType(static_cast<FcTypes::RectType>(subscript));
-
-			m_canSender.AddMsg(msgList.begin()[subscript], delay);
-
-			m_canSender.Start();
-
-			//msleep(delay + 1000);
-
-			if (!requestProcEx(args, reqList.begin()[subscript], reqFnc))
-			{
-				success = false;
-				setLastError(Q_SPRINTF("进入%s大视图失败", name[subscript]));
-				break;
-			}
-
-			if (!cycleCapture())
-			{
-				setLastError("抓图失败");
-				success = false;
-				break;
-			}
-
-			if (!checkRectOnImage(m_cvAnalyze, m_defConfig->image.bigRect[subscript], colorData))
-			{
-				success = false;
-				setLastError("检测前后视图失败");
-			}
-			addListItem(QString("%1摄像头大图,%2").arg(name[subscript], colorData));
-			m_canSender.DeleteOneMsg(msgList.begin()[subscript].id);
-		}
-
-		if (!success)
-		{
-			break;
-		}
-		msleep(1000);
-		result = true;
-	} while (false);
-	restoreRectType();
-	WRITE_LOG("%s 检测前后视图", OK_NG(result));
-	addListItem(Q_SPRINTF("检测前后视图 %s", OK_NG(result)), false);
+	WRITE_LOG("%s 检测视频出画", OK_NG(result));
+	addListItem(Q_SPRINTF("检测视频出画 %s", OK_NG(result)), false);
 	return result;
 }
 
@@ -2444,8 +2258,7 @@ bool Dt::Avm::checkAVMFRView(MsgList msgList, const ulong& msgDelay, const int& 
 	{
 		RUN_BREAK(msgList.size() != 2, "前后视图msg.size()!=2");
 
-		/*此处检测需要先切后再切前,提升效率,所以使用abs计算*/
-		const char* name[] = { "前","后","左","右" };
+		QStringList viewName = { "前","后","左","右" };
 		QString colorData;
 		int subscript = -1;
 		for (int i = 0; i < msgList.size(); i++)
@@ -2458,12 +2271,10 @@ bool Dt::Avm::checkAVMFRView(MsgList msgList, const ulong& msgDelay, const int& 
 
 			m_canSender.Start();
 
-			//msleep(delay + 1000);
-
 			if (!autoProcessCanMsg(id, reqList.begin()[subscript], msgProc))
 			{
 				success = false;
-				setLastError(Q_SPRINTF("进入%s大视图失败", name[subscript]));
+				setLastError(Q_SPRINTF("进入%s大视图失败", viewName.at(subscript)));
 				break;
 			}
 
@@ -2479,8 +2290,8 @@ bool Dt::Avm::checkAVMFRView(MsgList msgList, const ulong& msgDelay, const int& 
 				success = false;
 				setLastError("检测前后视图失败");
 			}
-			addListItem(QString("%1摄像头大图,%2").arg(name[subscript], colorData));
-			m_canSender.DeleteOneMsg(msgList.begin()[subscript].id);
+			m_canSender.DeleteOneMsg(msgList.begin()[subscript]);
+			addListItem(QString("%1摄像头大图,%2").arg(viewName[subscript], colorData));
 		}
 
 		if (!success)
@@ -2493,6 +2304,37 @@ bool Dt::Avm::checkAVMFRView(MsgList msgList, const ulong& msgDelay, const int& 
 	restoreRectType();
 	WRITE_LOG("%s 检测前后视图", OK_NG(result));
 	addListItem(Q_SPRINTF("检测前后视图 %s", OK_NG(result)), false);
+	return result;
+}
+
+bool Dt::Avm::checkKeyVoltage(const ulong& delay)
+{
+	setCurrentStatus("检测按键电压");
+	bool result = false, success = true;
+	do 
+	{
+		/*此处增加检测按键电压*/
+		KeyVolConfig& keyVol = m_hwdConfig->keyVol;
+		RUN_BREAK(!m_voltage.ReadVol(&keyVol.lRead), "读取电压表失败");
+
+		(keyVol.lRead >= keyVol.lLLimit) && (keyVol.lRead <= keyVol.lULimit) ? keyVol.lResult = true : keyVol.lResult = success = false;
+
+		addListItem(Q_SPRINTF("按键低电平  %.3f  %s", keyVol.lRead, OK_NG(keyVol.lResult)));
+
+		tiggerAVMByKey();
+
+		msleep(delay);
+
+		RUN_BREAK(!m_voltage.ReadVol(&keyVol.hRead), "读取电压表失败");
+
+		(keyVol.hRead >= keyVol.hLLimit) && (keyVol.hRead <= keyVol.hULimit) ? keyVol.hResult = true : keyVol.hResult = success = false;
+		addListItem(Q_SPRINTF("按键高电平  %.3f  %s", keyVol.hRead, OK_NG(keyVol.hResult)));
+
+		RUN_BREAK(!success, "检测按键电压失败");
+		result = true;
+	} while (false);
+	WRITE_LOG("%s 检测按键电压", OK_NG(result));
+	addListItem(Q_SPRINTF("检测按键电压 %s", OK_NG(result)), false);
 	return result;
 }
 
@@ -2551,27 +2393,27 @@ bool Dt::Dvr::initInstance()
 	return result;
 }
 
-bool Dt::Dvr::prepareTest(LaunchProc launchProc, void* args)
+bool Dt::Dvr::prepareTest(const ulong& delay)
 {
-	bool result = false;
+	bool result = false, success = false;
 	do
 	{
-		if (!Dt::Base::prepareTest(launchProc, args))
+		if (!Dt::Base::prepareTest(delay))
 		{
 			break;
 		}
 
-		RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "继电器通讯失败,请检查连接");
-		msleep(300);
-
-		startTimeSync();
-
-		addListItem("正在检测系统状态");
-
-		size_t&& startTime = GetTickCount();
-		RUN_BREAK(!autoProcessStatus<DvrTypes::SystemStatus>(), QString("系统初始化失败,%1").arg(getLastError()));
+		RUN_BREAK(!setOtherAction(), "设置其他动作失败," + getLastError());
 		
-		addListItem(Q_SPRINTF("检测系统状态正常,用时:%.3f秒", float(GetTickCount() - startTime) / 1000.000f));
+		addListItem("正在检测系统状态,请耐心等待...");
+		size_t&& startTime = GetTickCount();
+		success = autoProcessStatus(m_systemStatus, delay);
+		addListItem(Q_SPRINTF("检测系统状态%s,用时:%.3f秒", OK_NG(success), float(GetTickCount() - startTime) / 1000.000f));
+		RUN_BREAK(!success, "系统初始化失败," + getLastError());
+
+		success = autoProcessStatus(m_sdCardStatus, delay);
+		addListItem(Q_SPRINTF("SD卡状态 %s", OK_NG(success)));
+		RUN_BREAK(!success, "SD卡初始化失败," + getLastError());
 
 		result = true;
 	} while (false);
@@ -2588,51 +2430,108 @@ bool Dt::Dvr::finishTest(bool success)
 			break;
 		}
 
-		stopTimeSync();
-
-		RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, false), "继电器通讯失败,请检查连接");
-
-		msleep(300);
-
 		if (getSoundLigth())
 		{
-			RUN_BREAK(!setSoundLight(false), "继电器通讯失败,请检查连接");
+			RUN_BREAK(!setSoundLight(false), "继电器断开失败,请检查连接");
 		}
 		result = true;
 	} while (false);
 	return result;
 }
 
-void Dt::Dvr::startTimeSync()
+bool Dt::Dvr::getWifiInfo(bool rawData, bool showLog)
 {
-	MsgNode msg;
-	memset(&msg, 0x00, sizeof(msg));
-	msg.id = 0x511;
-	msg.iDLC = 8;
-	SYSTEMTIME time;
-	GetLocalTime(&time);
-
-	/*发送时间同步*/
-	msg.ucData[0] = time.wSecond << 2;
-	msg.ucData[1] = (0x1f & time.wHour) >> 3;
-	msg.ucData[2] = (0x07 & time.wHour) << 5;
-	msg.ucData[1] |= (0x3f & time.wMinute) << 2;
-	msg.ucData[2] |= (0x1f & time.wDay) >> 3;
-	msg.ucData[3] = (0x07 & time.wDay) << 5;
-	msg.ucData[3] |= (0x1f & (time.wYear - 2014)) >> 4;
-	msg.ucData[4] = (0x0f & (time.wYear - 2014)) << 4;
-	msg.ucData[3] |= (0x0f & time.wMonth) << 1;
-	m_canSender.AddMsg(msg, 1000);
-	m_canSender.Start();
-	msleep(1000);
-	return;
+	setLastError("子类未重写虚函数bool Dt::Dvr::getWifiInfo(bool,bool)");
+	return false;
 }
 
-void Dt::Dvr::stopTimeSync()
+void Dt::Dvr::setSysStatusMsg(const DvrTypes::SysStatusMsg& msg)
 {
-	m_canSender.DeleteOneMsg(0x511);
-	m_canSender.Stop();
-	return;
+	m_sysStatusMsg = (int)msg;
+}
+
+void Dt::Dvr::setSdCardStatus(const DvrTypes::SdCardStatus& status)
+{
+	m_sdCardStatus = status;
+}
+
+void Dt::Dvr::setSystemStatus(const DvrTypes::SystemStatus& status)
+{
+	m_systemStatus = status;
+}
+
+bool Dt::Dvr::checkDvr(const QString& rtspUrl, bool useWifi, bool useCard, bool downloadVideo)
+{
+	setCurrentStatus("检测DVR");
+	bool result = false, record = false, success = false;
+	do
+	{
+		if (useCard)
+		{
+			addListItem("检测采集卡出画");
+			success = setQuestionBoxEx("提示", "采集卡出画是否成功?", QPoint(80, 0));
+			endCaptureCard();
+			addListItem(Q_SPRINTF("检测采集卡出画 %s", OK_NG(success)));
+			WRITE_LOG("%s 采集卡出画", OK_NG(success));
+			RUN_BREAK(!success, "检测采集卡出画失败");
+		}
+
+		addListItem("正在检测网络状态,请耐心等待...");
+		size_t&& startTime = GetTickCount();
+		success = useWifi ? autoProcessStatus<DvrTypes::WifiStatus>() : autoProcessStatus<DvrTypes::EthernetStatus>();
+		addListItem(Q_SPRINTF("检测网络状态%s,用时:%.3f秒", success ? "正常" : "异常", float(GetTickCount() - startTime) / 1000.00f));
+		RUN_BREAK(!success, "网络状态异常");
+
+		addListItem("检测网络出画");
+		success = vlcRtspStart(rtspUrl);
+		RUN_BREAK(!success, "RTSP协议出画失败");
+
+		success = setQuestionBoxEx("提示", "网络出画是否成功?", QPoint(50, 0));
+		addListItem(Q_SPRINTF("检测网络出画 %s", OK_NG(success)));
+		WRITE_LOG("%s 网络出画", OK_NG(success));
+		RUN_BREAK(!success, "网络出画失败");
+
+		addListItem("获取紧急录制文件路径");
+		QString url;
+		success = getFileUrl(url, DvrTypes::FP_EVT);
+		addListItem("获取紧急录制文件路径:" + success ? url : "无效路径");
+		RUN_BREAK(!success, "获取紧急录制文件路径失败");
+
+		if (downloadVideo)
+		{
+			addListItem("下载紧急录制文件,大约需要10~30秒,请等待...");
+			success = downloadFile(url, "EVTDownload");
+			addListItem(Q_SPRINTF("下载紧急录制文件 %s", OK_NG(success)));
+			RUN_BREAK(!success, "下载紧急录制文件失败");
+		}
+
+		vlcRtspStop();
+		msleep(1000);
+
+		addListItem("播放紧急录制视频中...");
+		success = vlcRtspStart(url);
+		RUN_BREAK(!success, "播放紧急录制视频失败");
+
+		if (getSoundLigth())
+		{
+			RUN_BREAK(!setSoundLight(false), "关闭音响和灯光失败");
+		}
+		success = setQuestionBoxEx("提示", "紧急录制视频是否回放?", QPoint(80, 0));
+		addListItem(Q_SPRINTF("紧急录制视频回放 %s", OK_NG(success)));
+		WRITE_LOG("%s 紧急录制", OK_NG(success));
+
+		RUN_BREAK(!success, "紧急录制视频回放失败");
+		vlcRtspStop();
+		result = true;
+	} while (false);
+	addListItem(Q_SPRINTF("检测DVR %s", OK_NG(result)), false);
+	if (!result) { vlcRtspStop(); }
+	return result;
+}
+
+bool Dt::Dvr::checkDvr(bool useWifi, bool useCard, bool downloadVideo)
+{
+	return checkDvr(QString("rtsp://%1/stream2").arg(m_address), useWifi, useCard, downloadVideo);
 }
 
 bool Dt::Dvr::setSoundLight(bool enable)
@@ -2747,122 +2646,47 @@ bool Dt::Dvr::vlcRtspStop()
 	return result;
 }
 
-const size_t Dt::Dvr::crc32Algorithm(uchar const* memoryAddr, const size_t& memoryLen, const size_t& oldCrc32)
-{
-	size_t oldcrc32 = oldCrc32, length = memoryLen, crc32, oldcrc;
-	uchar ccc, t;
-
-	while (length--)
-	{
-		t = (uchar)(oldcrc32 >> 24U) & 0xFFU;
-		oldcrc = DvrTypes::crc32Table[t];
-		ccc = *memoryAddr;
-		oldcrc32 = (oldcrc32 << 8U | ccc);
-		oldcrc32 = oldcrc32 ^ oldcrc;
-		memoryAddr++;
-	}
-	crc32 = oldcrc32;
-	return crc32;
-}
-
-bool Dt::Dvr::crcVerify(const uchar* data, const size_t& length, const size_t& oldCrc)
-{
-	return (oldCrc == crc32Algorithm((uchar*)data, length, oldCrc));
-}
-
 bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const QString& address, const ushort& port)
 {
 	bool result = false;
 	do
 	{
 		msleep(1000);
-		int tryAgainCount = 0;
-
-		const size_t sendLen = 0x10;
-		if (!m_dvrClient->connectServer(Q_TO_C_STR(address), port))
-		{
-			setLastError("连接到服务器失败");
-			break;
-		}
+		char recvData[BUFF_SIZE] = { 0 };
+		int recvLen = 0, tryAgainCount = 0;
+		RUN_BREAK(!m_dvrClient->connect(address, port), m_dvrClient->getLastError());
 
 	tryAgain:
+		DEBUG_INFO() << "发送获取文件列表报文";
+		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ (char)filePath, (char)filePath, 0x01, 0x01 },
+			DvrTypes::NC_FILE_CTRL, DvrTypes::NS_GET_FILE_LIST), m_dvrClient->getLastError());
 
-		/*						    0	 1	  2    3    4    5    6    7    8				9			 10   11*/
-		char sendData[sendLen] = { 0xEE,0xAA,0x06,0x00,0x00,0x00,0x10,0x02,(char)filePath,(char)filePath,0x01,0x01 };
-		size_t crc32 = crc32Algorithm((uchar*)&sendData[2], 10, 0);
-		sendData[12] = crc32 & 0xff;
-		sendData[13] = (crc32 >> 8) & 0xff;
-		sendData[14] = (crc32 >> 16) & 0xff;
-		sendData[15] = (crc32 >> 24) & 0xff;
+		memset(recvData, 0x00, BUFF_SIZE);
+		RUN_BREAK(!m_dvrClient->recvFrameDataEx(recvData, &recvLen, DvrTypes::NC_FILE_CTRL,
+			DvrTypes::NS_GET_FILE_LIST), m_dvrClient->getLastError());
 
-#ifdef QT_DEBUG
-		//system("mode con:cols=100 lines=1000");
-		qDebug() << Misc::getCurrentTime() << "开始发送" << endl;
-		for (size_t i = 0; i < sendLen; i++)
-		{
-			printf("[%03u:%02x]\t", i, (uchar)sendData[i]);
-		}
-		qDebug() << endl << Misc::getCurrentTime() << "发送结束" << endl;
-#endif
 
-		//writeNetLog(filePath == DvrTypes::FP_EVT ? "evt_send.txt" : "pho_send.txt", sendData, sendLen);
-
-		if (m_dvrClient->send(sendData, sendLen) == -1)
-		{
-			setLastError("发送失败");
-			break;
-		}
-
-		char recvData[BUFF_SIZE] = { 0 };
-
-		int total = m_dvrClient->recv(recvData, DvrTypes::NC_FILE_CTRL, DvrTypes::NS_GET_FILE_LIST);
-		if (total == -1)
-		{
-			setLastError("接收失败," + m_dvrClient->getLastError());
-			break;
-		}
-		else if (total == -2)
-		{
-			tryAgainCount++;
-			if (tryAgainCount >= 20)
-			{
-				break;
-			}
-			goto tryAgain;
-		}
-
-		writeNetLog(filePath == DvrTypes::FP_EVT ? "evt_recv.txt" : "pho_recv.txt", recvData, total);
-
-#ifdef QT_DEBUG
-		qDebug() << Misc::getCurrentTime() << "总长度:" << total << "开始接收" << endl;
-		for (size_t i = 0; i < total; i++)
-		{
-			printf("[%03u:%02x]\t", i, (uchar)recvData[i]);
-		}
-		qDebug() << endl << Misc::getCurrentTime() << "接收结束" << endl;
-#endif
-
-		FileList dvrFileList;
-		memset(&dvrFileList, 0x00, sizeof(FileList));
-		memcpy(&dvrFileList.listCount, &recvData[8], sizeof(size_t));
+		FileList dvrFileList = { 0 };
+		memcpy(&dvrFileList.listCount, &recvData[2], sizeof(size_t));
 
 		dvrFileList.listCount = dvrFileList.listCount > 100 ? 100 : dvrFileList.listCount;
 
-#ifdef QT_DEBUG
-		qDebug() << "文件数量:" << dvrFileList.listCount << endl;
-#endif
+		DEBUG_INFO_EX("文件列表数量:%lu", dvrFileList.listCount);
+
 		/*存在没有获取到情况,所以再次获取,原因可能是??未知*/
 		if (dvrFileList.listCount == 0)
 		{
 			tryAgainCount++;
-			if (tryAgainCount >= 20)
+			if (tryAgainCount >= 30)
 			{
+				writeNetLog(filePath == DvrTypes::FP_EVT ? "getEvtUrl" : "getPhoUrl", recvData, recvLen);
+				setLastError(Q_SPRINTF("文件列表为空,超过重试%d次,\n请确认SD卡中是否存在文件", tryAgainCount));
 				break;
 			}
 			goto tryAgain;
 		}
 
-		char* pointer = &recvData[12];
+		const char* pointer = &recvData[6];
 		const char* dvrPath[] = { "NOR/", "EVT/", "PHO/" };
 		const char* dvrType[] = { "NOR_", "EVT_", "PHO_", "_D1_" };
 		const char* dvrSuffix[] = { ".mp4", ".jpg" };
@@ -2894,11 +2718,8 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const
 		int pathId = dvrFileList.fileInfo[flag].path;
 		int typeId = dvrFileList.fileInfo[flag].type;
 
-		if ((pathId < 0 || pathId > 2) || (typeId < 0 || typeId > 3))
-		{
-			setLastError("获取DVR文件列表数据包异常,\n请检测网络连接是否有波动");
-			break;
-		}
+		RUN_BREAK((pathId < 0 || pathId > 2) || (typeId < 0 || typeId > 3),
+			"获取DVR文件列表数据包异常,\n请检测网络连接是否有波动");
 
 		url.sprintf("http://%s:%d/%s%s", Q_TO_C_STR(address), 8080, dvrPath[pathId], dvrType[typeId]);
 		/*此处要减去时差*/
@@ -2906,11 +2727,7 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const
 
 		/*通过localtime将秒数转换为 年 月 日 时 分 秒*/
 		struct tm* dvrDate = localtime(&dvrSecond);
-		if (!dvrDate)
-		{
-			setLastError("localtime触发一个nullptr异常");
-			break;
-		}
+		RUN_BREAK(!dvrDate, "localtime触发一个nullptr异常");
 
 		url.append(Q_SPRINTF("%04d%02d%02d_%02d%02d%02d_%05d",
 			dvrDate->tm_year + 1900,
@@ -2923,7 +2740,7 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const
 		url.append(dvrSuffix[dvrFileList.fileInfo[flag].suffix]);
 		result = true;
 	} while (false);
-	m_dvrClient->closeConnect();
+	m_dvrClient->disconnect();
 	return result;
 }
 
@@ -2935,7 +2752,7 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath)
 bool Dt::Dvr::downloadFile(const QString& url, const QString& dirName, bool isVideo)
 {
 	bool result = false;
-	float networkSpeed = 0.0;
+	float networkSpeed = 0.0f;
 	do
 	{
 		RUN_BREAK(isVideo ? (dirName != m_videoPath) : (dirName != m_photoPath),
@@ -2950,9 +2767,9 @@ bool Dt::Dvr::downloadFile(const QString& url, const QString& dirName, bool isVi
 
 		QString destFile = path + url.mid(url.lastIndexOf("/"));
 
-		DeleteUrlCacheEntry(Q_TO_WC_STR(url));
+		DeleteUrlCacheEntryW(Q_TO_WC_STR(url));
 		size_t startDownloadTime = GetTickCount();
-		HRESULT downloadResult = URLDownloadToFileA(NULL, Q_TO_C_STR(url), Q_TO_C_STR(destFile), NULL, NULL);
+		HRESULT downloadResult = URLDownloadToFileW(NULL, Q_TO_WC_STR(url), Q_TO_WC_STR(destFile), NULL, NULL);
 		float endDownloadTime = (GetTickCount() - startDownloadTime) / 1000.0f;
 
 		if (downloadResult == S_OK)
@@ -3004,19 +2821,25 @@ void Dt::Dvr::setDownloadFileDir(const DvrTypes::FileType& types, const QString&
 
 bool Dt::Dvr::checkRayAxis(const QString& url, const QString& dirName)
 {
+	setCurrentStatus("检测光轴");
 	bool result = true;
 	do
 	{
-		QString localPath = QString("%1/%2/%3/%4").arg(Misc::getCurrentDir(), dirName, Misc::getCurrentDate(), Misc::getFileNameByUrl(url));
-		IplImage* grayImage = cvLoadImage(Q_TO_C_STR(localPath), CV_LOAD_IMAGE_GRAYSCALE);
+		QString localPath = QString("%1/%2/%3/%4").arg(Misc::getCurrentDir(), dirName,
+			Misc::getCurrentDate(), Misc::getFileNameByUrl(url));
+		DEBUG_INFO() << "照片路径 " << localPath << endl;
+
+		Misc::CharSet&& asciiPath = Misc::CharSet(localPath);
+		RUN_BREAK(!(const char*)asciiPath, "localPath字符集转换失败");
+		IplImage* grayImage = cvLoadImage(asciiPath, CV_LOAD_IMAGE_GRAYSCALE);
 		if (!grayImage)
 		{
 			result = false;
-			setLastError(QString("%1 无效的路径").arg(localPath));
+			setLastError(Q_SPRINTF("无效的路径 %s", asciiPath.getData()));
 			break;
 		}
 		grayBuffer_t grayBuffer = { 0 };
-		grayBuffer.buffer = (unsigned char*)grayImage->imageData;
+		grayBuffer.buffer = (uchar*)grayImage->imageData;
 		grayBuffer.height = grayImage->height;
 		grayBuffer.width = grayImage->width;
 
@@ -3033,102 +2856,86 @@ bool Dt::Dvr::checkRayAxis(const QString& url, const QString& dirName)
 		cross_t cross = { 0 };
 		cross = calculateCross(&grayBuffer, &threshold, &axisStandard);
 
+		cvReleaseImage(&grayImage);
 		if (cross.iResult != 0)
 		{
+			DEBUG_INFO() << "计算光轴失败";
 			addListItem("计算光轴失败");
+			break;
 		}
-		cvReleaseImage(&grayImage);
 
 		bool success = false;
 		auto& range = m_defConfig->range;
-		if (cross.x >= range.minRayAxisX && cross.x <= range.maxRayAxisX)
-		{
-			success = true;
-		}
-		else
-		{
-			result = success = false;
-		}
+
+		success = (cross.x >= range.minRayAxisX && cross.x <= range.maxRayAxisX) ? true : result = false;
 		addListItem(Q_SPRINTF("光轴X:%.2f,范围:%.2f~%.2f %s"
 			, cross.x, range.minRayAxisX, range.maxRayAxisX
 			, success ? "OK" : "NG"));
 		WRITE_LOG("%s 光轴X %.2f", OK_NG(success), cross.x);
 
-		if (cross.y >= range.minRayAxisY && cross.y <= range.maxRayAxisY)
-		{
-			success = true;
-		}
-		else
-		{
-			result = success = false;
-		}
+		success = (cross.y >= range.minRayAxisY && cross.y <= range.maxRayAxisY) ? true : result = false;
 		addListItem(Q_SPRINTF("光轴Y:%.2f,范围:%.2f~%.2f %s"
 			, cross.y, range.minRayAxisY, range.maxRayAxisY
 			, success ? "OK" : "NG"));
 		WRITE_LOG("%s 光轴Y %.2f", OK_NG(success), cross.y);
 
-		if (cross.angle >= range.minRayAxisA && cross.angle <= range.maxRayAxisA)
-		{
-			success = true;
-		}
-		else
-		{
-			result = success = false;
-		}
+		success = (cross.angle >= range.minRayAxisA && cross.angle <= range.maxRayAxisA) ? true : result = false;
 		addListItem(Q_SPRINTF("光轴角度:%.2f,范围:%.2f~%.2f %s"
 			, cross.angle, range.minRayAxisA, range.maxRayAxisA
 			, success ? "OK" : "NG"));
 		WRITE_LOG("%s 光轴A %.2f", OK_NG(success), cross.angle);
 	} while (false);
+	addListItem(Q_SPRINTF("检测光轴 %s", OK_NG(result)), false);
 	return result;
 }
 
 bool Dt::Dvr::checkSfr(const QString& url, const QString& dirName)
 {
+	setCurrentStatus("检测解像度");
 	bool result = false;
 	do
 	{
 		QString localPath = QString("%1/%2/%3/%4")
 			.arg(Misc::getCurrentDir(), dirName, Misc::getCurrentDate(), Misc::getFileNameByUrl(url));
-		IplImage* source = cvLoadImage(Q_TO_C_STR(localPath));
-		if (!source)
-		{
-			setLastError("加载图像失败");
-			break;
-		}
+		DEBUG_INFO() << "照片路径 " << localPath << endl;
+
+		Misc::CharSet&& asciiPath = Misc::CharSet(localPath);
+		RUN_BREAK(!(const char*)asciiPath, "localPath字符集转换失败");
+
+		IplImage* source = cvLoadImage(asciiPath);
+		RUN_BREAK(!source, Q_SPRINTF("加载图像%s失败", asciiPath.getData()));
 
 		QString destFile = localPath;
 		destFile.replace(".jpg", ".bmp");
-		cvSaveImage(Q_TO_C_STR(destFile), source);
+		DEBUG_INFO() << "转换照片路径 " << destFile << endl;
+
+		asciiPath.qstringToMultiByte(destFile);
+		RUN_BREAK(!(const char*)asciiPath, "destFile字符集转换失败");
+		cvSaveImage(asciiPath, source);
 		cvReleaseImage(&source);
 
 		float value = 0.0f;
-		if (!m_sfrServer->getSfr(destFile, value))
-		{
-			setLastError(m_sfrServer->getLastError());
-			break;
-		}
+		RUN_BREAK(!m_sfrServer->getSfr(asciiPath, value), m_sfrServer->getLastError());
 
 		auto& range = m_defConfig->range;
 		result = ((value >= range.minSfr) && (value <= range.maxSfr));
 		addListItem(Q_SPRINTF("图像解像度:%.2f,范围:%.2f~%.2f %s"
 			, value, range.minSfr, range.maxSfr, OK_NG(result)));
-		WRITE_LOG("%s 解析度 %.2f", OK_NG(result), value);
+		WRITE_LOG("%s 解像度 %.2f", OK_NG(result), value);
 	} while (false);
+	addListItem(Q_SPRINTF("检测解像度 %s", OK_NG(result)), false);
 	return result;
 }
 
-bool Dt::Dvr::checkRayAxisSfr(const MsgNode& msg, const int& delay, const SendType& st, const int& count,
-	const int& id, const int& req, MsgProc proc)
+bool Dt::Dvr::checkRayAxisSfr(const MsgNode& msg, const int& delay, const int& id, const int& req, MsgProc proc)
 {
-	setCurrentStatus("检测光轴及解析度");
 	bool result = false, success = false;
 	do
 	{
-		addListItem("DVR正在进行拍照,请等待...");
-		m_canSender.AddMsg(msg, delay, st, count);
+		addListItem("正在进行拍照,请等待...");
+		m_canSender.AddMsg(msg, delay);
 		success = autoProcessCanMsg(id, req, proc);
-		m_canSender.DeleteOneMsg(msg.id);
+		m_canSender.DeleteOneMsg(msg);
 
 		addListItem(Q_SPRINTF("DVR拍照 %s", OK_NG(success)));
 		WRITE_LOG("%s 拍照", OK_NG(success));
@@ -3138,123 +2945,152 @@ bool Dt::Dvr::checkRayAxisSfr(const MsgNode& msg, const int& delay, const SendTy
 		QString url;
 		success = getFileUrl(url, DvrTypes::FP_PHO);
 		addListItem("获取照片文件路径:" + success ? url : "无效路径");
-		RUN_BREAK(!success, "获取照片文件路径失败");
+		RUN_BREAK(!success, "获取照片文件路径失败,\n" + getLastError());
 
 		addListItem("下载DVR照片,请耐心等待...");
 		success = downloadFile(url, "PHODownload", false);
 		addListItem(Q_SPRINTF("下载DVR照片 %s", OK_NG(success)));
-		RUN_BREAK(!success, "下载DVR照片失败");
+		RUN_BREAK(!success, "下载DVR照片失败,\n" + getLastError());
 
 		addListItem("检测光轴");
 		success = checkRayAxis(url, "PHODownload");
 		addListItem(Q_SPRINTF("检测光轴 %s", OK_NG(success)));
-		RUN_BREAK(!success, "检测光轴失败");
+		RUN_BREAK(!success, "检测光轴失败,\n" + getLastError());
 
 		addListItem("检测解像度");
 		success = checkSfr(url, "PHODownload");
 		addListItem(Q_SPRINTF("检测解像度 %s", OK_NG(success)));
-		RUN_BREAK(!success, "检测解像度失败");
-
+		RUN_BREAK(!success, "检测解像度失败,\n" + getLastError());
 		result = true;
 	} while (false);
-	addListItem(Q_SPRINTF("检测光轴及解析度 %s", OK_NG(result)), false);
 	return result;
 }
 
-bool Dt::Dvr::formatSdCard(const DvrTypes::FormatSdCard& flag)
+bool Dt::Dvr::formatSdCard()
 {
 	setCurrentStatus("格式化SD卡");
 	bool result = false;
 	do
 	{
-		if (flag == DvrTypes::FSC_BY_NETWORK)
-		{
-			if (!m_dvrClient->connectServer(Q_TO_C_STR(m_address), m_port))
-			{
-				setLastError("连接服务器失败");
-				break;
-			}
+		char data[BUFF_SIZE] = { 0 };
+		int len = 0;
+		DEBUG_INFO() << "发送暂停循环录制报文";
+		RUN_BREAK(!m_dvrClient->connect(m_address, m_port), m_dvrClient->getLastError());
+		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ 0x00 }, 0x02, 0x00), m_dvrClient->getLastError());
+		RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, DvrTypes::NC_FAST_CONTROL,
+			DvrTypes::NS_FAST_CYCLE_RECORD), m_dvrClient->getLastError());
 
-			/*暂停录制*/
-			/*							0	1	2	 3    4    5    6    7    8*/
-			char pauseData[0x0D] = { 0xee,0xaa,0x03,0x00,0x00,0x00,0x02,0x00,0x00 };
-			size_t crc32 = crc32Algorithm((uchar*)&pauseData[2], 7, 0);
-			pauseData[9] = crc32 & 0xff;
-			pauseData[10] = (crc32 >> 8) & 0xff;
-			pauseData[11] = (crc32 >> 16) & 0xff;
-			pauseData[12] = (crc32 >> 24) & 0xff;
-			if (m_dvrClient->send(pauseData, 0x0D) == -1)
-			{
-				setLastError("发送失败");
-				break;
-			}
-
-			char recvData[BUFF_SIZE] = { 0 };
-			int total = m_dvrClient->recv(recvData, DvrTypes::NC_FAST_CONTROL, DvrTypes::NS_FAST_CYCLE_RECORD);
-			if (total < 0)
-			{
-				setLastError("接收失败");
-				break;
-			}
-
-			writeNetLog("pause_recv.txt", recvData, total);
-
-			int data = -1;
-			memcpy(&data, &recvData[8], sizeof(int));
-
-#ifdef QT_DEBUG
-			qDebug() << "暂停录制返回值:" << data << endl;
-#endif
-			bool success = (data == 0);
-
-			addListItem(Q_SPRINTF("暂停循环录制 %s", OK_NG(success)));
-			RUN_BREAK(!success, "暂停循环录制失败");
-
-			/*							 0    1    2    3    4    5    6    7    8*/
-			char sendData[0x0D] = { 0xee,0xaa,0x03,0x00,0x00,0x00,0x12,0x20,0x00 };
-			crc32 = crc32Algorithm((uchar*)&sendData[2], 7, 0);
-			sendData[9] = crc32 & 0xff;
-			sendData[10] = (crc32 >> 8) & 0xff;
-			sendData[11] = (crc32 >> 16) & 0xff;
-			sendData[12] = (crc32 >> 24) & 0xff;
-			if (m_dvrClient->send(sendData, 0x0D) == -1)
-			{
-				setLastError("发送失败");
-				break;
-			}
-
-			memset(recvData, 0x00, BUFF_SIZE);
-			total = m_dvrClient->recv(recvData, DvrTypes::NC_CONFIG_SET, DvrTypes::NS_FORMAT_SD_CARD);
-			if (total < 0)
-			{
-				setLastError("接收失败" + m_dvrClient->getLastError());
-				break;
-			}
-
-			//writeNetLog("format_recv.txt", recvData, total);
-
-			data = -1;
-			memcpy(&data, &recvData[8], sizeof(int));
-
-
-#ifdef QT_DEBUG
-			qDebug() << "格式化返回值:" << data << endl;
-#endif
-			if (data != 0)
-			{
-				setLastError("格式化SD卡失败");
-				break;
-			}
-		}
+		addListItem(Q_SPRINTF("暂停循环录制 %s", OK_NG(*(uint*)&data[2] == 0)));
+		//writeNetLog("pauseRecord", data, len, *(int*)&data[2] == 0);
+		RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("暂停循环录制失败,操作错误代码:0x%X", *(uint*)&data[2]));
+		msleep(1000);
+		memset(data, 0x00, BUFF_SIZE);
+		DEBUG_INFO() << "发送格式化SD卡报文";
+		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ }, 0x12, 0x20), m_dvrClient->getLastError());
+		RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, 0x12, 0x20), m_dvrClient->getLastError());
+		//writeNetLog("formatSDCard", data, len, *(int*)&data[2] == 0);
+		RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("格式化SD卡失败,操作错误代码:0x%X", *(uint*)&data[2]));
 		result = true;
 	} while (false);
-
-	if (flag == DvrTypes::FSC_BY_NETWORK)
-	{
-		m_dvrClient->closeConnect();
-	}
+	m_dvrClient->disconnect();
 	addListItemEx(Q_SPRINTF("格式化SD卡 %s", OK_NG(result)));
 	WRITE_LOG("%s 格式化SD卡", OK_NG(result));
+	return result;
+}
+
+bool Dt::Dvr::umountSdCard()
+{
+	setCurrentStatus("卸载SD卡");
+	bool result = false;
+	do
+	{
+		msleep(1000);
+		char data[BUFF_SIZE] = { 0 };
+		int len = 0;
+		DEBUG_INFO() << "发送卸载SD卡报文";
+		RUN_BREAK(!m_dvrClient->connect(m_address, m_port), m_dvrClient->getLastError());
+		RUN_BREAK(!m_dvrClient->sendFrameDataEx({}, 0x12, 0x22), m_dvrClient->getLastError());
+		RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, 0x12, 0x22), m_dvrClient->getLastError());
+		RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("卸载SD卡失败,操作错误代码:0x%X", *(uint*)&data[2]));
+		result = true;
+	} while (false);
+	m_dvrClient->disconnect();
+	addListItemEx(Q_SPRINTF("卸载SD卡 %s", OK_NG(result)));
+	WRITE_LOG("%s 卸载SD卡", OK_NG(result));
+	return result;
+}
+
+bool Dt::Dvr::changeWifiPassword()
+{
+	setCurrentStatus("修改WIFI密码");
+	bool result = false, success = false;
+	do
+	{
+		QString oldPassword = m_wifiInfo.password;
+
+		if (!getWifiInfo(true, false))
+		{
+			break;
+		}
+
+		char word[62] =
+		{
+			'0','1','2','3','4','5','6','7','8','9',
+			'q','w','e','r','t','y','u','i','o','p',
+			'a','s','d','f','g','h','j','k','l',
+			'z','x','c','v','b','n','m',
+			'Q','W','E','R','T','Y','U','I','O','P',
+			'A','S','D','F','G','H','J','K','L',
+			'Z','X','C','V','B','N','M'
+		};
+
+		srand((uint)time(NULL));
+		QString newPassword;
+		for (int i = 0; i < 8; i++)
+		{
+			newPassword.append(word[rand() % 62]);
+		}
+
+		DEBUG_INFO() << "发送修改WIFI密码报文";
+		addListItem("开始发送修改WIFI密码报文");
+		char data[256] = { 0 };
+		int len = 0;
+		memcpy(&data[00], m_wifiInfo.account, 8);
+		memcpy(&data[50], Q_TO_C_STR(newPassword), 8);
+		RUN_BREAK(!m_dvrClient->connect(m_address, m_port), m_dvrClient->getLastError());
+		RUN_BREAK(!m_dvrClient->sendFrameDataEx(data, 100, 0x12, 0x05), m_dvrClient->getLastError());
+		memset(data, 0xff, sizeof(data));
+		RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, 0x12, 0x05), m_dvrClient->getLastError());
+		RUN_BREAK(*(uint*)&data[2], "修改WIFI密码失败");
+		addListItem("正在校验WIFI密码,请耐心等待...");
+		size_t&& starTime = GetTickCount();
+		while (true)
+		{
+			if (!getWifiInfo(false, false))
+			{
+				break;
+			}
+
+			DEBUG_INFO_EX("WIFI矩阵新密码: %s", m_wifiInfo.password);
+			if (newPassword == m_wifiInfo.password)
+			{
+				success = true;
+				break;
+			}
+			RUN_BREAK(GetTickCount() - starTime > 20000, "校验WIFI密码超时");
+			msleep(100);
+		}
+
+		addListItem("WIFI矩阵旧密码: " + oldPassword);
+		addListItem("WIFI随机新密码: " + newPassword);
+		addListItem(Q_SPRINTF("WIFI矩阵新密码: %s", m_wifiInfo.password));
+		addListItem(Q_SPRINTF("校验WIFI密码 %s", OK_NG(success)));
+		RUN_BREAK(!success, "校验WIFI密码失败");
+		result = true;
+	} while (false);
+	m_dvrClient->disconnect();
+	WRITE_LOG("%s 修改WIFI密码", OK_NG(result));
+	addListItemEx(Q_SPRINTF("修改WIFI密码 %s", OK_NG(result)));
 	return result;
 }
 
@@ -3269,12 +3105,12 @@ bool Dt::Dvr::writeNetLog(const char* name, const char* data, const size_t& size
 	bool result = false;
 	do 
 	{
-		QString path = QString("./FcLog/NetLog/%1/").arg(Misc::getCurrentDate(true));
+		QString path = QString("./FcLog/NET/%1/").arg(Misc::getCurrentDate(true));
 		Misc::makePath(path);
 
 		QString fileName(name);
 		fileName.insert(0, Misc::getCurrentTime(true));
-		path.append(fileName);
+		path.append(fileName).append(".net");
 
 		QFile file(path);
 		if (!file.open(QFile::WriteOnly))
@@ -3283,15 +3119,15 @@ bool Dt::Dvr::writeNetLog(const char* name, const char* data, const size_t& size
 			break;
 		}
 
-		char buffer[0x10];
+		char buffer[0x10] = { 0 };
 		sprintf(buffer, "%s\n", name);
 		file.write(buffer, strlen(buffer));
 		for (size_t i = 0; i < size; i++)
 		{
 			memset(buffer, 0x00, sizeof(buffer));
-			sprintf(buffer, "0x%2x\t", (uchar)data[i]);
+			sprintf(buffer, "0x%02X\t", (uchar)data[i]);
 			file.write(buffer, strlen(buffer));
-			if ((i % 100 == 0) && i != 0)
+			if ((i % 10 == 0) && i != 0)
 			{
 				file.write("\r\n", strlen("\r\n"));
 			}
@@ -3313,7 +3149,7 @@ void WINAPI Cc::Mv800Proc(const uchar* head, const uchar* bits, LPVOID param)
 			break;
 		}
 
-		if (*static_cast<VideoSteamParam*>(param)->piChannelID != function->m_mv800ChannelId)
+		if (*static_cast<VideoSteamParam*>(param)->piChannelID != function->m_cardConfig.channelId)
 		{
 			break;
 		}
@@ -3331,7 +3167,7 @@ void WINAPI Cc::Mv800Proc(const uchar* head, const uchar* bits, LPVOID param)
 			/*将镜像视图转为正常视图*/
 			cvFlip(function->m_cvPainting, function->m_cvPainting, 0);
 
-			function->drawRectOnImage();
+			function->drawRectOnImage(function->m_cvPainting);
 
 			if (Misc::cvImageToQtImage(function->m_cvPainting, &image))
 			{
@@ -3354,12 +3190,15 @@ Nt::DvrClient::~DvrClient()
 {
 	if (!m_close)
 	{
-		closesocket(m_socket);
+		if (m_socket != INVALID_SOCKET)
+		{
+			closesocket(m_socket);
+		}
 		WSACleanup();
 	}
 }
 
-bool Nt::DvrClient::connectServer(const char* ipAddr, const ushort& port, const int& count)
+bool Nt::DvrClient::connect(const QString& ipAddr, const ushort& port, const int& count)
 {
 	bool result = false;
 	do
@@ -3371,38 +3210,27 @@ bool Nt::DvrClient::connectServer(const char* ipAddr, const ushort& port, const 
 		}
 
 		memset(m_ipAddr, 0x00, sizeof(m_ipAddr));
-		strcpy(m_ipAddr, ipAddr);
+		strcpy(m_ipAddr, ipAddr.toStdString().c_str());
 		m_port = port;
 
 		WORD sockVersion = MAKEWORD(2, 2);
 		WSADATA wsaData;
-		if (WSAStartup(sockVersion, &wsaData) != 0)
-		{
-			setLastError("初始化失败");
-			break;
-		}
+		RUN_BREAK(WSAStartup(sockVersion, &wsaData) != 0, Q_SPRINTF("WSAStartup初始化失败,错误代码:%d", WSAGetLastError()));
 
-		m_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-		if (m_socket == -1)
-		{
-			setLastError("套接字初始化失败");
-			break;
-		}
+		m_socket = ::socket(AF_INET, SOCK_STREAM, 0);
+		RUN_BREAK(m_socket == INVALID_SOCKET, Q_SPRINTF("套接字初始化失败,错误代码:%d", WSAGetLastError()));
 
 		int timeout = 3000;
-
 		setsockopt(m_socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
 		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
-
 		memset(&m_sockAddr, 0x00, sizeof(sockaddr_in));
-		m_sockAddr.sin_addr.S_un.S_addr = inet_addr(ipAddr);
+		m_sockAddr.sin_addr.S_un.S_addr = inet_addr(m_ipAddr);
 		m_sockAddr.sin_family = AF_INET;
 		m_sockAddr.sin_port = htons(port);
 
-		timeval tv;
-		fd_set set;
+		timeval tv = { 0 };
+		fd_set set = { 0 };
 		ulong argp = 1;
 		ioctlsocket(m_socket, FIONBIO, &argp);
 		bool success = false;
@@ -3410,8 +3238,9 @@ bool Nt::DvrClient::connectServer(const char* ipAddr, const ushort& port, const 
 		int length = sizeof(int);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (connect(m_socket, (const sockaddr*)&m_sockAddr, sizeof(m_sockAddr)) == -1)
+			if (::connect(m_socket, (const sockaddr*)&m_sockAddr, sizeof(m_sockAddr)) == SOCKET_ERROR)
 			{
+				DEBUG_INFO_EX("连接失败,正在轮询重连,剩余连接次数%d次", count - i - 1);
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 				FD_ZERO(&set);
@@ -3422,6 +3251,7 @@ bool Nt::DvrClient::connectServer(const char* ipAddr, const ushort& port, const 
 					getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (char*)&error, &length);
 					if (error == 0)
 					{
+						DEBUG_INFO_EX("连接成功,剩余连接次数%d次", count - i - 1);
 						success = true;
 						break;
 					}
@@ -3445,32 +3275,39 @@ bool Nt::DvrClient::connectServer(const char* ipAddr, const ushort& port, const 
 		argp = 0;
 		ioctlsocket(m_socket, FIONBIO, &argp);
 
-		if (!success)
-		{
-			setLastError("连接服务器超时");
-			break;
-		}
+		RUN_BREAK(!success, "连接服务器超时");
 		m_init = result = true;
 		m_close = false;
 	} while (false);
 	return result;
 }
 
-int Nt::DvrClient::send(char* buffer, int len)
+void Nt::DvrClient::disconnect()
 {
-	int result = 0, count = 0;
-	count = len;
+	if (m_socket != INVALID_SOCKET)
+	{
+		closesocket(m_socket);
+	}
+	WSACleanup();
+	m_init = false;
+	m_close = true;
+}
 
+int Nt::DvrClient::send(const char* buffer, const int& len)
+{
+	int result = 0, count = len;
 	while (count > 0)
 	{
 		result = ::send(m_socket, buffer, count, 0);
 		if (result == SOCKET_ERROR)
 		{
+			setLastError(Q_SPRINTF("发送失败,套接字错误,错误代码:%d", WSAGetLastError()));
 			return -1;
 		}
 
 		if (result == 0)
 		{
+			setLastError(Q_SPRINTF("发送失败,丢失数据包,错误代码:%d", WSAGetLastError()));
 			return len - count;
 		}
 
@@ -3480,142 +3317,194 @@ int Nt::DvrClient::send(char* buffer, int len)
 	return len;
 }
 
-/*这边的接收处理和文档上数据协议50%不匹配,技术那边的一群混子的自己都搞不懂写的什么垃圾协议,
-此处只能用屏蔽其他垃圾数据包来处理,所以代码逻辑比较乱,水很深,如果你看到了不要去乱改!!!*/
-int Nt::DvrClient::recv(char* buffer, const uchar& reqCmd, const uchar& reqSub)
+bool Nt::DvrClient::sendFrameData(const char* buffer, const int& len, const uchar& cmd, const uchar& sub)
 {
-	/*先接收前8个字节*/
-	char first8[8] = { 0 };
-
-	size_t startTime = GetTickCount();
-
-	/*此while循环用于处理,心跳包*/
-	while (true)
+	uchar data[BUFF_SIZE] = { 0 };
+	data[0] = 0xEE;
+	data[1] = 0xAA;
+	int sendLen = 2 + len;
+	memcpy(&data[2], &sendLen, sizeof(int));
+	data[6] = cmd;
+	data[7] = sub;
+	if (buffer != nullptr && len != 0)
+		memcpy(&data[8], buffer, len);
+	size_t&& crc32 = crc32Algorithm(&data[2], 4 + 2 + len, 0);
+	for (int i = 0; i < 4; i++)
 	{
-		/*判断是否接收失败*/
-		memset(first8, 0x00, sizeof(first8));
-
-		if (::recv(m_socket, first8, sizeof(first8), 0) != sizeof(first8))
-		{
-			setLastError("接收数据失败");
-			return -1;
-		}
-
-		/*包头1,2*/
-		uchar head1 = (uchar)first8[0], head2 = (uchar)first8[1];
-
-		/*判断是否为心跳包*/
-		uchar cmd = (uchar)first8[6], sub = (uchar)first8[7];
-
-#ifdef QT_DEBUG
-		qDebug("head1:%x,head2:%x\n", head1, head2);
-		qDebug("cmd:%x,sub:%x\n", cmd, sub);
-		qDebug("first8:0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n\n\n", (uchar)first8[0], (uchar)first8[1],
-			(uchar)first8[2], (uchar)first8[3], (uchar)first8[4], (uchar)first8[5], (uchar)first8[6], (uchar)first8[7]);
-#endif
-
-		/*判断包头是否正确*/
-		/*这里不可以判断包头,因还有很多垃圾数据要处理,如果判断90%会失败*/
-		//bool right = ((head1 == 0xEE) && (head2 == 0xAA));
-		//if (!right)
-		//{
-		//	setLastError("数据包头错误");
-		//	return -1;
-		//}
-
-		/*如果是期望的cmd与sub,则是想要获取的数据,跳出屏蔽心跳包循环*/
-		bool right = ((cmd == reqCmd) && (sub == reqSub));
-		if (right)
-		{
-			break;
-		}
-		else
-		{
-			/*不知道哪里来的垃圾包头0101,在格式化处会出现,此处屏蔽*/
-			if (head1 == 0x01 && head2 == 0x01)
-			{
-				continue;
-			}
-			char temp[BUFF_SIZE] = { 0 };
-			const char* ptr = temp;
-			int count = 0;
-			memcpy(&count, &first8[2], sizeof(int));
-			count -= 2;
-			count += 4;
-
-#ifdef QT_DEBUG
-			qDebug() << "else count:" << count << endl;
-#endif
-
-			/*此处用来处理心跳包*/
-			int bytes = 0;
-			while (count > 0)
-			{
-				bytes = ::recv(m_socket, temp, count, 0);
-				count -= bytes;
-				ptr += bytes;
-			}
-		}
-
-		if (GetTickCount() - startTime >= 3000)
-		{
-			setLastError("接收超时");
-			return -2;
-		}
+		data[8 + len + i] = (crc32 >> i * 8) & 0xff;
 	}
-
-	/*数据长度*/
-	int dataLength = 0;
-	memcpy(&dataLength, &first8[2], sizeof(int));
-
-	///*排除cmd和sub的2字节*/
-	//dataLength -= 2;
-	
-	/*加上自己本身*/
-	dataLength += 4;
-
-	/*加上crc4个字节长度*/
-	dataLength += 4;
-	
-	/*总字节长度,加上包头EEAA*/
-	int dataTotal = 2 + dataLength;
-
-	/*将前8个字节填充到buffer中*/
-	memcpy(buffer, first8, sizeof(first8));
-
-
-	/*计算协议包除CRC之外长度*/
-
-#ifdef QT_DEBUG
-	qDebug() << "数据长度[包含CRC]:" << dataLength << endl;
-	qDebug() << "总长度:" << dataTotal << endl;
-#endif
-
-	/*因前面处理过了前8个字节,此处需要将指针向后移动8个字节*/
-	buffer += sizeof(first8);
-
-	while (dataLength > 0)
-	{
-		int result = ::recv(m_socket, buffer, dataLength, 0);
-
-		/*如果中间有断开操作*/
-		if (result == SOCKET_ERROR)
-		{
-			return -1;
-		}
-
-		/*接收完毕*/
-		if (result == 0)
-		{
-			break;
-		}
-		buffer += result;
-		dataLength -= result;
-	}
-	return dataTotal;
+	return send((const char*)data, len + 12) == (len + 12);
 }
 
-const char* Nt::DvrClient::getIpAddr()
+bool Nt::DvrClient::sendFrameDataEx(const std::initializer_list<char>& buffer, const uchar& cmd, const uchar& sub)
+{
+	return sendFrameData(buffer.size() ? buffer.begin() : nullptr, buffer.size(), cmd, sub);
+}
+
+bool Nt::DvrClient::sendFrameDataEx(const char* buffer, const int& len, const uchar& cmd, const uchar& sub)
+{
+	return sendFrameData(buffer, len, cmd, sub);
+}
+
+int Nt::DvrClient::recv(char* buffer, const int& len)
+{
+	int total = len;
+	ulong&& startTime = GetTickCount();
+	while (total > 0)
+	{
+		int count = ::recv(m_socket, buffer, 1, 0);
+		if (count == SOCKET_ERROR)
+		{
+			setLastError(Q_SPRINTF("接收失败,套接字错误,错误代码:%d", WSAGetLastError()));
+			return -1;
+		}
+
+		if (count == 0)
+		{
+			setLastError(Q_SPRINTF("接收失败,丢失数据包,错误代码:%d", WSAGetLastError()));
+			return len - total;
+		}
+
+		buffer += count;
+		total -= count;
+
+		if (GetTickCount() - startTime > 6000)
+		{
+			return len - total;
+		}
+	}
+	return len;
+}
+
+bool Nt::DvrClient::recvFrameData(char* buffer, int* const recvLen)
+{
+	bool success = false;
+	uchar data[BUFF_SIZE] = { 0 };
+	char* dataPtr = (char*)data;
+	int tempLen = 0, dataLen = 0;
+	ulong&& startTime = GetTickCount();
+	while (true)
+	{
+		int count = recv(dataPtr, 1);
+		if (count == -1)
+		{
+			break;
+		}
+
+		if (count == 1)
+		{
+			tempLen++;
+			dataPtr++;
+		}
+
+		//校验帧头
+		if (tempLen == 2)
+		{
+			if (data[0] == 0xEE || data[1] == 0xAA)
+			{
+				dataPtr = (char*)&data[2];
+			}
+			else
+			{
+				tempLen = 0;
+				dataPtr = (char*)data;
+			}
+		}
+
+		//获取数据长度
+		if (tempLen == 6)
+		{
+			memcpy(&dataLen, &data[2], 4);
+		}
+
+		//校验CRC
+		if (tempLen == dataLen + 10)
+		{
+			uint crc32Recv = 0, crc32Result = 0;
+			memcpy(&crc32Recv, &data[dataLen + 6], 4);
+			crc32Result = crc32Algorithm((uchar const*)(&data[2]), dataLen + 4, 0);
+			if (crc32Result != crc32Recv)
+			{
+				tempLen = 0;
+				dataPtr = (char*)data;
+			}
+			else
+			{
+				if (*g_debugInfo)
+				{
+					printf("\nReceive Start--------------------\n");
+					for (int i = 0; i < tempLen; i++)
+						printf("%02X ", data[i]);
+					printf("\nReceive End  --------------------\n");
+				}
+
+				if (recvLen)
+				{
+					*recvLen = dataLen;
+				}
+				memcpy(buffer, &data[6], dataLen);
+				success = true;
+				break;
+			}
+		}
+
+		if (GetTickCount() - startTime > 5000)
+		{
+			break;
+		}
+		Sleep(1);
+	}
+	return success;
+}
+
+bool Nt::DvrClient::recvFrameDataEx(char* buffer, int* const len, const uchar& cmd, const uchar& sub)
+{
+	bool result = false, success = false;
+	ulong&& startTime = GetTickCount();
+	do 
+	{
+		while (true)
+		{
+			if (recvFrameData(buffer, len))
+			{
+				if ((uchar)buffer[0] == cmd && (uchar)buffer[1] == sub)
+				{
+					success = true;
+					break;
+				}
+			}
+
+			RUN_BREAK(GetTickCount() - startTime > 10000, Q_SPRINTF("CMD:%02X,SUB:%02X,接收数据超时", cmd, sub));
+		}
+
+		if (!success)
+		{
+			break;
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
+const size_t Nt::DvrClient::crc32Algorithm(uchar const* memoryAddr, const size_t& memoryLen, const size_t& oldCrc32)
+{
+	size_t oldcrc32 = oldCrc32, length = memoryLen, crc32, oldcrc;
+	uchar ccc, t;
+
+	while (length--)
+	{
+		t = (uchar)(oldcrc32 >> 24U) & 0xFFU;
+		oldcrc = DvrTypes::crc32Table[t];
+		ccc = *memoryAddr;
+		oldcrc32 = (oldcrc32 << 8U | ccc);
+		oldcrc32 = oldcrc32 ^ oldcrc;
+		memoryAddr++;
+	}
+	crc32 = oldcrc32;
+	return crc32;
+}
+
+const char* Nt::DvrClient::getAddress()
 {
 	return m_ipAddr;
 }
@@ -3625,19 +3514,10 @@ const ushort& Nt::DvrClient::getPort()
 	return m_port;
 }
 
-void Nt::DvrClient::closeConnect()
-{
-	closesocket(m_socket);
-	WSACleanup();
-	m_init = false;
-	m_close = true;
-}
-
 void Nt::DvrClient::setLastError(const QString& error)
 {
-#ifdef QT_DEBUG
-	qDebug() << error << endl;
-#endif
+	DEBUG_INFO() << error;
+	Misc::writeRunError(error);
 	m_lastError = error;
 }
 
@@ -3647,14 +3527,162 @@ const QString& Nt::DvrClient::getLastError()
 }
 
 /************************************************************************/
+/* Mc::Mil realize                                                      */
+/************************************************************************/
+void Cc::Mil::run()
+{
+	static QImage image;
+	IplImage* currentImage = cvCreateImage(cvSize(m_function->m_cardConfig.width, m_function->m_cardConfig.height), 8, 3);
+	if (!currentImage)
+	{
+		setLastError("currentImage分配内存失败");
+		return;
+	}
+
+	while (!m_quit)
+	{
+		if (m_function->m_connect && m_capture)
+		{
+			MbufGetColor(MilImage, M_PACKED + M_BGR24, M_ALL_BANDS, currentImage->imageData);
+			MbufClear(MilImage, 0);
+
+			if (m_function->m_capture)
+			{
+				memcpy(m_function->m_cvAnalyze->imageData, currentImage->imageData, m_function->m_cardConfig.size);
+				m_function->m_capture = false;
+			}
+
+			m_function->drawRectOnImage(currentImage);
+
+			if (Misc::cvImageToQtImage(currentImage, &image))
+			{
+				m_function->updateImage(image);
+			}
+		}
+		msleep(40);
+	}
+	cvReleaseImage(&currentImage);
+	quit();
+}
+
+void Cc::Mil::setLastError(const QString& error)
+{
+	DEBUG_INFO() << error;
+	Misc::writeRunError(error);
+	m_lastError = error;
+}
+
+Cc::Mil::Mil(QObject* parent)
+{
+	m_function = reinterpret_cast<Dt::Function*>(parent);
+}
+
+Cc::Mil::~Mil()
+{
+	m_quit = true;
+
+	if (isRunning())
+	{
+		wait(5000);
+	}
+	m_function = nullptr;
+}
+
+bool Cc::Mil::open(const QString& name, const int& channel)
+{
+	bool result = false;
+	do
+	{
+		m_quit = false;
+
+		if (channel < 0 || channel > 1)
+		{
+			setLastError(QString("MOR采集卡通道编号为%1,不支持的通道编号").arg(channel));
+			break;
+		}
+
+		if (!MappAlloc(M_DEFAULT, &MilApplication))
+		{
+			setLastError("MappAlloc失败");
+			break;
+		}
+
+		if (!MsysAlloc(M_SYSTEM_MORPHIS, M_DEF_SYSTEM_NUM, M_SETUP, &MilSystem))
+		{
+			setLastError("MsysAlloc失败");
+			break;
+		}
+
+		if (!MdigAllocA(MilSystem, M_DEFAULT, name.toLocal8Bit().data(), M_DEFAULT, &MilDigitizer))
+		{
+			setLastError("MdigAlloc失败");
+			break;
+		}
+
+		MIL_INT miX = MdigInquire(MilDigitizer, M_SIZE_X, M_NULL);
+		MIL_INT miY = MdigInquire(MilDigitizer, M_SIZE_Y, M_NULL);
+		MIL_INT miBand = MdigInquire(MilDigitizer, M_SIZE_BAND, M_NULL);
+		MbufAllocColor(MilSystem, miBand, miX, miY, 8L + M_UNSIGNED, M_IMAGE + M_BASIC_BUFFER_PURPOSE, &MilImage);
+		MdigControl(MilDigitizer, M_GRAB_MODE, M_SYNCHRONOUS);
+		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_ENABLE);
+
+		MdigControl(MilDigitizer, M_GRAB_AUTOMATIC_INPUT_GAIN, M_DISABLE);
+		MdigControl(MilDigitizer, M_GRAB_INPUT_GAIN, 50);
+
+		MappControl(M_ERROR, M_PRINT_DISABLE);
+
+		MbufClear(MilImage, 0);
+
+		if (!MilDigitizer)
+		{
+			setLastError("MilDigitizer失败");
+			break;
+		}
+		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_DISABLE);
+		MdigControl(MilDigitizer, M_CHANNEL, m_channel[channel]);
+		MdigControl(MilDigitizer, M_CAMERA_LOCK, M_ENABLE);
+		MdigGrabContinuous(MilDigitizer, MilImage);
+		result = true;
+	} while (false);
+	return result;
+}
+
+void Cc::Mil::close()
+{
+	m_quit = true;
+	MdigHalt(MilDigitizer);
+	MbufFree(MilImage);
+	MdigFree(MilDigitizer);
+	MsysFree(MilSystem);
+	MappFree(MilApplication);
+}
+
+void Cc::Mil::startCapture()
+{
+	if (!this->isRunning())
+	{
+		this->start();
+	}
+	m_capture = true;
+}
+
+void Cc::Mil::endCapture()
+{
+	m_capture = false;
+}
+
+const QString& Cc::Mil::getLastError()
+{
+	return m_lastError;
+}
+
+/************************************************************************/
 /* Nt::SfrServer realize                                                    */
 /************************************************************************/
-void Nt::SfrServer::setLastError(const QString& err)
+void Nt::SfrServer::setLastError(const QString& error)
 {
-#ifdef QT_DEBUG
-	qDebug() << err << endl;
-#endif
-	m_lastError = err;
+	DEBUG_INFO() << error;
+	m_lastError = error;
 }
 
 Nt::SfrServer::SfrServer()
@@ -3663,22 +3691,25 @@ Nt::SfrServer::SfrServer()
 
 Nt::SfrServer::~SfrServer()
 {
-	m_quit = true;
-	closesocket(m_socket);
-	WSACleanup();
+	closeListen();
 }
 
-static void sfrServerProc(void* arg)
+static void Nt::sfrProcThread(void* arg)
 {
-	Nt::SfrServer* sfrServer = (Nt::SfrServer*)arg;
+	Nt::SfrServer* sfrServer = static_cast<Nt::SfrServer*>(arg);
 	while (!sfrServer->m_quit)
 	{
-		sockaddr_in clientAddr;
+		sockaddr_in clientAddr = { 0 };
 		int addrLen = sizeof(sockaddr_in);
 		SOCKET clientSocket = accept(sfrServer->m_socket, (sockaddr*)&clientAddr, &addrLen);
 		if (clientSocket == -1)
 		{
 			break;
+		}
+		if (sfrServer->m_client != INVALID_SOCKET)
+		{
+			closesocket(sfrServer->m_client);
+			sfrServer->m_client = INVALID_SOCKET;
 		}
 		sfrServer->m_client = clientSocket;
 		Sleep(100);
@@ -3695,15 +3726,15 @@ bool Nt::SfrServer::startListen(const ushort& port)
 		WSADATA wsaData;
 		if (WSAStartup(sockVersion, &wsaData) != 0)
 		{
-			setLastError("WSAStartup初始化失败");
+			setLastError(Q_SPRINTF("WSAStartup初始化失败,错误代码:%d", WSAGetLastError()));
 			break;
 		}
 
 		m_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-		if (m_socket == -1)
+		if (m_socket == INVALID_SOCKET)
 		{
-			setLastError("SOCKET初始化失败");
+			setLastError(Q_SPRINTF("套接字初始化失败,错误代码:%d", WSAGetLastError()));
 			break;
 		}
 
@@ -3717,24 +3748,25 @@ bool Nt::SfrServer::startListen(const ushort& port)
 		m_sockAddr.sin_family = AF_INET;
 		m_sockAddr.sin_port = htons(port);
 
-		if (bind(m_socket, (const sockaddr*)&m_sockAddr, sizeof(SOCKADDR_IN)) == -1)
+		if (bind(m_socket, (const sockaddr*)&m_sockAddr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
 		{
-			setLastError("绑定失败");
+			setLastError(Q_SPRINTF("SFR服务端绑定失败,错误代码:%d", WSAGetLastError()));
 			break;
 		}
 
-		if (listen(m_socket, 128) == -1)
+		if (listen(m_socket, 128) == SOCKET_ERROR)
 		{
-			setLastError("监听失败");
+			setLastError(Q_SPRINTF("SFR服务端监听失败,错误代码:%d", WSAGetLastError()));
 			break;
 		}
-		_beginthread(sfrServerProc, 0, this);
+
+		_beginthread(Nt::sfrProcThread, 0, this);
 		result = true;
 	} while (false);
 	return result;
 }
 
-bool Nt::SfrServer::getSfr(const QString& filePath, float& sfr)
+bool Nt::SfrServer::getSfr(const char* filePath, float& sfr)
 {
 	bool result = false;
 	do
@@ -3742,19 +3774,19 @@ bool Nt::SfrServer::getSfr(const QString& filePath, float& sfr)
 		int sendLen = 208;
 		char sendData[256] = { 0 };
 
-		sprintf(sendData, "$THC001%s", Q_TO_C_STR(filePath));
+		sprintf(sendData, "$THC001%s", filePath);
 		sendData[sendLen - 1] = '$';
-		int count = ::send(m_client, sendData, sendLen, 0);
+		int count = send(sendData, sendLen);
 		if (count != sendLen)
 		{
-			setLastError("发送失败");
 			break;
 		}
 
 		int recvLen = 208;
 		char recvData[256] = { 0 };
-		count = ::recv(m_client, recvData, recvLen, 0);
-		if (count == -1 || recvData[0] != '$')
+		count = recv(recvData, recvLen);
+		//检测SFR的那个软件写的有问题,检测失败会返回SOCKET_ERROR
+		if (count == SOCKET_ERROR || recvData[0] != '$')
 		{
 			sfr = 0.0f;
 		}
@@ -3762,13 +3794,13 @@ bool Nt::SfrServer::getSfr(const QString& filePath, float& sfr)
 		{
 			if (strncmp(recvData, "$HTR000", 7))
 			{
-				setLastError("SFR客户端数据异常");
+				setLastError("SFR客户端数据异常,$HTR000");
 				break;
 			}
 
 			if (sscanf(&recvData[7], "%f", &sfr) != 1)
 			{
-				setLastError("SFR客户端数据异常");
+				setLastError("SFR客户端数据异常,结果值不为1");
 				break;
 			}
 		}
@@ -3777,19 +3809,21 @@ bool Nt::SfrServer::getSfr(const QString& filePath, float& sfr)
 	return result;
 }
 
-int Nt::SfrServer::send(SOCKET socket, char* buffer, int len)
+int Nt::SfrServer::send(const char* buffer, const int& len)
 {
 	int count = len, result = 0;
 	while (count > 0)
 	{
-		result = ::send(socket, buffer, count, 0);
-		if (result == -1)
+		result = ::send(m_client, buffer, count, 0);
+		if (result == SOCKET_ERROR)
 		{
+			setLastError(Q_SPRINTF("发送失败,套接字错误,错误代码:%d", WSAGetLastError()));
 			return -1;
 		}
 
 		if (result == 0)
 		{
+			setLastError(Q_SPRINTF("发送失败,数据包丢失,错误代码:%d", WSAGetLastError()));
 			return len - count;
 		}
 
@@ -3799,19 +3833,21 @@ int Nt::SfrServer::send(SOCKET socket, char* buffer, int len)
 	return len;
 }
 
-int Nt::SfrServer::recv(SOCKET socket, char* buffer, int len)
+int Nt::SfrServer::recv(char* buffer, const int& len)
 {
 	int count = len, result = 0;
 	while (count > 0)
 	{
-		result = ::recv(socket, buffer, count, 0);
-		if (result == -1)
+		result = ::recv(m_client, buffer, count, 0);
+		if (result == SOCKET_ERROR)
 		{
+			setLastError(Q_SPRINTF("接收失败,套接字错误,错误代码:%d", WSAGetLastError()));
 			return -1;
 		}
 
 		if (result == 0)
 		{
+			setLastError(Q_SPRINTF("接收失败,数据包丢失,错误代码:%d", WSAGetLastError()));
 			return len - count;
 		}
 
@@ -3821,9 +3857,21 @@ int Nt::SfrServer::recv(SOCKET socket, char* buffer, int len)
 	return len;
 }
 
-void Nt::SfrServer::closeServer()
+void Nt::SfrServer::closeListen()
 {
 	m_quit = true;
+	if (m_socket != INVALID_SOCKET)
+	{
+		closesocket(m_socket);
+		m_socket = INVALID_SOCKET;
+	}
+	
+	if (m_client != INVALID_SOCKET)
+	{
+		closesocket(m_client);
+		m_client = INVALID_SOCKET;
+	}
+	WSACleanup();
 }
 
 const QString& Nt::SfrServer::getLastError()
@@ -3834,6 +3882,30 @@ const QString& Nt::SfrServer::getLastError()
 /************************************************************************/
 /* Misc realize                                                         */
 /************************************************************************/
+bool Misc::writeRunError(const QString& error)
+{
+	bool result = false;
+	do 
+	{
+		QString path = QString(".\\%1\\RUN\\").arg(Misc::Var::detectionDir);
+		if (!Misc::makePath(path))
+		{
+			break;
+		}
+
+		QFile file(path.append(Misc::getCurrentDate(true)).append(".run"));
+		if (!file.open(QFile::WriteOnly | QFile::Append | QFile::Text))
+		{
+			break;
+		}
+		QTextStream stream(&file);
+		stream << Misc::getCurrentTime() << " " << (g_code.isEmpty() ? "未知" : g_code) << " " << error << endl;
+		file.close();
+		result = true;
+	} while (false);
+	return result;
+}
+
 bool Misc::cvImageToQtImage(IplImage* cv, QImage* qt)
 {
 	bool result = false;
@@ -3982,8 +4054,9 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		{
 			device.modelName.append(Misc::Var::appendName);
 		}
+
 		QString title, newName;
-		title = newName = QString("%1%2检测[%3]").arg(device.modelName, device.detectionName, getAppVersion());
+		title = newName = QString("%1%2检测[%3]").arg(device.modelName, Misc::Var::detectionType, getAppVersion());
 		title = QString("%1[权限:%3]").arg(title, user);
 
 		widget->setWindowTitle(title);
@@ -3997,6 +4070,11 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		result = true;
 	} while (false);
 	return result;
+}
+
+const QString Misc::getDetectionType()
+{
+	return Misc::Var::detectionType;
 }
 
 bool Misc::startApp(const QString& name, const int& show)
@@ -4111,6 +4189,44 @@ const QStringList Misc::getFileListBySuffixName(const QString& path, const QStri
 		}
 	}
 	return dst;
+}
+
+const char* Misc::wideCharToMultiByte(const wchar_t* wide)
+{
+	char* buffer = nullptr;
+	do
+	{
+		int size = WideCharToMultiByte(CP_OEMCP, 0, wide, -1, NULL, 0, NULL, FALSE);
+		if (size <= 0)
+		{
+			break;
+		}
+
+		buffer = NO_THROW_NEW char[size];
+		if (!buffer) break;
+		memset(buffer, 0x00, size);
+		if (WideCharToMultiByte(CP_OEMCP, 0, wide, -1, buffer, size, NULL, FALSE) <= 0)
+		{
+			SAFE_DELETE_A(buffer);
+		}
+	} while (false);
+	return buffer;
+}
+
+const char* Misc::qstringToMultiByte(const QString& str)
+{
+	wchar_t* buffer = nullptr;
+	do
+	{
+		buffer = NO_THROW_NEW wchar_t[str.length() + 1];
+		if (!buffer) break;
+		memset(buffer, 0x00, str.length() + 1);
+		int size = str.toWCharArray(buffer);
+		buffer[size] = '\0';
+	} while (false);
+	const char* result = wideCharToMultiByte(buffer);
+	SAFE_DELETE_A(buffer);
+	return result;
 }
 
 Dt::Tap::Tap(QObject* parent)
@@ -4285,16 +4401,12 @@ void Dt::Tap::screenUartHandler(const QString& port, const QByteArray& bytes)
 		{
 			for (int i = 0; i < 2; i++)
 			{
+				//if (m_dataResult[i].portName == portName)
+				//{
+				//	m_dataResult[i].isValid = true;
+				//}
 			}
 		}
 	} while (false);
 	return;
-}
-
-Dt::Module::Module(QObject* parent)
-{
-}
-
-Dt::Module::~Module()
-{
 }

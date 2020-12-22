@@ -46,6 +46,77 @@ public:
     QPushButton *configDel;
     QPushButton *configSave;
     QPushButton *configExit;
+    QWidget *tab_8;
+    QVBoxLayout *verticalLayout_14;
+    QGridLayout *gridLayout_8;
+    QGroupBox *groupBox_5;
+    QVBoxLayout *verticalLayout_10;
+    QGridLayout *gridLayout_4;
+    QCheckBox *relayIo8;
+    QCheckBox *relayIo0;
+    QCheckBox *relayIo9;
+    QCheckBox *relayIo3;
+    QCheckBox *relayIo1;
+    QCheckBox *relayIo10;
+    QCheckBox *relayIo11;
+    QCheckBox *relayIo12;
+    QCheckBox *relayIo13;
+    QCheckBox *relayIo14;
+    QCheckBox *relayIo15;
+    QCheckBox *relayIo2;
+    QCheckBox *relayIo4;
+    QCheckBox *relayIo5;
+    QCheckBox *relayIo6;
+    QCheckBox *relayIo7;
+    QHBoxLayout *horizontalLayout_5;
+    QLabel *label_15;
+    QComboBox *relayCombo;
+    QPushButton *relayConnect;
+    QSpacerItem *verticalSpacer_4;
+    QGroupBox *groupBox_6;
+    QVBoxLayout *verticalLayout_11;
+    QGridLayout *gridLayout_5;
+    QLabel *label_18;
+    QLabel *label_17;
+    QLineEdit *powerVoltage;
+    QComboBox *powerCombo;
+    QLineEdit *powerCurrent;
+    QLabel *label_16;
+    QHBoxLayout *horizontalLayout_6;
+    QPushButton *powerOn;
+    QPushButton *powerConnect;
+    QGroupBox *groupBox_7;
+    QVBoxLayout *verticalLayout_12;
+    QGridLayout *gridLayout_6;
+    QLabel *label_19;
+    QLineEdit *currentValue;
+    QLabel *label_20;
+    QComboBox *currentCombo;
+    QHBoxLayout *horizontalLayout_7;
+    QPushButton *currentGetValue;
+    QPushButton *currentConnect;
+    QSpacerItem *verticalSpacer_5;
+    QGroupBox *groupBox_8;
+    QVBoxLayout *verticalLayout_13;
+    QGridLayout *gridLayout_7;
+    QLabel *label_21;
+    QLineEdit *voltageValue;
+    QLabel *label_22;
+    QComboBox *voltageCombo;
+    QHBoxLayout *horizontalLayout_8;
+    QPushButton *voltageGetValue;
+    QPushButton *voltageConnect;
+    QSpacerItem *verticalSpacer_6;
+    QSpacerItem *horizontalSpacer_5;
+    QWidget *tab_3;
+    QVBoxLayout *verticalLayout_4;
+    QLabel *label_13;
+    QLabelEx *label;
+    QHBoxLayout *horizontalLayout_4;
+    QPushButton *startCapture;
+    QPushButton *stopCapture;
+    QPushButton *saveCoord;
+    QSpacerItem *horizontalSpacer_4;
     QWidget *tab_2;
     QVBoxLayout *verticalLayout_5;
     QTableWidget *canTable;
@@ -101,15 +172,6 @@ public:
     QCheckBox *checkBox_4;
     QCheckBox *checkBox_5;
     QSpacerItem *verticalSpacer;
-    QWidget *tab_3;
-    QVBoxLayout *verticalLayout_4;
-    QLabel *label_13;
-    QLabelEx *label;
-    QHBoxLayout *horizontalLayout_4;
-    QPushButton *startCapture;
-    QPushButton *stopCapture;
-    QPushButton *saveCoord;
-    QSpacerItem *horizontalSpacer_4;
     QWidget *tab_7;
     QGroupBox *groupBox_4;
     QGridLayout *gridLayout_3;
@@ -124,7 +186,7 @@ public:
     {
         if (SettingDlg->objectName().isEmpty())
             SettingDlg->setObjectName(QStringLiteral("SettingDlg"));
-        SettingDlg->resize(762, 591);
+        SettingDlg->resize(762, 592);
         verticalLayout = new QVBoxLayout(SettingDlg);
         verticalLayout->setSpacing(6);
         verticalLayout->setContentsMargins(11, 11, 11, 11);
@@ -192,6 +254,388 @@ public:
         verticalLayout_2->addLayout(horizontalLayout);
 
         tabWidget->addTab(tab, QString());
+        tab_8 = new QWidget();
+        tab_8->setObjectName(QStringLiteral("tab_8"));
+        verticalLayout_14 = new QVBoxLayout(tab_8);
+        verticalLayout_14->setSpacing(6);
+        verticalLayout_14->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_14->setObjectName(QStringLiteral("verticalLayout_14"));
+        gridLayout_8 = new QGridLayout();
+        gridLayout_8->setSpacing(6);
+        gridLayout_8->setObjectName(QStringLiteral("gridLayout_8"));
+        groupBox_5 = new QGroupBox(tab_8);
+        groupBox_5->setObjectName(QStringLiteral("groupBox_5"));
+        verticalLayout_10 = new QVBoxLayout(groupBox_5);
+        verticalLayout_10->setSpacing(6);
+        verticalLayout_10->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_10->setObjectName(QStringLiteral("verticalLayout_10"));
+        gridLayout_4 = new QGridLayout();
+        gridLayout_4->setSpacing(6);
+        gridLayout_4->setObjectName(QStringLiteral("gridLayout_4"));
+        relayIo8 = new QCheckBox(groupBox_5);
+        relayIo8->setObjectName(QStringLiteral("relayIo8"));
+
+        gridLayout_4->addWidget(relayIo8, 0, 1, 1, 1);
+
+        relayIo0 = new QCheckBox(groupBox_5);
+        relayIo0->setObjectName(QStringLiteral("relayIo0"));
+
+        gridLayout_4->addWidget(relayIo0, 0, 0, 1, 1);
+
+        relayIo9 = new QCheckBox(groupBox_5);
+        relayIo9->setObjectName(QStringLiteral("relayIo9"));
+
+        gridLayout_4->addWidget(relayIo9, 1, 1, 1, 1);
+
+        relayIo3 = new QCheckBox(groupBox_5);
+        relayIo3->setObjectName(QStringLiteral("relayIo3"));
+
+        gridLayout_4->addWidget(relayIo3, 3, 0, 1, 1);
+
+        relayIo1 = new QCheckBox(groupBox_5);
+        relayIo1->setObjectName(QStringLiteral("relayIo1"));
+
+        gridLayout_4->addWidget(relayIo1, 1, 0, 1, 1);
+
+        relayIo10 = new QCheckBox(groupBox_5);
+        relayIo10->setObjectName(QStringLiteral("relayIo10"));
+
+        gridLayout_4->addWidget(relayIo10, 2, 1, 1, 1);
+
+        relayIo11 = new QCheckBox(groupBox_5);
+        relayIo11->setObjectName(QStringLiteral("relayIo11"));
+
+        gridLayout_4->addWidget(relayIo11, 3, 1, 1, 1);
+
+        relayIo12 = new QCheckBox(groupBox_5);
+        relayIo12->setObjectName(QStringLiteral("relayIo12"));
+
+        gridLayout_4->addWidget(relayIo12, 4, 1, 1, 1);
+
+        relayIo13 = new QCheckBox(groupBox_5);
+        relayIo13->setObjectName(QStringLiteral("relayIo13"));
+
+        gridLayout_4->addWidget(relayIo13, 5, 1, 1, 1);
+
+        relayIo14 = new QCheckBox(groupBox_5);
+        relayIo14->setObjectName(QStringLiteral("relayIo14"));
+
+        gridLayout_4->addWidget(relayIo14, 6, 1, 1, 1);
+
+        relayIo15 = new QCheckBox(groupBox_5);
+        relayIo15->setObjectName(QStringLiteral("relayIo15"));
+
+        gridLayout_4->addWidget(relayIo15, 7, 1, 1, 1);
+
+        relayIo2 = new QCheckBox(groupBox_5);
+        relayIo2->setObjectName(QStringLiteral("relayIo2"));
+
+        gridLayout_4->addWidget(relayIo2, 2, 0, 1, 1);
+
+        relayIo4 = new QCheckBox(groupBox_5);
+        relayIo4->setObjectName(QStringLiteral("relayIo4"));
+
+        gridLayout_4->addWidget(relayIo4, 4, 0, 1, 1);
+
+        relayIo5 = new QCheckBox(groupBox_5);
+        relayIo5->setObjectName(QStringLiteral("relayIo5"));
+
+        gridLayout_4->addWidget(relayIo5, 5, 0, 1, 1);
+
+        relayIo6 = new QCheckBox(groupBox_5);
+        relayIo6->setObjectName(QStringLiteral("relayIo6"));
+
+        gridLayout_4->addWidget(relayIo6, 6, 0, 1, 1);
+
+        relayIo7 = new QCheckBox(groupBox_5);
+        relayIo7->setObjectName(QStringLiteral("relayIo7"));
+
+        gridLayout_4->addWidget(relayIo7, 7, 0, 1, 1);
+
+
+        verticalLayout_10->addLayout(gridLayout_4);
+
+        horizontalLayout_5 = new QHBoxLayout();
+        horizontalLayout_5->setSpacing(6);
+        horizontalLayout_5->setObjectName(QStringLiteral("horizontalLayout_5"));
+        label_15 = new QLabel(groupBox_5);
+        label_15->setObjectName(QStringLiteral("label_15"));
+
+        horizontalLayout_5->addWidget(label_15);
+
+        relayCombo = new QComboBox(groupBox_5);
+        relayCombo->setObjectName(QStringLiteral("relayCombo"));
+
+        horizontalLayout_5->addWidget(relayCombo);
+
+        relayConnect = new QPushButton(groupBox_5);
+        relayConnect->setObjectName(QStringLiteral("relayConnect"));
+        QIcon icon5;
+        icon5.addFile(QStringLiteral(":/images/Resources/images/key.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        relayConnect->setIcon(icon5);
+
+        horizontalLayout_5->addWidget(relayConnect);
+
+
+        verticalLayout_10->addLayout(horizontalLayout_5);
+
+        verticalSpacer_4 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_10->addItem(verticalSpacer_4);
+
+
+        gridLayout_8->addWidget(groupBox_5, 1, 0, 2, 1);
+
+        groupBox_6 = new QGroupBox(tab_8);
+        groupBox_6->setObjectName(QStringLiteral("groupBox_6"));
+        verticalLayout_11 = new QVBoxLayout(groupBox_6);
+        verticalLayout_11->setSpacing(6);
+        verticalLayout_11->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_11->setObjectName(QStringLiteral("verticalLayout_11"));
+        gridLayout_5 = new QGridLayout();
+        gridLayout_5->setSpacing(6);
+        gridLayout_5->setObjectName(QStringLiteral("gridLayout_5"));
+        label_18 = new QLabel(groupBox_6);
+        label_18->setObjectName(QStringLiteral("label_18"));
+
+        gridLayout_5->addWidget(label_18, 1, 0, 1, 1);
+
+        label_17 = new QLabel(groupBox_6);
+        label_17->setObjectName(QStringLiteral("label_17"));
+
+        gridLayout_5->addWidget(label_17, 0, 0, 1, 1);
+
+        powerVoltage = new QLineEdit(groupBox_6);
+        powerVoltage->setObjectName(QStringLiteral("powerVoltage"));
+
+        gridLayout_5->addWidget(powerVoltage, 0, 1, 1, 1);
+
+        powerCombo = new QComboBox(groupBox_6);
+        powerCombo->setObjectName(QStringLiteral("powerCombo"));
+
+        gridLayout_5->addWidget(powerCombo, 2, 1, 1, 1);
+
+        powerCurrent = new QLineEdit(groupBox_6);
+        powerCurrent->setObjectName(QStringLiteral("powerCurrent"));
+
+        gridLayout_5->addWidget(powerCurrent, 1, 1, 1, 1);
+
+        label_16 = new QLabel(groupBox_6);
+        label_16->setObjectName(QStringLiteral("label_16"));
+
+        gridLayout_5->addWidget(label_16, 2, 0, 1, 1);
+
+
+        verticalLayout_11->addLayout(gridLayout_5);
+
+        horizontalLayout_6 = new QHBoxLayout();
+        horizontalLayout_6->setSpacing(6);
+        horizontalLayout_6->setObjectName(QStringLiteral("horizontalLayout_6"));
+        powerOn = new QPushButton(groupBox_6);
+        powerOn->setObjectName(QStringLiteral("powerOn"));
+        QIcon icon6;
+        icon6.addFile(QStringLiteral(":/images/Resources/images/dash.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        powerOn->setIcon(icon6);
+
+        horizontalLayout_6->addWidget(powerOn);
+
+        powerConnect = new QPushButton(groupBox_6);
+        powerConnect->setObjectName(QStringLiteral("powerConnect"));
+        powerConnect->setIcon(icon5);
+
+        horizontalLayout_6->addWidget(powerConnect);
+
+
+        verticalLayout_11->addLayout(horizontalLayout_6);
+
+
+        gridLayout_8->addWidget(groupBox_6, 0, 0, 1, 2);
+
+        groupBox_7 = new QGroupBox(tab_8);
+        groupBox_7->setObjectName(QStringLiteral("groupBox_7"));
+        verticalLayout_12 = new QVBoxLayout(groupBox_7);
+        verticalLayout_12->setSpacing(6);
+        verticalLayout_12->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_12->setObjectName(QStringLiteral("verticalLayout_12"));
+        gridLayout_6 = new QGridLayout();
+        gridLayout_6->setSpacing(6);
+        gridLayout_6->setObjectName(QStringLiteral("gridLayout_6"));
+        label_19 = new QLabel(groupBox_7);
+        label_19->setObjectName(QStringLiteral("label_19"));
+
+        gridLayout_6->addWidget(label_19, 0, 0, 1, 1);
+
+        currentValue = new QLineEdit(groupBox_7);
+        currentValue->setObjectName(QStringLiteral("currentValue"));
+        currentValue->setEnabled(false);
+
+        gridLayout_6->addWidget(currentValue, 0, 1, 1, 1);
+
+        label_20 = new QLabel(groupBox_7);
+        label_20->setObjectName(QStringLiteral("label_20"));
+
+        gridLayout_6->addWidget(label_20, 1, 0, 1, 1);
+
+        currentCombo = new QComboBox(groupBox_7);
+        currentCombo->setObjectName(QStringLiteral("currentCombo"));
+
+        gridLayout_6->addWidget(currentCombo, 1, 1, 1, 1);
+
+
+        verticalLayout_12->addLayout(gridLayout_6);
+
+        horizontalLayout_7 = new QHBoxLayout();
+        horizontalLayout_7->setSpacing(6);
+        horizontalLayout_7->setObjectName(QStringLiteral("horizontalLayout_7"));
+        currentGetValue = new QPushButton(groupBox_7);
+        currentGetValue->setObjectName(QStringLiteral("currentGetValue"));
+        QIcon icon7;
+        icon7.addFile(QStringLiteral(":/images/Resources/images/monitor.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        currentGetValue->setIcon(icon7);
+
+        horizontalLayout_7->addWidget(currentGetValue);
+
+        currentConnect = new QPushButton(groupBox_7);
+        currentConnect->setObjectName(QStringLiteral("currentConnect"));
+        currentConnect->setIcon(icon5);
+
+        horizontalLayout_7->addWidget(currentConnect);
+
+
+        verticalLayout_12->addLayout(horizontalLayout_7);
+
+        verticalSpacer_5 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Fixed);
+
+        verticalLayout_12->addItem(verticalSpacer_5);
+
+
+        gridLayout_8->addWidget(groupBox_7, 1, 1, 1, 1);
+
+        groupBox_8 = new QGroupBox(tab_8);
+        groupBox_8->setObjectName(QStringLiteral("groupBox_8"));
+        verticalLayout_13 = new QVBoxLayout(groupBox_8);
+        verticalLayout_13->setSpacing(6);
+        verticalLayout_13->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_13->setObjectName(QStringLiteral("verticalLayout_13"));
+        gridLayout_7 = new QGridLayout();
+        gridLayout_7->setSpacing(6);
+        gridLayout_7->setObjectName(QStringLiteral("gridLayout_7"));
+        label_21 = new QLabel(groupBox_8);
+        label_21->setObjectName(QStringLiteral("label_21"));
+
+        gridLayout_7->addWidget(label_21, 0, 0, 1, 1);
+
+        voltageValue = new QLineEdit(groupBox_8);
+        voltageValue->setObjectName(QStringLiteral("voltageValue"));
+        voltageValue->setEnabled(false);
+
+        gridLayout_7->addWidget(voltageValue, 0, 1, 1, 1);
+
+        label_22 = new QLabel(groupBox_8);
+        label_22->setObjectName(QStringLiteral("label_22"));
+
+        gridLayout_7->addWidget(label_22, 1, 0, 1, 1);
+
+        voltageCombo = new QComboBox(groupBox_8);
+        voltageCombo->setObjectName(QStringLiteral("voltageCombo"));
+
+        gridLayout_7->addWidget(voltageCombo, 1, 1, 1, 1);
+
+
+        verticalLayout_13->addLayout(gridLayout_7);
+
+        horizontalLayout_8 = new QHBoxLayout();
+        horizontalLayout_8->setSpacing(6);
+        horizontalLayout_8->setObjectName(QStringLiteral("horizontalLayout_8"));
+        voltageGetValue = new QPushButton(groupBox_8);
+        voltageGetValue->setObjectName(QStringLiteral("voltageGetValue"));
+        voltageGetValue->setIcon(icon7);
+
+        horizontalLayout_8->addWidget(voltageGetValue);
+
+        voltageConnect = new QPushButton(groupBox_8);
+        voltageConnect->setObjectName(QStringLiteral("voltageConnect"));
+        voltageConnect->setIcon(icon5);
+
+        horizontalLayout_8->addWidget(voltageConnect);
+
+
+        verticalLayout_13->addLayout(horizontalLayout_8);
+
+        verticalSpacer_6 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Fixed);
+
+        verticalLayout_13->addItem(verticalSpacer_6);
+
+
+        gridLayout_8->addWidget(groupBox_8, 2, 1, 1, 1);
+
+        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        gridLayout_8->addItem(horizontalSpacer_5, 1, 2, 1, 1);
+
+
+        verticalLayout_14->addLayout(gridLayout_8);
+
+        tabWidget->addTab(tab_8, QString());
+        tab_3 = new QWidget();
+        tab_3->setObjectName(QStringLiteral("tab_3"));
+        verticalLayout_4 = new QVBoxLayout(tab_3);
+        verticalLayout_4->setSpacing(6);
+        verticalLayout_4->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_4->setObjectName(QStringLiteral("verticalLayout_4"));
+        label_13 = new QLabel(tab_3);
+        label_13->setObjectName(QStringLiteral("label_13"));
+        label_13->setStyleSheet(QStringLiteral("color: rgb(255, 0, 255);"));
+
+        verticalLayout_4->addWidget(label_13);
+
+        label = new QLabelEx(tab_3);
+        label->setObjectName(QStringLiteral("label"));
+        QSizePolicy sizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(label->sizePolicy().hasHeightForWidth());
+        label->setSizePolicy(sizePolicy);
+        label->setMinimumSize(QSize(720, 480));
+        label->setStyleSheet(QStringLiteral("background-color: rgb(0, 0, 0);"));
+
+        verticalLayout_4->addWidget(label);
+
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setSpacing(6);
+        horizontalLayout_4->setObjectName(QStringLiteral("horizontalLayout_4"));
+        startCapture = new QPushButton(tab_3);
+        startCapture->setObjectName(QStringLiteral("startCapture"));
+        QIcon icon8;
+        icon8.addFile(QStringLiteral(":/images/Resources/images/connect.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        startCapture->setIcon(icon8);
+
+        horizontalLayout_4->addWidget(startCapture);
+
+        stopCapture = new QPushButton(tab_3);
+        stopCapture->setObjectName(QStringLiteral("stopCapture"));
+        QIcon icon9;
+        icon9.addFile(QStringLiteral(":/images/Resources/images/exit.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        stopCapture->setIcon(icon9);
+
+        horizontalLayout_4->addWidget(stopCapture);
+
+        saveCoord = new QPushButton(tab_3);
+        saveCoord->setObjectName(QStringLiteral("saveCoord"));
+        QIcon icon10;
+        icon10.addFile(QStringLiteral(":/images/Resources/images/setting.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        saveCoord->setIcon(icon10);
+
+        horizontalLayout_4->addWidget(saveCoord);
+
+        horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_4->addItem(horizontalSpacer_4);
+
+
+        verticalLayout_4->addLayout(horizontalLayout_4);
+
+        tabWidget->addTab(tab_3, QString());
         tab_2 = new QWidget();
         tab_2->setObjectName(QStringLiteral("tab_2"));
         verticalLayout_5 = new QVBoxLayout(tab_2);
@@ -232,11 +676,11 @@ public:
         verticalLayout_3->setObjectName(QStringLiteral("verticalLayout_3"));
         groupBox = new QGroupBox(tab_4);
         groupBox->setObjectName(QStringLiteral("groupBox"));
-        QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-        sizePolicy.setHorizontalStretch(0);
-        sizePolicy.setVerticalStretch(0);
-        sizePolicy.setHeightForWidth(groupBox->sizePolicy().hasHeightForWidth());
-        groupBox->setSizePolicy(sizePolicy);
+        QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(groupBox->sizePolicy().hasHeightForWidth());
+        groupBox->setSizePolicy(sizePolicy1);
         groupBox->setAutoFillBackground(false);
         groupBox->setFlat(false);
         groupBox->setCheckable(false);
@@ -246,11 +690,11 @@ public:
         gridLayout->setObjectName(QStringLiteral("gridLayout"));
         label_2 = new QLabel(groupBox);
         label_2->setObjectName(QStringLiteral("label_2"));
-        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Preferred);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(label_2->sizePolicy().hasHeightForWidth());
-        label_2->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy2(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(label_2->sizePolicy().hasHeightForWidth());
+        label_2->setSizePolicy(sizePolicy2);
 
         gridLayout->addWidget(label_2, 0, 0, 1, 1);
 
@@ -335,9 +779,9 @@ public:
 
         canStartup = new QPushButton(groupBox);
         canStartup->setObjectName(QStringLiteral("canStartup"));
-        QIcon icon5;
-        icon5.addFile(QStringLiteral(":/images/Resources/images/bird.ico"), QSize(), QIcon::Normal, QIcon::Off);
-        canStartup->setIcon(icon5);
+        QIcon icon11;
+        icon11.addFile(QStringLiteral(":/images/Resources/images/bird.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        canStartup->setIcon(icon11);
 
         gridLayout->addWidget(canStartup, 2, 7, 1, 1);
 
@@ -371,11 +815,11 @@ public:
         QTableWidgetItem *__qtablewidgetitem12 = new QTableWidgetItem();
         tableWidget->setHorizontalHeaderItem(4, __qtablewidgetitem12);
         tableWidget->setObjectName(QStringLiteral("tableWidget"));
-        QSizePolicy sizePolicy2(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        sizePolicy2.setHorizontalStretch(100);
-        sizePolicy2.setVerticalStretch(0);
-        sizePolicy2.setHeightForWidth(tableWidget->sizePolicy().hasHeightForWidth());
-        tableWidget->setSizePolicy(sizePolicy2);
+        QSizePolicy sizePolicy3(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        sizePolicy3.setHorizontalStretch(100);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(tableWidget->sizePolicy().hasHeightForWidth());
+        tableWidget->setSizePolicy(sizePolicy3);
 
         horizontalLayout_3->addWidget(tableWidget);
 
@@ -505,56 +949,6 @@ public:
         verticalLayout_5->addWidget(tabWidget_2);
 
         tabWidget->addTab(tab_2, QString());
-        tab_3 = new QWidget();
-        tab_3->setObjectName(QStringLiteral("tab_3"));
-        verticalLayout_4 = new QVBoxLayout(tab_3);
-        verticalLayout_4->setSpacing(6);
-        verticalLayout_4->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_4->setObjectName(QStringLiteral("verticalLayout_4"));
-        label_13 = new QLabel(tab_3);
-        label_13->setObjectName(QStringLiteral("label_13"));
-        label_13->setStyleSheet(QStringLiteral("color: rgb(255, 0, 255);"));
-
-        verticalLayout_4->addWidget(label_13);
-
-        label = new QLabelEx(tab_3);
-        label->setObjectName(QStringLiteral("label"));
-        QSizePolicy sizePolicy3(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        sizePolicy3.setHorizontalStretch(0);
-        sizePolicy3.setVerticalStretch(0);
-        sizePolicy3.setHeightForWidth(label->sizePolicy().hasHeightForWidth());
-        label->setSizePolicy(sizePolicy3);
-        label->setMinimumSize(QSize(720, 480));
-        label->setStyleSheet(QStringLiteral("background-color: rgb(0, 0, 0);"));
-
-        verticalLayout_4->addWidget(label);
-
-        horizontalLayout_4 = new QHBoxLayout();
-        horizontalLayout_4->setSpacing(6);
-        horizontalLayout_4->setObjectName(QStringLiteral("horizontalLayout_4"));
-        startCapture = new QPushButton(tab_3);
-        startCapture->setObjectName(QStringLiteral("startCapture"));
-
-        horizontalLayout_4->addWidget(startCapture);
-
-        stopCapture = new QPushButton(tab_3);
-        stopCapture->setObjectName(QStringLiteral("stopCapture"));
-
-        horizontalLayout_4->addWidget(stopCapture);
-
-        saveCoord = new QPushButton(tab_3);
-        saveCoord->setObjectName(QStringLiteral("saveCoord"));
-
-        horizontalLayout_4->addWidget(saveCoord);
-
-        horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout_4->addItem(horizontalSpacer_4);
-
-
-        verticalLayout_4->addLayout(horizontalLayout_4);
-
-        tabWidget->addTab(tab_3, QString());
         tab_7 = new QWidget();
         tab_7->setObjectName(QStringLiteral("tab_7"));
         groupBox_4 = new QGroupBox(tab_7);
@@ -617,6 +1011,48 @@ public:
         configSave->setText(QApplication::translate("SettingDlg", "\344\277\235\345\255\230\346\225\260\346\215\256", 0));
         configExit->setText(QApplication::translate("SettingDlg", "\351\200\200\345\207\272", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab), QApplication::translate("SettingDlg", "\351\205\215\347\275\256", 0));
+        groupBox_5->setTitle(QApplication::translate("SettingDlg", "\347\273\247\347\224\265\345\231\250", 0));
+        relayIo8->setText(QApplication::translate("SettingDlg", "8", 0));
+        relayIo0->setText(QApplication::translate("SettingDlg", "0", 0));
+        relayIo9->setText(QApplication::translate("SettingDlg", "9", 0));
+        relayIo3->setText(QApplication::translate("SettingDlg", "3", 0));
+        relayIo1->setText(QApplication::translate("SettingDlg", "1", 0));
+        relayIo10->setText(QApplication::translate("SettingDlg", "10", 0));
+        relayIo11->setText(QApplication::translate("SettingDlg", "11", 0));
+        relayIo12->setText(QApplication::translate("SettingDlg", "12", 0));
+        relayIo13->setText(QApplication::translate("SettingDlg", "13", 0));
+        relayIo14->setText(QApplication::translate("SettingDlg", "14", 0));
+        relayIo15->setText(QApplication::translate("SettingDlg", "15", 0));
+        relayIo2->setText(QApplication::translate("SettingDlg", "2", 0));
+        relayIo4->setText(QApplication::translate("SettingDlg", "4", 0));
+        relayIo5->setText(QApplication::translate("SettingDlg", "5", 0));
+        relayIo6->setText(QApplication::translate("SettingDlg", "6", 0));
+        relayIo7->setText(QApplication::translate("SettingDlg", "7", 0));
+        label_15->setText(QApplication::translate("SettingDlg", "\344\270\262\345\217\243\345\217\267:", 0));
+        relayConnect->setText(QApplication::translate("SettingDlg", "\350\277\236\346\216\245", 0));
+        groupBox_6->setTitle(QApplication::translate("SettingDlg", "\347\224\265\346\272\220", 0));
+        label_18->setText(QApplication::translate("SettingDlg", "\347\224\265\346\265\201(A):", 0));
+        label_17->setText(QApplication::translate("SettingDlg", "\347\224\265\345\216\213(V):", 0));
+        label_16->setText(QApplication::translate("SettingDlg", "\344\270\262\345\217\243\345\217\267:", 0));
+        powerOn->setText(QApplication::translate("SettingDlg", "\345\274\200\345\220\257", 0));
+        powerConnect->setText(QApplication::translate("SettingDlg", "\350\277\236\346\216\245", 0));
+        groupBox_7->setTitle(QApplication::translate("SettingDlg", "\347\224\265\346\265\201\350\241\250", 0));
+        label_19->setText(QApplication::translate("SettingDlg", "\347\224\265\346\265\201(\316\274A):", 0));
+        label_20->setText(QApplication::translate("SettingDlg", "\344\270\262\345\217\243\345\217\267:", 0));
+        currentGetValue->setText(QApplication::translate("SettingDlg", "\350\216\267\345\217\226\347\224\265\346\265\201", 0));
+        currentConnect->setText(QApplication::translate("SettingDlg", "\350\277\236\346\216\245", 0));
+        groupBox_8->setTitle(QApplication::translate("SettingDlg", "\347\224\265\345\216\213\350\241\250", 0));
+        label_21->setText(QApplication::translate("SettingDlg", "\347\224\265\345\216\213(V):", 0));
+        label_22->setText(QApplication::translate("SettingDlg", "\344\270\262\345\217\243\345\217\267:", 0));
+        voltageGetValue->setText(QApplication::translate("SettingDlg", "\350\216\267\345\217\226\347\224\265\345\216\213", 0));
+        voltageConnect->setText(QApplication::translate("SettingDlg", "\350\277\236\346\216\245", 0));
+        tabWidget->setTabText(tabWidget->indexOf(tab_8), QApplication::translate("SettingDlg", "\347\241\254\344\273\266", 0));
+        label_13->setText(QApplication::translate("SettingDlg", "\345\217\213\346\203\205\346\217\220\347\244\272:\346\211\200\347\224\273\345\233\276\345\203\217\351\241\272\345\272\217\344\276\235\346\254\241\344\270\272:\345\211\215\345\220\216\345\267\246\345\217\263,\345\246\202\346\236\234\347\224\273\347\232\204\344\270\215\346\273\241\346\204\217,\351\274\240\346\240\207\345\217\263\351\224\256\346\222\244\351\224\200.", 0));
+        label->setText(QString());
+        startCapture->setText(QApplication::translate("SettingDlg", "\345\274\200\345\247\213\346\212\223\345\233\276", 0));
+        stopCapture->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242\346\212\223\345\233\276", 0));
+        saveCoord->setText(QApplication::translate("SettingDlg", "\344\277\235\345\255\230\345\235\220\346\240\207", 0));
+        tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("SettingDlg", "\347\224\273\345\233\276", 0));
         QTableWidgetItem *___qtablewidgetitem = canTable->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("SettingDlg", "\345\272\217\345\217\267", 0));
         QTableWidgetItem *___qtablewidgetitem1 = canTable->horizontalHeaderItem(1);
@@ -684,12 +1120,6 @@ public:
         checkBox_5->setText(QApplication::translate("SettingDlg", "\350\275\254\346\216\245\346\235\277", 0));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_6), QApplication::translate("SettingDlg", "\347\241\254\344\273\266\346\223\215\344\275\234", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_2), QApplication::translate("SettingDlg", "CAN", 0));
-        label_13->setText(QApplication::translate("SettingDlg", "\345\217\213\346\203\205\346\217\220\347\244\272:\346\211\200\347\224\273\345\233\276\345\203\217\351\241\272\345\272\217\344\276\235\346\254\241\344\270\272:\345\211\215\345\220\216\345\267\246\345\217\263,\345\246\202\346\236\234\347\224\273\347\232\204\344\270\215\346\273\241\346\204\217,\351\274\240\346\240\207\345\217\263\351\224\256\346\222\244\351\224\200.", 0));
-        label->setText(QString());
-        startCapture->setText(QApplication::translate("SettingDlg", "\345\274\200\345\247\213\346\212\223\345\233\276", 0));
-        stopCapture->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242\346\212\223\345\233\276", 0));
-        saveCoord->setText(QApplication::translate("SettingDlg", "\344\277\235\345\255\230\345\235\220\346\240\207", 0));
-        tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("SettingDlg", "\347\224\273\345\233\276", 0));
         groupBox_4->setTitle(QApplication::translate("SettingDlg", "\347\211\210\346\234\254\344\277\241\346\201\257", 0));
         label_11->setText(QApplication::translate("SettingDlg", "\346\241\206\346\236\266\347\211\210\346\234\254:", 0));
         frameVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));

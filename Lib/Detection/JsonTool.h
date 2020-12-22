@@ -1,4 +1,5 @@
 #pragma once
+
 /************************************************************************/
 /* 此文件用于管理检测框架配置文件读写修改                               */
 /************************************************************************/
@@ -13,9 +14,9 @@
 #include <memory>
 #include <Common/Types.h>
 
-#define LIBRARY_VER "1.0.0.1"
+#define LIBRARY_VER "1.0.0.4"
 
-#define JSON_FILE_VER "1.0.0.1"
+#define JSON_FILE_VER "1.0.0.5"
 
 #define DCF_FILE_VER "1.0.0.0"
 
@@ -60,9 +61,6 @@ typedef struct DeviceConfig
 	/*采集卡通道号*/
 	QString cardChannelId;
 
-	/*检测名称*/
-	QString detectionName;
-
 	/*条码判断*/
 	QString codeJudge;
 
@@ -83,6 +81,9 @@ typedef struct HardwareConfig
 
 	/*电源电压*/
 	float powerVoltage;
+
+	/*电源电流*/
+	float powerCurrent;
 
 	/*继电器串口号,COM20为20*/
 	int relayPort;
@@ -151,6 +152,15 @@ typedef struct RelayConfig {
 
 	/*音响*/
 	int sound;
+
+	/*信号灯白*/
+	int white;
+
+	/*信号灯红*/
+	int red;
+
+	/*信号灯绿*/
+	int green;
 }relayConfig_t;
 
 /************************************************************************/
@@ -188,9 +198,9 @@ typedef struct RectConfig
 
 #define SMALL_RECT_  4
 
-#define BIG_RECT_ 2
+#define BIG_RECT_ 4
 
-#define IMAGE_CHECK_COUNT  7
+#define IMAGE_CHECK_COUNT  9
 /************************************************************************/
 /* 图像配置结构体定义                                                    */
 /************************************************************************/
@@ -239,6 +249,14 @@ typedef struct RangeConfig
 	/*解像度*/
 	float minSfr;
 	float maxSfr;
+
+	/*最小电流*/
+	float minCurrent0;
+	float minCurrent1;
+
+	/*最大电流*/
+	float maxCurrent0;
+	float maxCurrent1;
 }rangeConfig_t;
 
 typedef struct ThresholdConfig
@@ -270,6 +288,9 @@ struct EnableConfig
 
 	/*运行日志,整个程序运行中的日志*/
 	int saveRunLog;
+
+	/*启用信号灯*/
+	int signalLight;
 };
 
 /*默认配置*/
@@ -561,7 +582,6 @@ private:
 
 	CanMsg m_canMsg[MAX_MSG_COUNT] = { 0 };
 protected:
-	/*电压*/
 	/*设备配置键列表*/
 	QStringList m_deviceConfigKeyList = {
 		"机种名称",
@@ -570,7 +590,6 @@ protected:
 		"采集卡名称",
 		"采集卡通道数",
 		"采集卡通道号",
-		"检测名称",
 		"条码判断",
 		"条码长度"
 	};
@@ -583,7 +602,6 @@ protected:
 		"MV800",
 		"1",
 		"1",
-		"功能",
 		"ABC",
 		"6"
 	};
@@ -593,6 +611,7 @@ protected:
 		"电源串口",//2
 		"电源波特率",//3
 		"电源电压",//4
+		"电源电流",
 		"继电器串口",//6
 		"继电器波特率",//7
 		"电压表串口",//8
@@ -613,7 +632,8 @@ protected:
 	QStringList m_hardwareConfigValueList{
 		"4",//2
 		"19200",//3
-		"12",//4
+		"12.0",//4
+		"1.0",
 		"5",//6
 		"19200",//7
 		"2",//8
@@ -638,7 +658,10 @@ protected:
 		"硬按键",//13
 		"转接板",//14
 		"跑马灯",
-		"音箱"
+		"音箱",
+		"白灯",
+		"红灯",
+		"绿灯"
 	};
 
 	/*继电器IO配置值列表*/
@@ -649,7 +672,10 @@ protected:
 		"3",//13
 		"4",//14
 		"6",
-		"7"
+		"7",
+		"15",
+		"14",
+		"13"
 	};
 
 	/*范围配置键列表*/
@@ -658,16 +684,20 @@ protected:
 		"光轴X坐标",//2
 		"光轴Y坐标",//3
 		"光轴角度",//4
-		"解像度"//5
+		"解像度",//5
+		"最小电流",//6
+		"最大电流"//7
 	};
 
 	/*范围配置值列表*/
 	QStringList m_rangeConfigValueList = {
-		"2.00~5.00",//1
-		"800.0~1100.0",//2
-		"400.0~600.0",//3
-		"5.0~20.0",//4
-		"0.0~1000.0"//5
+		"0.0~9999.0",//1
+		"-9999.0~9999.0",//2
+		"-9999.0~9999.0",//3
+		"-9999.0~9999.0",//4
+		"-9999.0~9999.0",//5
+		"0.0~1000.0",//6
+		"0.0~1000.0"//7
 	};
 
 	/*用户配置键列表*/
@@ -694,11 +724,15 @@ protected:
 		"右小图矩形框",
 		"前大图矩形框",
 		"后大图矩形框",
+		"左大图矩形框",
+		"右大图矩形框",
 		"检测启用状态"
 	};
 
 	/*子图像键列表*/
 	QStringList m_childImageKeyList[IMAGE_CHECK_COUNT] = {
+		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
+		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
 		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
 		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
 		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
@@ -716,7 +750,9 @@ protected:
 		QStringList{"!=黑色",("164"),("78"),("7"),("100"),("120"),("130"),("40"),("180")},
 		QStringList{"!=黑色",("153"),("212"),("81"),("100"),("320"),("80"),("110"),("250")},
 		QStringList{"!=黑色",("113"),("50"),("34"),("100"),("300"),("50"),("110"),("250")},
-		QStringList{"1","0","0","0"}
+		QStringList{"!=黑色",("100"),("108"),("30"),("18"),("96"),("88"),("10"),("25")},
+		QStringList{"!=黑色",("168"),("55"),("66"),("77"),("88"),("100"),("99"),("68")},
+		QStringList{"1","1","1","0"}
 	};
 
 	int m_childImageSubscript = 0;
@@ -741,7 +777,8 @@ protected:
 		"保存CAN日志",//3
 		"忽略失败",//4
 		"输出运行日志",
-		"保存运行日志"//5
+		"保存运行日志",//5
+		"信号灯"
 	};
 
 	/*启用配置值列表*/
@@ -751,6 +788,7 @@ protected:
 		"0",//3
 		"0",//4
 		"0",//5
+		"0",
 		"0"
 	};
 protected:
@@ -845,13 +883,13 @@ public:
 	const QStringList getAllMainKey();
 	
 	/*获取库版本*/
-	const QString getLibrayVersion();
+	static const QString getLibrayVersion();
 
 	/*获取JSON文件版本*/
-	const QString getJsonFileVersion();
+	static const QString getJsonFileVersion();
 
 	/*获取DCF文件版本*/
-	const QString getDCFFileVersion();
+	static const QString getDCFFileVersion();
 
 	/************************************************************************/
 	/*读写配置文件操作                                                      */
@@ -973,13 +1011,17 @@ public:
 	/************************************************************************/
 	/* 用户配置操作                                                         */
 	/************************************************************************/
+	const QStringList& getUserConfigKeyList();
+
+	const QStringList& getUserConfigExplain();
+
 	/*通过键获取用户配置值*/
 	const QString getUserConfigValue(const QString& key);
 
 	/*获取用户配置数量*/
 	const int getUserConfigCount();
 
-	void setUserConfigValue(const QString& key, const QString& value);
+	bool setUserConfigValue(const QString& key, const QString& value);
 	/************************************************************************/
 	/* 范围配置操作                                                         */
 	/************************************************************************/

@@ -196,6 +196,7 @@ void ScanCodeDlg::returnPressedSlot()
 {
 	ui.titleLabel->setText("ÇëÉ¨ÌõÂë");
 #ifdef QT_DEBUG
+	g_code = ui.codeLine->text();
 	this->hide();
 	g_threadWait = false;
 	return;

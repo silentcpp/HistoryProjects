@@ -414,8 +414,8 @@ int Dt::Hardware::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     return _id;
 }
 struct qt_meta_stringdata_Dt__Function_t {
-    QByteArrayData data[6];
-    char stringdata0[66];
+    QByteArrayData data[1];
+    char stringdata0[13];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -424,16 +424,10 @@ struct qt_meta_stringdata_Dt__Function_t {
     )
 static const qt_meta_stringdata_Dt__Function_t qt_meta_stringdata_Dt__Function = {
     {
-QT_MOC_LITERAL(0, 0, 12), // "Dt::Function"
-QT_MOC_LITERAL(1, 13, 19), // "getChannelImageSlot"
-QT_MOC_LITERAL(2, 33, 0), // ""
-QT_MOC_LITERAL(3, 34, 9), // "channelID"
-QT_MOC_LITERAL(4, 44, 15), // "const IplImage*"
-QT_MOC_LITERAL(5, 60, 5) // "image"
+QT_MOC_LITERAL(0, 0, 12) // "Dt::Function"
 
     },
-    "Dt::Function\0getChannelImageSlot\0\0"
-    "channelID\0const IplImage*\0image"
+    "Dt::Function"
 };
 #undef QT_MOC_LITERAL
 
@@ -443,32 +437,22 @@ static const uint qt_meta_data_Dt__Function[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       1,   14, // methods
+       0,    0, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
        0,       // signalCount
 
- // slots: name, argc, parameters, tag, flags
-       1,    2,   19,    2, 0x0a /* Public */,
-
- // slots: parameters
-    QMetaType::Void, QMetaType::Int, 0x80000000 | 4,    3,    5,
-
        0        // eod
 };
 
 void Dt::Function::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
-    if (_c == QMetaObject::InvokeMetaMethod) {
-        Function *_t = static_cast<Function *>(_o);
-        Q_UNUSED(_t)
-        switch (_id) {
-        case 0: _t->getChannelImageSlot((*reinterpret_cast< const int(*)>(_a[1])),(*reinterpret_cast< const IplImage*(*)>(_a[2]))); break;
-        default: ;
-        }
-    }
+    Q_UNUSED(_o);
+    Q_UNUSED(_id);
+    Q_UNUSED(_c);
+    Q_UNUSED(_a);
 }
 
 const QMetaObject Dt::Function::staticMetaObject = {
@@ -495,15 +479,6 @@ int Dt::Function::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     _id = Base::qt_metacall(_c, _id, _a);
     if (_id < 0)
         return _id;
-    if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 1)
-            qt_static_metacall(this, _c, _id, _a);
-        _id -= 1;
-    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 1)
-            *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 1;
-    }
     return _id;
 }
 struct qt_meta_stringdata_Dt__Avm_t {
@@ -710,25 +685,25 @@ int Dt::Tap::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         return _id;
     return _id;
 }
-struct qt_meta_stringdata_Dt__Module_t {
+struct qt_meta_stringdata_Cc__Mil_t {
     QByteArrayData data[1];
-    char stringdata0[11];
+    char stringdata0[8];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    qptrdiff(offsetof(qt_meta_stringdata_Dt__Module_t, stringdata0) + ofs \
+    qptrdiff(offsetof(qt_meta_stringdata_Cc__Mil_t, stringdata0) + ofs \
         - idx * sizeof(QByteArrayData)) \
     )
-static const qt_meta_stringdata_Dt__Module_t qt_meta_stringdata_Dt__Module = {
+static const qt_meta_stringdata_Cc__Mil_t qt_meta_stringdata_Cc__Mil = {
     {
-QT_MOC_LITERAL(0, 0, 10) // "Dt::Module"
+QT_MOC_LITERAL(0, 0, 7) // "Cc::Mil"
 
     },
-    "Dt::Module"
+    "Cc::Mil"
 };
 #undef QT_MOC_LITERAL
 
-static const uint qt_meta_data_Dt__Module[] = {
+static const uint qt_meta_data_Cc__Mil[] = {
 
  // content:
        7,       // revision
@@ -744,7 +719,7 @@ static const uint qt_meta_data_Dt__Module[] = {
        0        // eod
 };
 
-void Dt::Module::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+void Cc::Mil::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     Q_UNUSED(_o);
     Q_UNUSED(_id);
@@ -752,28 +727,28 @@ void Dt::Module::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
     Q_UNUSED(_a);
 }
 
-const QMetaObject Dt::Module::staticMetaObject = {
-    { &Dvr::staticMetaObject, qt_meta_stringdata_Dt__Module.data,
-      qt_meta_data_Dt__Module,  qt_static_metacall, Q_NULLPTR, Q_NULLPTR}
+const QMetaObject Cc::Mil::staticMetaObject = {
+    { &QThread::staticMetaObject, qt_meta_stringdata_Cc__Mil.data,
+      qt_meta_data_Cc__Mil,  qt_static_metacall, Q_NULLPTR, Q_NULLPTR}
 };
 
 
-const QMetaObject *Dt::Module::metaObject() const
+const QMetaObject *Cc::Mil::metaObject() const
 {
     return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
 }
 
-void *Dt::Module::qt_metacast(const char *_clname)
+void *Cc::Mil::qt_metacast(const char *_clname)
 {
     if (!_clname) return Q_NULLPTR;
-    if (!strcmp(_clname, qt_meta_stringdata_Dt__Module.stringdata0))
-        return static_cast<void*>(const_cast< Module*>(this));
-    return Dvr::qt_metacast(_clname);
+    if (!strcmp(_clname, qt_meta_stringdata_Cc__Mil.stringdata0))
+        return static_cast<void*>(const_cast< Mil*>(this));
+    return QThread::qt_metacast(_clname);
 }
 
-int Dt::Module::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+int Cc::Mil::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
-    _id = Dvr::qt_metacall(_c, _id, _a);
+    _id = QThread::qt_metacall(_c, _id, _a);
     if (_id < 0)
         return _id;
     return _id;

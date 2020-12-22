@@ -1,5 +1,6 @@
 #ifndef _H_SIMPLESRMGR_H_
 #define _H_SIMPLESRMGR_H_
+
 #pragma warning(disable:4477)
 /************************************************************************/
 /* Include                                                              */
@@ -19,17 +20,17 @@ static UINT __stdcall SendCanProc(void* pArgs);
 class CanSender
 {
 public:
-	friend static UINT __stdcall SendCanProc(void* pArgs);
+	friend static UINT WINAPI SendCanProc(void* pArgs);
 
 	CanSender();
 
-	CanSender(IConnMgr* pIConnMgr);
+	CanSender(IConnMgr* const pIConnMgr);
 
 	~CanSender();
 
 	bool EnableExternalMsg(bool enable = true);
 
-	bool Init(IConnMgr* pIConnMgr);
+	bool Init(IConnMgr* const pIConnMgr);
 
 	bool GetMsgData(const int& ID, UCHAR* ucData);
 
@@ -39,21 +40,25 @@ public:
 
 	bool AddMsg(const CanMsg& msg);
 
-	bool AddMsg(std::initializer_list<CanMsg> msg);
+	bool AddMsg(const std::initializer_list<CanMsg>& msg);
 
-	bool DeleteMsgs(const int* iIDs, const int& iCount);
+	void DeleteMsgs(const std::initializer_list<MsgNode>& msgs);
 
-	bool DeleteMsgs(std::initializer_list<int> ids);
+	void DeleteMsgs(const std::initializer_list<int>& ids);
 
-	bool DeleteOneMsg(const int& iID);
+	void DeleteOneMsg(const MsgNode& msg);
 
-	bool PauseMsg(const int* iIDs, const int& iCount);
+	void DeleteOneMsg(const int& id);
 
-	bool ProceedMsg(const int* iIDs, const int& iCount);
+	void DeleteAllMsgs();
 
-	bool Start();
+	void PauseMsg(const std::initializer_list<MsgNode>& msg);
 
-	bool Stop();
+	void ProceedMsg(const std::initializer_list<MsgNode>& msg);
+
+	void Start();
+
+	void Stop();
 
 	bool ReceSpecSigs(const int& iID, LPVOID pstSS, fpConfirmMsg fpConMsg, const int& iTime, char* szResult);
 

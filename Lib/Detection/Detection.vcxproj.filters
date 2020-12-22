@@ -100,6 +100,12 @@
     <ClCompile Include="jqcpumonitor.cpp">
       <Filter>Source Files\Manage</Filter>
     </ClCompile>
+    <ClCompile Include="Hardware.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="Function.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CanMatrix.h">
@@ -149,6 +155,12 @@
     <QtMoc Include="jqcpumonitor.h">
       <Filter>Header Files\Manage</Filter>
     </QtMoc>
+    <QtMoc Include="Hardware.h">
+      <Filter>Header Files\Manage</Filter>
+    </QtMoc>
+    <QtMoc Include="Function.h">
+      <Filter>Header Files\Manage</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="SettingDlg.ui">
@@ -174,5 +186,10 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="修改内容.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

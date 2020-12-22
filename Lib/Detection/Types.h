@@ -55,12 +55,6 @@
 */
 
 /************************************************************************/
-/* 硬件 功能[AVM DVR TAP]检测框架										*/
-/* 界面框架		  :Qt													*/
-/* VS_QT插件		  :V2.3.3(此版本不要去更新,如果选择模块,没有确定按钮勾选回车即可)*/
-/************************************************************************/
-
-/************************************************************************/
 /* Include                                                              */
 /************************************************************************/
 #include <QStyleFactory>
@@ -86,6 +80,7 @@
 #include <QProcess>
 
 #include <QTimer>
+
 //#include <QtNetwork/QNetworkAccessManager>
 //
 //#include <QtNetwork/QNetworkRequest>
@@ -110,12 +105,13 @@
 #pragma comment(lib, "CanMgr.lib")
 
 #include <StaticCurrentMgr/StaticCurrentMgr.h>
-#pragma comment(lib,"StaticCurrentMgr.lib")
+#pragma comment(lib, "StaticCurrentMgr.lib")
 
-#include <MilCC/MilCC.h>
-#pragma comment(lib,"MilCC.lib")
 #include <MV800Mgr/MV800Mgr.h>
 #pragma comment(lib, "MV800Mgr.lib")
+
+#include <WifiMgr/WifiMgr.h>
+#pragma comment(lib, "WifiMgr.lib")
 
 #include "QMessageBoxEx.h"
 
@@ -135,11 +131,36 @@
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "version.lib")
-
-#include <vlc/vlc.h>
-#pragma comment(lib, "libvlc.lib")
-#pragma comment(lib, "libvlccore.lib")
 #pragma comment(lib, "urlmon.lib")
+
+#include "../DetectionExt/Lib/OpenCv2.3.1/include/opencv/cv.h"
+#include "../DetectionExt/Lib/OpenCv2.3.1/include/opencv/cxcore.h"
+#include "../DetectionExt/Lib/OpenCv2.3.1/include/opencv/highgui.h"
+#include "../DetectionExt/Lib/OpenCv2.3.1/include/opencv2/imgproc/imgproc_c.h"
+#include "../DetectionExt/Lib/MIL/include/Mil.h"
+
+#pragma comment(lib, "../DetectionExt/Lib/OpenCv2.3.1/lib/opencv_core231.lib")
+#pragma comment(lib, "../DetectionExt/Lib/OpenCv2.3.1/lib/opencv_highgui231.lib")
+#pragma comment(lib, "../DetectionExt/Lib/OpenCv2.3.1/lib/opencv_imgproc231.lib")
+#pragma comment(lib, "../DetectionExt/Lib/MIL/lib/mil.lib")
+
+using namespace cv;
+
+#include "../DetectionExt/Lib/vlc-2.2.4/include/vlc.h"
+#pragma comment(lib, "../DetectionExt/Lib/vlc-2.2.4/lib/libvlc.lib")
+#pragma comment(lib, "../DetectionExt/Lib/vlc-2.2.4/lib/libvlccore.lib")
+
+#include <process.h>
+#include <wincon.h>
+#include <WinInet.h>
+#pragma comment(lib,"wininet.lib")
+
+
+#define CALL_PYTHON_LIB 0
+
+#if CALL_PYTHON_LIB
+#include "../DetectionExt/Lib/Python34/include/Python.h"
+#endif
 
 /************************************************************************/
 /* Define                                                               */
@@ -148,7 +169,7 @@
 
 #define WS_TO_Q_STR(X) QString::fromStdWString(X)
 
-#define WC_TO_Q_STR(X) QString::fromWCharArray(X)
+#define WC_TO_Q_STR QString::fromWCharArray
 
 #define Q_TO_C_STR(X) X.toStdString().c_str()
 
@@ -158,60 +179,196 @@
 
 #define G_TO_C_STR(X) Q_TO_C_STR(G_TO_Q_STR(X))
 
+#define N_TO_Q_STR QString::number
+
+#define SU_FA(X) X ? "成功":"失败"
+
 #define OK_NG(X) X ? "OK" : "NG"
 
-#define Q_SPRINTF(format,...) QString().sprintf(format,__VA_ARGS__)
+#define Q_SPRINTF(format,...) QString().sprintf(format,##__VA_ARGS__)
 
-static ulong count = 0;
-#define OUTPUT_DEBUG_INFO(format,...) \
-if (Dt::Base::getOutputRunLog())\
-qDebug() << QString("%1 %2 %3 %4 %5").arg(QString::number(++count),4,'0').arg(Misc::getCurrentTime(),\
-__FUNCTION__,QString::number(__LINE__),Q_SPRINTF(format,__VA_ARGS__))
+extern int* g_debugInfo;
+
+static ulong __logCount = 0;
+
+#define DEBUG_INFO()\
+if (g_debugInfo && *g_debugInfo)\
+	qDebug().noquote() << QString("%1 %2 %3 %4").arg(QString::number(++__logCount), 4, '0').arg(Misc::getCurrentTime(), \
+	__FUNCTION__, QString::number(__LINE__))
+
+#define DEBUG_INFO_EX(format,...) \
+if (g_debugInfo && *g_debugInfo)\
+	qDebug().noquote() << QString("%1 %2 %3 %4 %5").arg(QString::number(++__logCount), 4, '0').arg(Misc::getCurrentTime(), \
+	__FUNCTION__, QString::number(__LINE__), Q_SPRINTF(format, ##__VA_ARGS__))
 
 #define WRITE_LOG(format,...)\
-Dt::Base::m_logList.push_back(Q_SPRINTF(format,__VA_ARGS__).replace(" ",","))
+m_logList.push_back(Q_SPRINTF(format,##__VA_ARGS__).replace(" ",","))
 
 #define RUN_BREAK(success,error) \
 if ((success))\
 {\
-	Dt::Base::m_lastError = error;\
+	setLastError(error);\
 	break;\
 }
 
-#define CYCLE_OUTPUT(DELAY,FNC)\
-QTimer* timer = new QTimer;\
+#define CYCLE_PROC_FNC(FNC,DELAY)\
+{\
+QTimer* timer = NO_THROW_NEW QTimer;\
+if (timer)\
+{\
 QObject::connect(timer,&QTimer::timeout,FNC);\
-timer->start(DELAY);
+timer->start(DELAY);\
+}\
+}
 
-#define FUNC_NAME(X) #X
+#define GET_FNC_NAME(X) #X
 
 #define BUFF_SIZE 0x1000
 
 #define NO_THROW_NEW new(std::nothrow)
 
-#define GET_DETECTION_DIR(NAME) NAME == "功能" ?"FcLog":"HwLog"
+#define GET_DETECTION_DIR(NAME) ((NAME == BaseTypes::DT_HARDWARE) ? "HwLog" : "FcLog")
+
+#define GET_DETECTION_TYPE(NAME) ((NAME == BaseTypes::DT_HARDWARE) ? "硬件" : "功能")
 
 #define AUTO_RESIZE(X) X->resize(QApplication::desktop()->screenGeometry().width() / 2 + 100,\
 QApplication::desktop()->screenGeometry().height() / 2 + 100)
 
+#define FREQ req
+
+#define FMSG msg
+
+#define MSG_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const MsgNode& FMSG)mutable->bool
+
+#define TEST_PASS []()->bool{ return true; }
+
 typedef const std::function<bool(const int&, const MsgNode&)>& MsgProc;
 
-typedef std::initializer_list<MsgNode>&& MsgList;
+typedef const std::initializer_list<int>& IdList;
 
 typedef const std::initializer_list<int>& ReqList;
 
-/*启动处理回调函数*/
-typedef bool (*LaunchProc)(void*);
+typedef const std::initializer_list<MsgNode>& MsgList;
 
-typedef bool (*LaunchProcEx)(void*, const int&, MsgProc);
+enum TestSequence {
+	TS_SCAN_CODE = 0x1000,
+	TS_PREP_TEST,
+	TS_CHECK_STATIC,
+	TS_CHECK_ROUSE,
+	TS_CHECK_VOLTAGE,
+	TS_CHECK_CURRENT,
+	TS_CHECK_VERSION,
+	TS_WRITE_SN,
+	TS_CHECK_SN,
+	TS_WRITE_DATE,
+	TS_SAVE_LOG,
+	TS_CHECK_VIDEO,
+	TS_CHECK_AVM,
+	TS_TIGGER_AVM,
+	TS_CHECK_DVR,
+	TS_CHECK_FRVIEW,
+	TS_CHECK_LRVIEW,
+	TS_CHECK_ALLVIEW,
+	TS_CLEAR_DTC,
+	TS_CHECK_DTC,
+	TS_FORMAT_CARD,
+	TS_UMOUNT_CARD,
+	TS_CHECK_CARD,
+	TS_POPUP_CARD,
+	TS_CHECK_RECORD,
+	TS_CHECK_RAYAXIS_SFR,
+	TS_CHECK_RAYAXIS,
+	TS_CHECK_SFR,
+	TS_CHECK_PLAYBACK,
+	TS_CHECK_UART,
+	TS_CHECK_KEYVOL,
+	TS_CHECK_LDW,
+	TS_CHANGE_PWD,
+	TS_CHECK_MINCUR,
+	TS_CHECK_MAXCUR,
+	TS_NO
+};
 
-/*请求处理回调函数*/
-typedef bool (*RequestProc)(void*, const int&);
+#define TS_SUCCESS success
 
-typedef bool (*RequestProcEx)(void*, const int&, MsgProc);
+#define GO_SAVE_LOG()\
+success = false;\
+m_testSequence = TS_SAVE_LOG;\
+break
 
-#define TS_SCAN_CODE 0x1024
-#define TS_NO 0x2048
+#define GO_NEXT_TEST(NEXT)\
+success = true;\
+m_testSequence = NEXT;\
+break
+
+template<class T> static void privateCall(const T& arg)
+{
+	(static_cast<const std::function<void()>&>(arg))();
+}
+
+template<class T, class ...args> static void privateCall(const T& fnc, args... arg)
+{
+	privateCall(arg...);
+}
+
+#define ASSERT_PROC_FNC(...) [__VA_ARGS__]()mutable->void
+
+/*
+* @ASSERT_TEST
+* @param1,当前测试内容
+* @param2,当前测试函数
+* @param3,下个测试内容
+* @param4,附加函数,ASSERT_PROC_FNC(){},可选
+*/
+#define ASSERT_TEST(CURR,FNC,NEXT,...)\
+case CURR:\
+{\
+	if (!FNC)\
+	{\
+		if (CURR == TS_SAVE_LOG)\
+		{\
+			setMessageBox("保存日志失败",getLastError());\
+		}\
+		else\
+		{\
+			GO_SAVE_LOG();\
+		}\
+	}\
+	privateCall(ASSERT_PROC_FNC(){},__VA_ARGS__);\
+	GO_NEXT_TEST(NEXT);\
+}
+
+#define TEST_THREAD(FNC)\
+bool success = true;\
+while(!m_quit)\
+{\
+	if (m_connect)\
+	{\
+		switch(m_testSequence)\
+		{\
+			FNC\
+			default:break;\
+		}\
+	}\
+	msleep(100);\
+}
+
+#define TEST_THREAD_EX(FNC)\
+bool success = true;\
+while(!m_quit)\
+{\
+	if (m_connect)\
+	{\
+		switch(m_testSequence)\
+		{\
+			ASSERT_TEST(TS_SCAN_CODE, setScanCodeDlg(), TS_PREP_TEST);\
+			FNC\
+			ASSERT_TEST(TS_SAVE_LOG, saveLog(TS_SUCCESS), TS_SCAN_CODE);\
+			default:break;\
+		}\
+	}\
+	msleep(100);\
+}
 
 namespace BaseTypes {
 	/*检测类型*/
@@ -222,8 +379,6 @@ namespace BaseTypes {
 
 	/*检测日志*/
 	enum DetectionLog { DL_CUR, DL_RES, DL_VOL, DL_VER, DL_DTC, DL_ALL };
-
-	static uchar others[] = {0xf1,0x8c};
 }
 
 namespace HwTypes {
@@ -232,7 +387,7 @@ namespace HwTypes {
 
 namespace FcTypes {
 	/*矩形类型*/
-	enum RectType { RT_FRONT_BIG, RT_REAR_BIG, RT_SMALL, RT_NO };
+	enum RectType { RT_FRONT_BIG, RT_REAR_BIG, RT_LEFT_BIG, RT_RIGHT_BIG, RT_SMALL, RT_NO };
 
 	/*采集卡结构体*/
 	struct CardConfig {
@@ -261,32 +416,77 @@ namespace AvmTypes {
 }
 
 namespace DvrTypes {
+	/*WIFI信息*/
+	struct WIFIInfo {
+		char account[64];
+
+		char password[64];
+
+		char mode[32];
+
+		char auth[32];
+	};
+
+	/*系统状态报文*/
+	enum SysStatusMsg {
+		SSM_BAIC = 0x5A0,
+		SSM_CHJ = 0x514,
+	};
+
+	/*网络类型*/
+	enum NetworkTypes { NT_WIFI, NT_ETHERNET };
+
 	/*DVR系统状态*/
 	enum SystemStatus { SS_INITIALIZING, SS_GENERAL_RECORD, SS_PAUSE_RECORD, SS_HARDWARE_KEY, SS_CRASH_KEY, SS_UPDATE_MODE, SS_ERROR, };
 
-	/*DVR WIFI状态*/
-	enum WifiStatus { WS_CLOSE, WS_INIT, WS_NORMAL, WS_CONNECT, WS_ERROR, };
+	/*WIFI状态*/
+	enum WifiStatus { WS_CLOSE, WS_INIT, WS_NORMAL, WS_CONNECT, WS_ERROR, WS_CONNECTED };
 
-	/*DVR以太网状态*/
+	/*以太网状态*/
 	enum EthernetStatus { ES_CONNECT, ES_ERROR, };
 
-	/*DVR SD卡状态*/
-	enum SdCardStatus { SCS_NORMAL, SCS_NO_SD, SCS_ERROR, SCS_NOT_FORMAT, SCS_INSUFFICIENT, SCS_RESERVED, };
+	/*SD卡状态*/
+	enum SdCardStatus { SCS_NORMAL, SCS_NO_SD, SCS_ERROR, SCS_NOT_FORMAT, SCS_INSUFFICIENT, SCS_SPEED_LOW, SCS_USING, SCS_RESERVED, };
 
-	/*DVR文件路径*/
+	/*文件路径*/
 	enum FilePath { FP_NOR, FP_EVT, FP_PHO, FP_D1, FP_ALL, };
 
-	/*DVR文件类型*/
+	/*文件类型*/
 	enum FileType { FT_PHOTO, FT_VIDEO };
 
-	/*格式化sd卡*/
+	/*格式化SD卡*/
 	enum FormatSdCard { FSC_BY_NETWORK, FSC_BY_CAN, FSC_BY_UDS, };
 
+	/*网络命令1*/
 	enum NetCmd { NC_CONNECT = 0x00, NC_FAST_CONTROL = 0x02,NC_FILE_CTRL = 0x10, NC_CONFIG_SET = 0x12 };
 
+	/*网络命令2*/
 	enum NetSub { NS_HEART = 0x10, NS_FAST_CYCLE_RECORD = 0x00, NS_GET_FILE_LIST = 0x02, NS_FORMAT_SD_CARD = 0x20 };
 
+	/*网络错误*/
+	enum NetErr {
+		NE_OK = 0x00000000U,
+		NE_PARA_CONST,
+		NE_PARA_RANGE,
+		NE_PARA_VALUE = 0x00000004U,
+		NE_OVERTIME = 0x00000008U,
+		NE_BUSY = 0x00000010U,
+		NE_NOT_INIT = 0x00000020U,
+		NE_NOT_SUPPORT = 0x00000040U,
+		NE_BUFF_EMPTY = 0x00000080U,
+		NE_BUFF_FULL = 0x00000100U,
+		NE_HW_PER = 0x00000200U,
+		NE_HW_IC = 0x00000400U,
+		NE_ACCESS = 0x00000800U,
+		NE_CHECK = 0x00001000U,
+		NE_BUS_OFF = 0x00002000U,
+		NE_ABORT = 0x00004000U,
+		NE_OVERFLOW = 0x00008000U,
+		NE_UNKNOW = 0x80000000U,
+	};
+
 	/*加密算法密钥*/
-	static const size_t crc32Table[256] = { };
+	static const size_t crc32Table[256] = { 
+	};
 }
 

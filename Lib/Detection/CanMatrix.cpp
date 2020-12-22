@@ -91,11 +91,11 @@ bool CanMatrix::pack(uchar* buffer, const int& start, const int& length, const i
 
 		try
 		{
-			if (m_matrixType == MatrixType::INTEL_MATRIX)
+			if (m_matrixType == MatrixType::MT_INTEL)
 			{
 
 			}
-			else if (m_matrixType == MatrixType::MOTOROLA_LSB_MATRIX)
+			else if (m_matrixType == MatrixType::MT_MOTOROLA_LSB)
 			{
 				/*	bufPos 4			  */
 				/*  start 39    length 19 */
@@ -151,7 +151,7 @@ bool CanMatrix::pack(uchar* buffer, const int& start, const int& length, const i
 					buffer[bufPos] |= (data & bitSet(length)) << bitPos;
 				}
 			}
-			else if (m_matrixType == MatrixType::MOTOROLA_MSB_MATRIX)
+			else if (m_matrixType == MatrixType::MT_MOTOROLA_MSB)
 			{
 				/*MSB需要倒着计算*/
 				/*	bufPos 1			  */
@@ -232,11 +232,11 @@ bool CanMatrix::unpack(const uchar* buffer, const int& start, const int& length,
 
 		try
 		{
-			if (m_matrixType == MatrixType::INTEL_MATRIX)
+			if (m_matrixType == MatrixType::MT_INTEL)
 			{
 
 			}
-			else if (m_matrixType == MatrixType::MOTOROLA_LSB_MATRIX)
+			else if (m_matrixType == MatrixType::MT_MOTOROLA_LSB)
 			{
 				/*	bufPos 4			  */
 				/*	start 39   7		19*/
@@ -290,7 +290,7 @@ bool CanMatrix::unpack(const uchar* buffer, const int& start, const int& length,
 					data |= (buffer[bufPos] >> bitPos)& bitSet(length);
 				}
 			}
-			else if (m_matrixType == MatrixType::MOTOROLA_MSB_MATRIX)
+			else if (m_matrixType == MatrixType::MT_MOTOROLA_MSB)
 			{
 
 			}

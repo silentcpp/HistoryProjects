@@ -10,24 +10,16 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
-enum class MatrixType {
-	INTEL_MATRIX,
-	MOTOROLA_LSB_MATRIX,
-	MOTOROLA_MSB_MATRIX
+enum MatrixType {
+	MT_INTEL,
+	MT_MOTOROLA_LSB,
+	MT_MOTOROLA_MSB,
 };
 
 class CanMatrix
 {
-private:
-	MatrixType m_matrixType;
-
-	std::string m_lastError = "No Error";
-
-	static const uchar m_canMatrix[8][8];
-protected:
-	void setLastError(const std::string& err);
 public:
-	CanMatrix(const MatrixType& matrixType = MatrixType::MOTOROLA_MSB_MATRIX);
+	CanMatrix(const MatrixType& matrixType = MT_MOTOROLA_MSB);
 
 	~CanMatrix();
 
@@ -44,6 +36,14 @@ public:
 	bool pack(uchar* buffer, const int& start, const int& length, const int& data);
 
 	bool unpack(const uchar* buffer, const int& start, const int& length, uchar& data);
+protected:
+	void setLastError(const std::string& err);
+private:
+	MatrixType m_matrixType;
+
+	std::string m_lastError = "No Error";
+
+	static const uchar m_canMatrix[8][8];
 };
 
 #endif

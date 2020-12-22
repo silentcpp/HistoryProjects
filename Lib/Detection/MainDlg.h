@@ -13,38 +13,17 @@
 #define NEW_MAIN_DLG(THREAD)\
 (NO_THROW_NEW MainDlg(NO_THROW_NEW THREAD))->show()
 
+#define RUN_MAIN_FNC(THREAD)\
+int main(int argc,char* argv[])\
+{\
+QApplication a(argc,argv);\
+NEW_MAIN_DLG(THREAD);\
+return a.exec();\
+}
+
 class MainDlg : public QWidget
 {
 	Q_OBJECT
-private:
-	Ui::MainDlgClass ui;
-
-	Dt::Base* m_base = nullptr;
-
-	/*扫码界面*/
-	ScanCodeDlg* m_scanCodeDlg = nullptr;
-
-	/*解锁界面*/
-	UnlockDlg* m_unlockDlg = nullptr;
-
-	/*认证界面*/
-	AuthDlg* m_authDlg = nullptr;
-
-	/*设置界面*/
-	SettingDlg* m_settingDlg = nullptr;
-
-	/*保存错误*/
-	QString m_lastError = "No Error";
-
-	/*使用率定时器*/
-	QTimer m_usageRateTimer;
-
-protected:
-	/*重写关闭事件*/
-	virtual void closeEvent(QCloseEvent* event);
-
-	/*设置错误*/
-	void setLastError(const QString& err);
 public:
 	/*构造*/
 	MainDlg(Dt::Base* thread, QWidget* parent = nullptr);
@@ -103,4 +82,36 @@ public slots:
 	void coordinateSlot(const QPoint& point);
 
 	void usageRateTimerSlot();
+protected:
+	/*重写关闭事件*/
+	virtual void closeEvent(QCloseEvent* event);
+
+	/*设置错误*/
+	void setLastError(const QString& error);
+private:
+	Ui::MainDlgClass ui;
+
+	Dt::Base* m_base = nullptr;
+
+	/*扫码界面*/
+	ScanCodeDlg* m_scanCodeDlg = nullptr;
+
+	/*解锁界面*/
+	UnlockDlg* m_unlockDlg = nullptr;
+
+	/*认证界面*/
+	AuthDlg* m_authDlg = nullptr;
+
+	/*设置界面*/
+	SettingDlg* m_settingDlg = nullptr;
+
+	/*保存错误*/
+	QString m_lastError = "No Error";
+
+	/*使用率定时器*/
+	QTimer m_usageRateTimer;
+
+	bool m_isExistSettingDlg = false;
+
+	bool m_connected = false;
 };

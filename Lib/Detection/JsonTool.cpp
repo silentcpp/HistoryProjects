@@ -48,6 +48,10 @@ bool JsonTool::parseHardwareConfigData()
 			{
 				m_defConfig.hardware.powerVoltage = getHardwareConfigValue(m_hardwareConfigKeyList.value(i)).toFloat(&convert);
 			}
+			else if (i == 3)
+			{
+				m_defConfig.hardware.powerCurrent = getHardwareConfigValue(m_hardwareConfigKeyList.value(i)).toFloat(&convert);
+			}
 			else
 			{
 				*valuePtr = getHardwareConfigValue(m_hardwareConfigKeyList.value(i)).toInt(&convert);
@@ -132,7 +136,7 @@ bool JsonTool::parseImageConfigData()
 				else
 				{
 					const QString& color = m_defConfig.image.smallRect[i].color = getImageConfigValue(m_parentImageKeyList[i], m_childImageKeyList[i][j]);
-					if ((!color.contains("!=") && !color.contains("==")) || color.length() != 4)
+					if ((!color.contains("!=") && !color.contains("==")))
 					{
 						convert = false;
 						setLastError(QString("%1[%2],语法错误,\n判断语法,!=黑色(不等于黑色),==黑色(等于黑色)").arg(m_parentImageKeyList[i], m_childImageKeyList[i][j]));
@@ -604,7 +608,7 @@ bool JsonTool::parseCanMsgData()
 				break;
 			}
 
-			m_canMsg[i].msg.iDLC = getCanMsgValue(parentKey, "长度").toInt(&convert);
+			m_canMsg[i].msg.dlc = getCanMsgValue(parentKey, "长度").toInt(&convert);
 			if (!convert)
 			{
 				setLastError(parentKey + "[长度]格式错误");
@@ -646,7 +650,7 @@ bool JsonTool::parseCanMsgData()
 			QStringList dataList = getCanMsgValue(getCanMsgKeyList()[i], "数据").split(" ");
 			for (int j = 0; j < dataList.size(); j++)
 			{
-				m_canMsg[i].msg.ucData[j] = dataList[j].toInt(&convert, 16);
+				m_canMsg[i].msg.data[j] = dataList[j].toInt(&convert, 16);
 				if (!convert)
 				{
 					setLastError(parentKey + "[数据]格式错误");
@@ -805,7 +809,7 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 const QStringList JsonTool::getAllMainKey()
 {
 	static QStringList keys = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","图像配置","按键电压配置","电压配置",
-	"电流配置","电阻配置","静态电流配置","版本配置","诊断故障码配置","启用配置" };
+	"电流配置","电阻配置","静态电流配置","版本配置","诊断故障码配置","启用配置","用户配置" };
 	return keys;
 }
 
@@ -1449,9 +1453,8 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getDeviceConfigExplain()
 {
-	static QStringList explain = { "界面标题", "车厂UDS协议", "支持CAN卡[ZLG ADV KVASER PORT]",
-		"支持采集卡[MOR MV800]","最多支持2个通道同时启用,此处大于1,通道号将失效", "支持0~1通道编号,[MV800,AV1是1,AV2是0通道]",
-		"支持检测[硬件 功能]","表示前N位为当前字符串", "整个条码的总长度" };
+	static QStringList explain = { "界面标题", "悬停查看所有", "ZLG ADV KVASER PORT",
+		"MOR MV800","最大支持2通道", "MV800,AV1是1,AV2是0","前N位字符串", "条码总长度" };
 	return explain;
 }
 
@@ -1501,8 +1504,8 @@ bool JsonTool::setHardwareConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getHardwareConfigExplain()
 {
-	static QStringList explain = { "电源串口编号","波特率默认[19200]","系统电压","继电器串口编号","波特率默认[19200]","电压表串口编号",
-			"波特率默认[9600]","静态电流表串口编号","波特率默认[9600]","预留拓展","预留拓展","预留拓展","预留拓展",
+	static QStringList explain = { "串口编号","波特率:19200","单位:伏(V)","单位:安培(A)","串口编号","波特率:19200",
+		"串口编号","波特率:9600","串口编号","波特率:9600","预留拓展","预留拓展","预留拓展","预留拓展",
 	"预留拓展","预留拓展","预留拓展","预留拓展" };
 	return explain;
 }
@@ -1552,8 +1555,20 @@ bool JsonTool::setRelayConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getRelayConfigExplain()
 {
-	static QStringList explain = { "地线","自适应巡航控制电源","用于检测静态电流","用于检测硬按键电压","用于采集全景出画","用于紧急录制",
-			"用于播放音乐" };
+	static QStringList explain = { "地线","自适应巡航控制电源","用于检测静态电流",
+		"用于检测硬按键电压","用于采集全景出画","用于紧急录制",
+		"用于播放音乐","检测中亮","结果NG亮","结果OK亮" };
+	return explain;
+}
+
+const QStringList& JsonTool::getUserConfigKeyList()
+{
+	return m_userConfigKeyList;
+}
+
+const QStringList& JsonTool::getUserConfigExplain()
+{
+	static QStringList explain = {"用户名","密码"};
 	return explain;
 }
 
@@ -1567,12 +1582,20 @@ const int JsonTool::getUserConfigCount()
 	return m_userConfigObj.count();
 }
 
-void JsonTool::setUserConfigValue(const QString& key, const QString& value)
+bool JsonTool::setUserConfigValue(const QString& key, const QString& value)
 {
-	if (m_userConfigObj.contains(key))
+	bool result = false;
+	do 
 	{
+		if (!m_userConfigObj.contains(key))
+		{
+			setLastError(QString("非法的键值[%1]").arg(key));
+			break;
+		}
 		m_userConfigObj[key] = value;
-	}
+		result = true;
+	} while (false);
+	return result;
 }
 
 const QString JsonTool::getRangeConfigValue(const QString& key)
@@ -1635,7 +1658,9 @@ bool JsonTool::setRangeConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getRangeConfigExplain()
 {
-	static QStringList explain = { "单位:MB(兆字节)","单位:MM(毫米)","单位:MM(毫米)","单位:°(度)","单位:PX(像素)" };
+	static QStringList explain = { "单位:MB(兆字节)","单位:MM(毫米)",
+		"单位:MM(毫米)","单位:°(度)","单位:PX(像素)",
+		"单位:A(安培)","单位:A(安培)" };
 	return explain;
 }
 
@@ -1836,7 +1861,9 @@ bool JsonTool::setEnableConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getEnableConfigExplain()
 {
-	static QStringList explain = { "0禁用,1启用","0禁用,1启用", "0禁用,1启用", "0禁用,1启用", "0禁用,1启用" ,"0禁用,1启用" };
+	static QStringList explain = { "0禁用,1启用","0禁用,1启用", "0禁用,1启用",
+		"0禁用,1启用", "0禁用,1启用" ,"0禁用,1启用",
+		"0禁用,1启用" };
 	return explain;
 }
 
@@ -2513,3 +2540,4 @@ QJsonObject& JsonTool::getCanMsgObj()
 {
 	return m_canMsgObj;
 }
+

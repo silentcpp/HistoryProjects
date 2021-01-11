@@ -2,12 +2,12 @@
 
 JsonTool* JsonTool::m_self = nullptr;
 
-void JsonTool::setLastError(const QString& err)
+void JsonTool::setLastError(const QString& error)
 {
 #ifdef QT_DEBUG
-	qDebug() << err << endl;
+	qDebug() << error;
 #endif
-	m_lastError = err;
+	m_lastError = error;
 }
 
 bool JsonTool::parseDeviceConfigData()
@@ -16,7 +16,7 @@ bool JsonTool::parseDeviceConfigData()
 	do
 	{
 		QString* valuePtr = reinterpret_cast<QString*>(&m_defConfig.device);
-		for (size_t i = 0; i < m_deviceConfigKeyList.length(); i++, valuePtr++)
+		for (int i = 0; i < m_deviceConfigKeyList.length(); i++, valuePtr++)
 		{
 			*valuePtr = getDeviceConfigValue(m_deviceConfigKeyList.value(i));
 			if (valuePtr->isEmpty())
@@ -42,7 +42,7 @@ bool JsonTool::parseHardwareConfigData()
 	do
 	{
 		int* valuePtr = reinterpret_cast<int*>(&m_defConfig.hardware);
-		for (size_t i = 0; i < m_hardwareConfigKeyList.length(); i++, valuePtr++)
+		for (int i = 0; i < m_hardwareConfigKeyList.length(); i++, valuePtr++)
 		{
 			if (i == 2)
 			{
@@ -80,7 +80,7 @@ bool JsonTool::parseRelayPortConfigData()
 	do
 	{
 		int* valuePtr = reinterpret_cast<int*>(&m_defConfig.relay);
-		for (size_t i = 0; i < m_relayConfigKeyList.length(); i++, valuePtr++)
+		for (int i = 0; i < m_relayConfigKeyList.length(); i++, valuePtr++)
 		{
 			*valuePtr = getRelayConfigValue(m_relayConfigKeyList.value(i)).toInt(&convert);
 			if (!convert)
@@ -172,7 +172,7 @@ bool JsonTool::parseRangeConfigData()
 	do
 	{
 		float* valuePtr = reinterpret_cast<float*>(&m_defConfig.range);
-		for (size_t i = 0; i < m_rangeConfigKeyList.length(); i++, valuePtr++, valuePtr++)
+		for (int i = 0; i < m_rangeConfigKeyList.length(); i++, valuePtr++, valuePtr++)
 		{
 			if (!parseRangeValue(getRangeConfigValue(m_rangeConfigKeyList.value(i)), *valuePtr, *(valuePtr + 1)))
 			{
@@ -197,7 +197,7 @@ bool JsonTool::parseThresholdConfigData()
 	do
 	{
 		float* valuePtr = reinterpret_cast<float*>(&m_defConfig.threshold);
-		for (size_t i = 0; i < m_thresholdKeyList.length(); i++, valuePtr++)
+		for (int i = 0; i < m_thresholdKeyList.length(); i++, valuePtr++)
 		{
 			*valuePtr = getThresholdConfigValue(m_thresholdKeyList.value(i)).toFloat(&convert);
 			if (!convert)
@@ -260,7 +260,7 @@ bool JsonTool::parseVoltageConfigData()
 
 		memset(voltage, 0x00, sizeof(VoltageConfig));
 
-		for (size_t i = 0; i < getVoltageConfigCount(); i++)
+		for (int i = 0; i < getVoltageConfigCount(); i++)
 		{
 			strcpy(voltage[i].name, Q_TO_C_STR(getParentVoltageConfigKeyList()[i]));
 			voltage[i].high = getVoltageConfigValue(getParentVoltageConfigKeyList()[i], "上限").toFloat(&convert);
@@ -348,7 +348,7 @@ bool JsonTool::parseCurrentConfigData()
 			break;
 		}
 		memset(current, 0x00, sizeof(CurrentConfig));
-		for (size_t i = 0; i < getCurrentConfigCount(); i++)
+		for (int i = 0; i < getCurrentConfigCount(); i++)
 		{
 			strcpy(current[i].name, Q_TO_C_STR(getParentCurrentConfigKeyList()[i]));
 			current[i].high = getCurrentConfigValue(getParentCurrentConfigKeyList()[i], "上限").toFloat(&convert);
@@ -415,7 +415,7 @@ bool JsonTool::parseResConfigData()
 			break;
 		}
 		memset(res, 0x00, sizeof(ResConfig));
-		for (size_t i = 0; i < getResConfigCount(); i++)
+		for (int i = 0; i < getResConfigCount(); i++)
 		{
 			strcpy(m_hwdConfig.res[i].name, Q_TO_C_STR(getParentResConfigKeyList()[i]));
 			m_hwdConfig.res[i].high = getResConfigValue(getParentResConfigKeyList()[i], "上限").toFloat(&convert);
@@ -467,7 +467,7 @@ bool JsonTool::parseVerConfigData()
 		}
 
 		memset(ver, 0x00, sizeof(VersonConfig));
-		for (size_t i = 0; i < getVerConfigCount(); i++)
+		for (int i = 0; i < getVerConfigCount(); i++)
 		{
 			strcpy(ver[i].name, Q_TO_C_STR(getParentVerConfigKeyList()[i]));
 
@@ -484,7 +484,7 @@ bool JsonTool::parseVerConfigData()
 
 			strcpy(ver[i].setup, Q_TO_C_STR(getVerConfigValue(getParentVerConfigKeyList()[i], "值")));
 			strcpy(ver[i].encode, Q_TO_C_STR(getVerConfigValue(getParentVerConfigKeyList()[i], "编码").toUpper()));
-			for (size_t j = 0; j < sizeof(code) / sizeof(char*); j++)
+			for (int j = 0; j < sizeof(code) / sizeof(char*); j++)
 			{
 				if (!strcmp(ver[i].encode, code[j]))
 				{
@@ -525,7 +525,7 @@ bool JsonTool::parseDtcConfigData()
 			break;
 		}
 		memset(dtc, 0x00, sizeof(DtcConfig));
-		for (size_t i = 0; i < getDtcConfigCount(); i++)
+		for (int i = 0; i < getDtcConfigCount(); i++)
 		{
 			strcpy(m_udsConfig.dtc[i].name, Q_TO_C_STR(getParentDtcConfigKeyList()[i]));
 			QString dtc = dtcCategoryConvert(getDtcConfigValue(getParentDtcConfigKeyList()[i], "DTC"));
@@ -619,11 +619,11 @@ bool JsonTool::parseCanMsgData()
 			QString canType = getCanMsgValue(parentKey, "类型");
 			if (canType == "周期")
 			{
-				m_canMsg[i].emST = ST_Period;
+				m_canMsg[i].type = ST_Period;
 			}
 			else if (canType == "事件")
 			{
-				m_canMsg[i].emST = ST_Event;
+				m_canMsg[i].type = ST_Event;
 			}
 			else
 			{
@@ -631,7 +631,7 @@ bool JsonTool::parseCanMsgData()
 				break;
 			}
 
-			m_canMsg[i].iCycle = getCanMsgValue(parentKey, "时间").toInt(&convert);
+			m_canMsg[i].delay = getCanMsgValue(parentKey, "时间").toInt(&convert);
 			if (!convert)
 			{
 				setLastError(parentKey + "[时间]格式错误");
@@ -639,7 +639,7 @@ bool JsonTool::parseCanMsgData()
 				break;
 			}
 
-			m_canMsg[i].iSendCount = getCanMsgValue(parentKey, "次数").toInt(&convert);
+			m_canMsg[i].count = getCanMsgValue(parentKey, "次数").toInt(&convert);
 			if (!convert)
 			{
 				setLastError(parentKey + "[次数]格式错误");
@@ -738,8 +738,8 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 	bool result = false, success = true;
 	do
 	{
-		QString jsonPath = QString("%1/JsonFile_%2").arg(folderName, JSON_FILE_VER);
-		QString dcfPath = QString("%1/DcfFile_%2").arg(folderName, DCF_FILE_VER);
+		QString jsonPath = QString("%1/JsonFile_%2").arg(folderName, JSON_VERSION);
+		QString dcfPath = QString("%1/DcfFile_%2").arg(folderName, DCF_VERSION);
 
 		QStringList pathList = { jsonPath,dcfPath };
 		for (int i = 0; i < pathList.count(); i++)
@@ -813,19 +813,19 @@ const QStringList JsonTool::getAllMainKey()
 	return keys;
 }
 
-const QString JsonTool::getLibrayVersion()
+const QString JsonTool::getLibVersion()
 {
-	return LIBRARY_VER;
+	return LIB_VERSION;
 }
 
-const QString JsonTool::getJsonFileVersion()
+const QString JsonTool::getJsonVersion()
 {
-	return JSON_FILE_VER;
+	return JSON_VERSION;
 }
 
-const QString JsonTool::getDCFFileVersion()
+const QString JsonTool::getDcfVersion()
 {
-	return DCF_FILE_VER;
+	return DCF_VERSION;
 }
 
 bool JsonTool::readDefJsonFile(const QString& name)
@@ -1596,6 +1596,12 @@ bool JsonTool::setUserConfigValue(const QString& key, const QString& value)
 		result = true;
 	} while (false);
 	return result;
+}
+
+bool JsonTool::getUserPrivileges()
+{
+	const QString&& userName = getUserConfigValue("用户名").toUpper();
+	return (userName == "ROOT" || userName == "INVO");
 }
 
 const QString JsonTool::getRangeConfigValue(const QString& key)

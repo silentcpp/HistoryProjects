@@ -7,6 +7,7 @@
 #include "ScanCodeDlg.h"
 #include "UnlockDlg.h"
 #include "AuthDlg.h"
+#include "DownloadDlg.h"
 #include "Detection.h"
 #include "jqcpumonitor.h"
 
@@ -37,13 +38,17 @@ public:
 	/*获取错误*/
 	const QString& getLastError();
 public slots:
-	/*扫码界面槽*/
+	/*扫码对话框槽*/
 	void setScanCodeDlgSlot(bool show);
 
+	/*解锁对话框槽*/
 	void setUnlockDlgSlot(bool show);
 
-	/*flag,0:DetectionThread,需要解阻塞;1.SettingDlg,无需解阻塞*/
-	void setAuthDlgSlot(bool* result, const int& flag);
+	/*认证对话框槽*/
+	void setAuthDlgSlot(bool* result);
+
+	/*设置下载对话框槽*/
+	void setDownloadDlgSlot(BaseTypes::DownloadInfo* info);
 
 	/*设置按钮槽*/
 	void settingButtonSlot();
@@ -60,7 +65,7 @@ public slots:
 	void setMessageBoxExSlot(const QString& title, const QString& text, const QPoint& point);
 
 	/*询问对话框槽*/
-	void setQuestionBoxSlot(const QString& title, const QString& text, bool* result, bool auth);
+	void setQuestionBoxSlot(const QString& title, const QString& text, bool* result);
 
 	void setQuestionBoxExSlot(const QString& title, const QString& text, bool* result, const QPoint& point);
 
@@ -82,6 +87,8 @@ public slots:
 	void coordinateSlot(const QPoint& point);
 
 	void usageRateTimerSlot();
+
+	void updateSfrSlot();
 protected:
 	/*重写关闭事件*/
 	virtual void closeEvent(QCloseEvent* event);
@@ -93,17 +100,20 @@ private:
 
 	Dt::Base* m_base = nullptr;
 
-	/*扫码界面*/
+	/*扫码对话框*/
 	ScanCodeDlg* m_scanCodeDlg = nullptr;
 
-	/*解锁界面*/
+	/*解锁对话框*/
 	UnlockDlg* m_unlockDlg = nullptr;
 
-	/*认证界面*/
+	/*认证对话框*/
 	AuthDlg* m_authDlg = nullptr;
 
-	/*设置界面*/
+	/*设置对话框*/
 	SettingDlg* m_settingDlg = nullptr;
+
+	/*下载对话框*/
+	DownloadDlg* m_downloadDlg = nullptr;
 
 	/*保存错误*/
 	QString m_lastError = "No Error";
@@ -111,7 +121,9 @@ private:
 	/*使用率定时器*/
 	QTimer m_usageRateTimer;
 
+	/*是否存在设置对话框*/
 	bool m_isExistSettingDlg = false;
 
+	/*是否已连接*/
 	bool m_connected = false;
 };

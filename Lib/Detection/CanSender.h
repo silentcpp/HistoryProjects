@@ -14,6 +14,10 @@ typedef bool (*fpConfirmMsg)(LPVOID pstSS, UCHAR* src);
 
 static UINT __stdcall SendCanProc(void* pArgs);
 
+typedef const std::function<void(MsgNode&)>& SendProc;
+
+#define SEND_PROC_FNC(...) [__VA_ARGS__](MsgNode& FMSG)mutable->void
+
 /************************************************************************/
 /* Class define                                                         */
 /************************************************************************/
@@ -36,7 +40,9 @@ public:
 
 	bool SetMsgData(const int& ID, const UCHAR* const ucData);
 
-	bool AddMsg(const MsgNode& msg, const int& iDelay, const SendType& emST = ST_Period, const int& iSendCount = 0);
+	bool AddMsg(const MsgNode& msg, const int& iDelay, const SendType& emST = ST_Period, const int& iSendCount = 0, SendProc sendProc = nullptr);
+
+	bool AddMsg(SendProc sendProc, const int& delay, const SendType& type = ST_Period, const int& count = 0);
 
 	bool AddMsg(const CanMsg& msg);
 
@@ -66,9 +72,9 @@ public:
 protected:
 	void SetLastError(const char* szError);
 private:
-	bool m_bQuit;
+	bool m_bQuit = false;
 
-	bool m_bStart;
+	bool m_bStart = false;
 
 	IConnMgr* m_pIConnMgr = nullptr;
 
@@ -78,7 +84,7 @@ private:
 
 	CanMsg m_msgBackup[MAX_MSG_COUNT] = { 0 };
 
-	HANDLE m_hSend;
+	HANDLE m_hSend = nullptr;
 
 	char m_szLastError[512] = { 0 };
 

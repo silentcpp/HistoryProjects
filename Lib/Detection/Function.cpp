@@ -39,7 +39,7 @@ bool Fnc::BAIC::setOtherAction()
 Fnc::CHJAutoMotive::CHJAutoMotive(QObject* parent)
 {
 	setSysStatusMsg(DvrTypes::SSM_CHJ);
-	setAddressPort("192.168.42.1", 2000);
+	setAddressPort("192.168.42.1", 2000); 
 }
 
 Fnc::CHJAutoMotive::~CHJAutoMotive()
@@ -50,10 +50,20 @@ Fnc::CHJAutoMotive::~CHJAutoMotive()
 bool Fnc::CHJAutoMotive::setOtherAction()
 {
 	bool result = false;
-	do 
+	do
 	{
 		m_canSender.AddMsg({ 0x440,8,{0} }, 100, ST_Event, 10);
 		msleep(1000);
+		m_canSender.AddMsg(SEND_PROC_FNC() {
+			time_t tm = time(NULL) * 1000;
+			uchar temp[6] = { 0 };
+			memcpy(temp, &tm, 6);
+			FMSG.id = 0x179;
+			FMSG.dlc = 8;
+			for (int i = 1; i <= 6; ++i)
+				FMSG.data[i] = temp[6 - i];
+			FMSG.data[7] = 0x21;
+		}, 10);
 		m_startGetCur = true;
 		m_vector.clear();
 		RUN_BREAK(0 >= (!m_startThread ? _beginthread(getCurrentThread, NULL, this) : true), "创建getCurrentThread失败");
@@ -111,11 +121,15 @@ bool Fnc::CHJAutoMotive::checkRecord(const ulong& timeout)
 	do
 	{
 		addListItem("检测紧急录制中,请耐心等待...");
-		m_canSender.AddMsg({ 0x39a,8,{0,0,0,0,2} }, 100);
-		msleep(100);
+		m_canSender.AddMsg({ 0x39a,8,{0} }, 100, ST_Event, 3);
+		msleep(300);
+		m_canSender.AddMsg({ 0x39a,8,{0,0,0,0,2} }, 100, ST_Event, 3);
+		msleep(300);
 		RUN_BREAK(!setSoundLight(true), "打开音响和灯光失败");
 		success = autoProcessStatus(DvrTypes::SS_HARDWARE_KEY, timeout);
 		addListItem(Q_SPRINTF("触发紧急录制 %s", OK_NG(success)));
+		m_canSender.AddMsg({ 0x39a,8,{0} }, 100, ST_Event, 3);
+		msleep(300);
 		RUN_BREAK(!success, "触发紧急录制失败");
 		result = true;
 	} while (false);
@@ -129,7 +143,7 @@ bool Fnc::CHJAutoMotive::writeDate()
 {
 	setCurrentStatus("写入生产日期");
 	bool result = false;
-	do 
+	do
 	{
 		SYSTEMTIME time;
 		GetLocalTime(&time);
@@ -154,7 +168,7 @@ void Fnc::CHJAutoMotive::getCurrentThread(void* args)
 	float current = 0.0f;
 	while (!self->m_quit)
 	{
-		if (self->m_startGetCur)
+		if (self->m_connect && self->m_startGetCur)
 		{
 			if (!self->m_power.GetCurrent(&current))
 			{
@@ -174,7 +188,7 @@ bool Fnc::CHJAutoMotive::getWifiInfo(bool rawData, bool showLog)
 	bool result = false, success = false;
 	do
 	{
-		memset(&m_wifiInfo, 0x00, sizeof(DvrTypes::WIFIInfo));
+		memset(&m_wifiInfo, 0x00, sizeof(WIFIInfo));
 		if (showLog) addListItem("正在获取WIFI信息...");
 		const int account = 0x515, password = 0x516;
 		success = autoProcessCanMsgEx({ account ,password }, { 0 ,0 },
@@ -205,11 +219,12 @@ bool Fnc::CHJAutoMotive::getWifiInfo(bool rawData, bool showLog)
 		);
 		strcpy(m_wifiInfo.mode, MODE_MANUAL);
 		strcpy(m_wifiInfo.auth, AUTH_WPA2PSK);
+		strcpy(m_wifiInfo.encrypt, ENCR_AES);
 		if (showLog)
 		{
 			addListItem(Q_SPRINTF("获取WIFI信息 %s", OK_NG(success)));
 			addListItem(Q_SPRINTF("WIFI名称:%s WIFI密码:%s", m_wifiInfo.account, m_wifiInfo.password));
-			addListItem(Q_SPRINTF("连接模式:%s 认证方式:%s", m_wifiInfo.mode, m_wifiInfo.auth));
+			addListItem(Q_SPRINTF("连接模式:%s 认证方式:%s 加密方式:%s", m_wifiInfo.mode, m_wifiInfo.auth, m_wifiInfo.encrypt));
 		}
 
 		if (!success)

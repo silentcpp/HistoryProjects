@@ -128,7 +128,7 @@ public:
         label->setAutoFillBackground(false);
         label->setFrameShape(QFrame::NoFrame);
         label->setTextFormat(Qt::AutoText);
-        label->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/images/system.ico")));
+        label->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/images/activity.ico")));
         label->setScaledContents(false);
 
         horizontalLayout_4->addWidget(label);
@@ -158,7 +158,7 @@ public:
         label_4->setObjectName(QStringLiteral("label_4"));
         sizePolicy1.setHeightForWidth(label_4->sizePolicy().hasHeightForWidth());
         label_4->setSizePolicy(sizePolicy1);
-        label_4->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/images/system.ico")));
+        label_4->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/images/dash.ico")));
 
         horizontalLayout_2->addWidget(label_4);
 
@@ -184,7 +184,7 @@ public:
         label_7->setObjectName(QStringLiteral("label_7"));
         sizePolicy1.setHeightForWidth(label_7->sizePolicy().hasHeightForWidth());
         label_7->setSizePolicy(sizePolicy1);
-        label_7->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/images/system.ico")));
+        label_7->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/images/monitor.ico")));
 
         horizontalLayout_6->addWidget(label_7);
 

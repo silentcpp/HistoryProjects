@@ -1,11 +1,27 @@
-﻿  Moc'ing Detection.h...
+﻿  Moc'ing DownloadDlg.h...
+  Moc'ing Downloader.h...
+  Moc'ing Detection.h...
+  Moc'ing ScanCodeDlg.h...
+  Moc'ing MainDlg.h...
+  AuthDlg.cpp
   Detection.cpp
+  DownloadDlg.cpp
+  Downloader.cpp
   Function.cpp
-  moc_Detection.cpp
-  moc_Function.cpp
-  moc_Hardware.cpp
-  moc_MainDlg.cpp
   Hardware.cpp
   MainDlg.cpp
+  ScanCodeDlg.cpp
   SettingDlg.cpp
+  UnlockDlg.cpp
+  qrc_Resource.cpp
+  moc_AuthDlg.cpp
+  moc_Function.cpp
+  moc_Hardware.cpp
+  moc_UnlockDlg.cpp
+  moc_SettingDlg.cpp
+  moc_DownloadDlg.cpp
+  moc_Downloader.cpp
+  moc_Detection.cpp
+  moc_ScanCodeDlg.cpp
+  moc_MainDlg.cpp
   Detection.vcxproj -> E:\Silence\Lib\Release\Detection.lib

@@ -1,5 +1,4 @@
 #include "MainDlg.h"
-
 using namespace Dt;
 
 void MainDlg::closeEvent(QCloseEvent* event)
@@ -36,6 +35,8 @@ MainDlg::~MainDlg()
 	SAFE_DELETE(m_unlockDlg);
 
 	SAFE_DELETE(m_authDlg);
+
+	SAFE_DELETE(m_downloadDlg);
 
 	SAFE_DELETE(m_base);
 }
@@ -74,8 +75,10 @@ bool MainDlg::initInstance()
 		m_authDlg = NO_THROW_NEW AuthDlg;
 		RUN_BREAK(!m_authDlg, "认证对话框分配内存失败");
 
-		RUN_BREAK(!m_base, "检测框架基类分配内存失败");
+		m_downloadDlg = NO_THROW_NEW DownloadDlg;
+		RUN_BREAK(!m_downloadDlg, "下载对话框分配内存失败");
 
+		RUN_BREAK(!m_base, "检测框架基类分配内存失败");
 
 		connect(m_base, &Base::setScanCodeDlgSignal, this, &MainDlg::setScanCodeDlgSlot);
 
@@ -99,13 +102,14 @@ bool MainDlg::initInstance()
 
 		connect(m_base, &Base::setUnlockDlgSignal, this, &MainDlg::setUnlockDlgSlot);
 
-		connect(m_base, &Base::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
+		connect(m_base, &Base::setDownloadDlgSignal, this, &MainDlg::setDownloadDlgSlot);
 
 		if (m_base->getDetectionType() == BaseTypes::DT_DVR)
 		{
 			Dt::Dvr* dvr = nullptr;
 			RUN_BREAK(!(dvr = dynamic_cast<Dt::Dvr*>(m_base)), "父类不为Dt::Dvr,设置VLC句柄失败");
 			dvr->setVlcMediaHwnd((HWND)ui.imageLabel->winId());
+			//connect(dvr->getUpdateSfr(), &Misc::UpdateSfr::updateSfrSignal, this, &MainDlg::updateSfrSlot);
 		}
 
 		RUN_BREAK(!m_base->initInstance(), m_base->getLastError());
@@ -133,16 +137,21 @@ void MainDlg::setUnlockDlgSlot(bool show)
 	m_base->threadContinue();
 }
 
-void MainDlg::setAuthDlgSlot(bool* result, const int& flag)
+void MainDlg::setAuthDlgSlot(bool* result)
 {
-	/*避免多次认证导致,让人反感,故只需要认证一次*/
 	*result = !m_authDlg->isAuth() ? (m_authDlg->exec() == QDialog::Accepted) : true;
-
-	if (!flag && m_base->threadIsPause())
-	{
-		m_base->threadContinue();
-	}
 	return;
+}
+
+void MainDlg::setDownloadDlgSlot(BaseTypes::DownloadInfo* info)
+{
+	m_downloadDlg->download(info->title, info->url, info->path);
+	m_downloadDlg->exec();
+	info->result = m_downloadDlg->result();
+	info->time = m_downloadDlg->elapsedTime();
+	info->speed = m_downloadDlg->averageSpeed();
+	info->error = m_downloadDlg->getLastError();
+	m_base->threadContinue();
 }
 
 void MainDlg::settingButtonSlot()
@@ -150,7 +159,7 @@ void MainDlg::settingButtonSlot()
 	do
 	{
 		bool result = false;
-		setAuthDlgSlot(&result, 1);
+		setAuthDlgSlot(&result);
 		if (!result)
 		{
 			break;
@@ -214,25 +223,9 @@ void MainDlg::setMessageBoxExSlot(const QString& title, const QString& text, con
 	m_base->threadContinue();
 }
 
-void MainDlg::setQuestionBoxSlot(const QString& title, const QString& text, bool* result, bool auth)
+void MainDlg::setQuestionBoxSlot(const QString& title, const QString& text, bool* result)
 {
-	if (auth)
-	{
-		const QString&& userName = JsonTool::getInstance()->getUserConfigValue("用户名").toUpper();
-		if (userName == "ROOT" || userName == "INVO")
-		{
-			*result = QMessageBox::question(this, title, text) == QMessageBox::Yes;
-		}
-		else
-		{
-			*result = false;
-		}
-	}
-	else
-	{
-		*result = QMessageBox::question(this, title, text) == QMessageBox::Yes;
-	}
-
+	*result = QMessageBox::question(this, title, text) == QMessageBox::Yes;
 	m_base->threadContinue();
 }
 
@@ -339,5 +332,27 @@ void MainDlg::usageRateTimerSlot()
 
 	ui.memLabel->setText(QString().sprintf("%02d%%", memoryStatus.dwMemoryLoad));
 	ui.memLabel->setStyleSheet(memStyle);
+}
+
+void MainDlg::updateSfrSlot()
+{
+	dynamic_cast<Dt::Dvr*>(m_base)->getUpdateSfr()->setInterval(1000);
+
+	HDC hDCMem = CreateCompatibleDC(NULL);
+	HWND hWnd = (HWND)ui.imageLabel->winId();
+	RECT rect = { 0 };
+	GetWindowRect(hWnd, &rect);
+	HDC hDc = GetDC(hWnd);
+	ReleaseDC(hWnd, hDc);
+	HBITMAP hBmp = CreateCompatibleBitmap(hDc, rect.right - rect.left, rect.bottom - rect.top);
+	HGDIOBJ hOld = SelectObject(hDCMem, hBmp);
+	SelectObject(hDCMem, hOld);
+	DeleteObject(hDCMem);
+	qDebug() << (Misc::saveBitmapToFile(hBmp, "d:\\temp.bmp") ? "成功" : "失败");
+	//QFile file("d:\\temp.bmp");
+	//file.open(QFile::WriteOnly);
+	//QPixmap pix = ui.imageLabel->grab(ui.imageLabel->rect());
+	//pix.save(&file, "BMP");
+	//file.close();
 }
 

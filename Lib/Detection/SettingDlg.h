@@ -155,4 +155,6 @@ private:
 	QList<bool> m_buttonList;
 
 	bool m_connected = false;
+
+	QList<QCheckBox*> m_relayBoxList;
 };

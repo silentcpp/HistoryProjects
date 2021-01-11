@@ -58,6 +58,7 @@ public:
 	ScanCodeDlg(QWidget* parent = Q_NULLPTR);
 
 	~ScanCodeDlg();
+
 	void setLineEditText(const QString& text);
 private slots:
 	void returnPressedSlot();

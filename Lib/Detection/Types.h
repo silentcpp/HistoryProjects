@@ -227,9 +227,9 @@ timer->start(DELAY);\
 
 #define NO_THROW_NEW new(std::nothrow)
 
-#define GET_DETECTION_DIR(NAME) ((NAME == BaseTypes::DT_HARDWARE) ? "HwLog" : "FcLog")
+#define GET_DT_DIR() ((Dt::Base::getDetectionType() == BaseTypes::DT_HARDWARE) ? "HwLog" : "FcLog")
 
-#define GET_DETECTION_TYPE(NAME) ((NAME == BaseTypes::DT_HARDWARE) ? "硬件" : "功能")
+#define GET_DT_TYPE() ((Dt::Base::getDetectionType() == BaseTypes::DT_HARDWARE) ? "硬件" : "功能")
 
 #define AUTO_RESIZE(X) X->resize(QApplication::desktop()->screenGeometry().width() / 2 + 100,\
 QApplication::desktop()->screenGeometry().height() / 2 + 100)
@@ -238,17 +238,57 @@ QApplication::desktop()->screenGeometry().height() / 2 + 100)
 
 #define FMSG msg
 
+#define FSIZE size
+
+#define FDATA data
+
 #define MSG_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const MsgNode& FMSG)mutable->bool
+
+#define CAN_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const MsgNode& FMSG)mutable->bool
+
+#define UDS_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const int& FSIZE,const uchar* FDATA)mutable->bool
 
 #define TEST_PASS []()->bool{ return true; }
 
 typedef const std::function<bool(const int&, const MsgNode&)>& MsgProc;
 
+typedef const std::function<bool(const int&, const int&, const uchar* data)>& UdsProc;
+
 typedef const std::initializer_list<int>& IdList;
 
 typedef const std::initializer_list<int>& ReqList;
 
+typedef const std::initializer_list<CanMsg>& CanList;
+
 typedef const std::initializer_list<MsgNode>& MsgList;
+
+typedef const std::initializer_list<uchar>& DidList;
+
+typedef MsgProc CanProc;
+
+struct MsgProcInfo {
+	int id;
+	int req;
+	MsgProc proc;
+};
+
+struct CanProcInfo {
+	int id;
+	int req;
+	CanProc proc;
+};
+
+struct MsgProcInfoEx {
+	IdList idList;
+	ReqList reqList;
+	MsgProc proc;
+};
+
+struct CanProcInfoEx {
+	IdList idList;
+	ReqList reqList;
+	CanProc proc;
+};
 
 enum TestSequence {
 	TS_SCAN_CODE = 0x1000,
@@ -264,7 +304,7 @@ enum TestSequence {
 	TS_SAVE_LOG,
 	TS_CHECK_VIDEO,
 	TS_CHECK_AVM,
-	TS_TIGGER_AVM,
+	TS_SET_AVM,
 	TS_CHECK_DVR,
 	TS_CHECK_FRVIEW,
 	TS_CHECK_LRVIEW,
@@ -286,6 +326,26 @@ enum TestSequence {
 	TS_CHANGE_PWD,
 	TS_CHECK_MINCUR,
 	TS_CHECK_MAXCUR,
+	TS_CAN_PROC0,
+	TS_CAN_PROC1,
+	TS_CAN_PROC2,
+	TS_CAN_PROC3,
+	TS_CAN_PROC4,
+	TS_CAN_PROC5,
+	TS_CAN_PROC6,
+	TS_CAN_PROC7,
+	TS_CAN_PROC8,
+	TS_CAN_PROC9,
+	TS_UDS_PROC0,
+	TS_UDS_PROC1,
+	TS_UDS_PROC2,
+	TS_UDS_PROC3,
+	TS_UDS_PROC4,
+	TS_UDS_PROC5,
+	TS_UDS_PROC6,
+	TS_UDS_PROC7,
+	TS_UDS_PROC8,
+	TS_UDS_PROC9,
 	TS_NO
 };
 
@@ -371,6 +431,26 @@ while(!m_quit)\
 }
 
 namespace BaseTypes {
+	/*
+	* 下载信息
+	* @param1,对话框标题
+	* @param2,URL链接
+	* @param3,保存路径
+	* @param4,结果
+	* @param5,所用时间
+	* @param6,平均速度
+	* @param7,错误内容
+	*/
+	struct DownloadInfo {
+		QString title;
+		QString url;
+		QString path;
+		bool result;
+		ulong time;
+		float speed;
+		QString error;
+	};
+
 	/*检测类型*/
 	enum DetectionType { DT_AVM, DT_DVR, DT_HARDWARE, DT_TAP };
 
@@ -416,17 +496,6 @@ namespace AvmTypes {
 }
 
 namespace DvrTypes {
-	/*WIFI信息*/
-	struct WIFIInfo {
-		char account[64];
-
-		char password[64];
-
-		char mode[32];
-
-		char auth[32];
-	};
-
 	/*系统状态报文*/
 	enum SysStatusMsg {
 		SSM_BAIC = 0x5A0,
@@ -487,6 +556,7 @@ namespace DvrTypes {
 
 	/*加密算法密钥*/
 	static const size_t crc32Table[256] = { 
+		
 	};
 }
 

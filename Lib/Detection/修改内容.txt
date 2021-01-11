@@ -3,64 +3,107 @@
 	Control		,控件目录  
 	Dialog		,对话框目录
 	Manage		,管理目录
-	Protocol	,协议目录
+	Network	    ,网络目录
+
+2021.1.4
+修改内容:
+	1.Detection
+		(1)优化了dvr拍照成功但SD卡中并没有照片,导致获取不到照片URL而失败的BUG,
+		修改为如果失败,则进行再次拍照,达到重复次数到3次,判定为失败.
+
+2020.12.28
+修改内容:
+	1.SettingDlg
+		设置界面增加硬件测试功能,支持电压,继电器,电压表,电流表单独控制
+
+	2.JsonTool
+		(1)范围配置节点增加最大电流,最小电流
+		(2)增加信号灯控制,继电器配置节点增加红灯,绿灯,白灯,目前仅支持AVM检测,启用配置节点增加信号灯启用
+		(3)JSON_VERSION升至1.0.0.5
+		(4)增加接口getUserPrivileges,查询用户权限,用于处理认证操作
+
+	3.DvrClient
+		Dt::DvrClient优化了网络协议传输的正确性和稳定性.
+
+	4.Detection
+		(1)Dt::Base中增加了setCanProcessFnc,setCanProcessFncEx,可以处理大部分CAN发送和接收功能,
+		setUdsProcessFnc,可以处理大部分UDS发送和接收功能
+		(2)Dt::Dvr中将车和家车厂类增加到了autoProccessStatus函数模板
+		(3)增加了WIFI模块
+		(4)Misc中增加了CharSet用于处理GBK宽字符集多字符集到UTF-8,并自动回收内存
+		(5)修复了Dt::Dvr中checkSfr和checkRayAxis,调用opencv api和调用外部程序所导致的中文乱码的BUG
+		(6)Misc中增加了检测失败,保存错误日志功能
+		(7)增加日志文件.run,.net
+		(8)修复了检测版本,检测DTC中,如果检测失败,查询用户权限所导致的检测线程卡死的BUG
+		(9)checkStaticCurrent,修复了测试电流不稳定的BUG,增加了是否开启ACC与设置检测完成之后延时功能
+
+	5.Types.h
+		(1)增加调试宏定义DEBUG_INFO和DEBUG_INFO_EX
+		(2)增加宏CAN_PROC_FNC,UDS_PROC_FNC,TEST_PASS,TEST_THREAD,TEST_THREAD_EX,ASSERT_TEST,ASSERT_TEST_EX
+		(3)ASSERT_TEST和ASSERT_TEST_EX宏,支持默认与可变参数,可变参数始终是处理最后一个函数,函数返回值为void
+
+	6.Other
+		(1)增加Function文件,此文件用于处理功能检测,以后所有功能检测,都需要放入此类中进行增加,提高开发效率.
+		(2)增加Hardware文件,此文件用于处理硬件检测,以后所有硬件检测,都需要放入此类中进行增加,提高开发效率.
+		(3)LIB_VERSION升至1.0.0.4
+		
 
 2020.11.12
 修改内容:
-	1.将MilCC静态库更换为老的Cc::Mil类,以后不要去更换了,太TMD的坑爹了,这个破玩意.
+	1.将MilCC静态库更换为老的Cc::Mil类
 	2.增强图像检测功能中,用色彩模型检测,可以判断多个颜色,语法!=黑色,白色,绿色 ==黑色,白色,绿色
-	3.LIBRARY_VER升级为1.0.0.3
+	3.LIB_VERSION升级为1.0.0.3
 
 2020.11.04
 修改内容:
 	1.JsonTool设备配置中,将主键检测名称删除.
-	2.JSON_FILE_VER 宏更改为1.0.0.3
+	2.JSON_VERSION 宏更改为1.0.0.3
 
 2020.10.30
 修改内容:
 	1.JsonTool图像配置中,添加左右大图节点.
-	2.JSON_FILE_VER 宏更改为1.0.0.2
+	2.JSON_VERSION 宏更改为1.0.0.2
 
-日期:20200807
+日期:2020.08.07
 修改内容:
 	1.增加MilCC采集卡类库,替换掉旧的CC::Mil类.
 	2.增加支持采集卡双通道同时采集图像.
 	3.增加配置文件中可以配置采集卡双通道工作选项.
 	4.以上功能全为测试中,待测试.
 	
-日期:20200806
+日期:2020.08.06
 修改内容:
 	1.修复了getFileListByPath,遍历文件夹如果存在无后缀名的文件,可能会导致崩溃的问题.
 
-日期:20200805
+日期:2020.08.05
 修改内容:
 	1.getFileListByPath由不能查询中文字符串命名的文件夹修改为可以查询中文文件夹.
 	2.增加enableRecycle,setRecycleSuffixName,setRecycleIntervalMonth接口,更好的管理回收内容.
 
-日期:20200804
+日期:2020.08.04
 修改内容:
 	1.增加自动回收存储空间,影响模块Function,DVR类
 	2.增加一些参数较多的函数,注释参数内容
 	3.优化加载配置参数的速度
 	
-日期:20200721
+日期:2020.07.21
 修改内容:
 	1.增加可以画AVM视图检测框.
 	2.优化了一进入设置界面就接收CAN报文,导致CPU占用较高的BUG.
 	3.增加Detection.lib宏定义版本号.
 	4.增加Misc::getAppAppendName()接口.
 	
-日期:20200715
+日期:2020.07.15
 修改内容:
 	1.修复了MOR采集卡程序退出,子类先析构,并未导致线程完全退出的BUG,会导致崩溃的问题.
 	2.配置中增加了采集卡通道可选项
 	3.优化了采集卡抓图的流畅度.
 	
-日期:20200518
+日期:2020.05.18
 修改内容:
 	1.增加认证对话框AuthDlg
 
-日期:20200515
+日期:2020.05.15
 修改内容:
 	1.JsonTool
 		(1)增加动态修改功能

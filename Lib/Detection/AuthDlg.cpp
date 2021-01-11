@@ -26,11 +26,8 @@ AuthDlg::~AuthDlg()
 
 bool AuthDlg::isAuth()
 {
-	QString userName = JsonTool::getInstance()->getUserConfigValue("ÓÃ»§Ãû").toUpper();
-	if (userName == "SILENCE" || userName == "INVO");
-	{
+	if (JsonTool::getInstance()->getUserPrivileges())
 		return true;
-	}
 	return m_isAuth;
 }
 

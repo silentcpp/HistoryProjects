@@ -4,6 +4,7 @@
 /* 此文件用于管理检测框架配置文件读写修改                               */
 /************************************************************************/
 #pragma execution_character_set("utf-8")
+#include <functional>
 #include <QObject>
 #include <QFile>
 #include <QJsonObject>
@@ -14,11 +15,11 @@
 #include <memory>
 #include <Common/Types.h>
 
-#define LIBRARY_VER "1.0.0.4"
+#define LIB_VERSION "1.0.0.4"
 
-#define JSON_FILE_VER "1.0.0.5"
+#define DCF_VERSION "1.0.0.0"
 
-#define DCF_FILE_VER "1.0.0.0"
+#define JSON_VERSION "1.0.0.5"
 
 #define Q_TO_C_STR(X) X.toStdString().c_str()
 
@@ -489,20 +490,20 @@ enum SendType {
 };
 
 struct CanMsg {
-	bool bValid;
-
-	SendType emST;
-
-	/*循环周期,ms*/
-	int iCycle;
-
 	MsgNode msg;
 
-	int iTime;
+	int delay;
 
-	int iSendCount;
+	SendType type;
+
+	int count;
+
+	bool valid;
+
+	int time;
+
+	std::function<void(MsgNode& msg)> fnc;
 };
-
 
 /************************************************************************/
 /* JsonTool定义                                                         */
@@ -793,7 +794,7 @@ protected:
 	};
 protected:
 	/*设置错误*/
-	void setLastError(const QString& err);
+	void setLastError(const QString& error);
 
 	/*解析范围*/
 	bool parseRangeValue(const QString& value, float& min, float& max);
@@ -883,13 +884,13 @@ public:
 	const QStringList getAllMainKey();
 	
 	/*获取库版本*/
-	static const QString getLibrayVersion();
+	static const QString getLibVersion();
 
 	/*获取JSON文件版本*/
-	static const QString getJsonFileVersion();
+	static const QString getJsonVersion();
 
 	/*获取DCF文件版本*/
-	static const QString getDCFFileVersion();
+	static const QString getDcfVersion();
 
 	/************************************************************************/
 	/*读写配置文件操作                                                      */
@@ -1022,6 +1023,8 @@ public:
 	const int getUserConfigCount();
 
 	bool setUserConfigValue(const QString& key, const QString& value);
+
+	bool getUserPrivileges();
 	/************************************************************************/
 	/* 范围配置操作                                                         */
 	/************************************************************************/

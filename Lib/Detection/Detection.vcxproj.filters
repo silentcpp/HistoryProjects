@@ -106,6 +106,15 @@
     <ClCompile Include="Function.cpp">
       <Filter>Source Files\Manage</Filter>
     </ClCompile>
+    <ClCompile Include="UpdateApp.cpp">
+      <Filter>Source Files\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadDlg.cpp">
+      <Filter>Source Files\Dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="Downloader.cpp">
+      <Filter>Source Files\Network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CanMatrix.h">
@@ -161,6 +170,15 @@
     <QtMoc Include="Function.h">
       <Filter>Header Files\Manage</Filter>
     </QtMoc>
+    <QtMoc Include="UpdateApp.h">
+      <Filter>Header Files\Network</Filter>
+    </QtMoc>
+    <QtMoc Include="DownloadDlg.h">
+      <Filter>Header Files\Dialog</Filter>
+    </QtMoc>
+    <QtMoc Include="Downloader.h">
+      <Filter>Header Files\Network</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="SettingDlg.ui">
@@ -176,6 +194,9 @@
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="AuthDlg.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="DownloadDlg.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

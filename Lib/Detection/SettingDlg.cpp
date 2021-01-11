@@ -36,7 +36,7 @@ bool SettingDlg::initInstance()
 		RUN_BREAK(!m_jsonTool, "JSON工具初始化失败");
 
 		QString&& newTitle = QString("%1%2%3设置[%4]").arg(m_jsonTool->getParsedDefConfig()->device.modelName,
-			Misc::getAppAppendName(), Misc::getDetectionType(), Misc::getAppVersion());
+			Misc::getAppAppendName(), GET_DT_TYPE(), Misc::getAppVersion());
 
 		setWindowTitle(newTitle);
 
@@ -493,6 +493,10 @@ void SettingDlg::relayConnectSlot()
 		}
 		else
 		{
+			for (auto& x : m_relayBoxList)
+			{
+				x->setChecked(false);
+			}
 			device->Close();
 		}
 		ui.relayCombo->setEnabled(m_buttonList[DB_RELAY_CONN]);
@@ -507,14 +511,15 @@ void SettingDlg::relayControlSlot(bool checked)
 	bool convert = false;
 	do 
 	{
+		QCheckBox* box = dynamic_cast<QCheckBox*>(QObject::sender());
+		RUN_BREAK(!box, "dynamic_cast<QCheckBox*>(QObject::sender())失败");
 		if (!Dt::Base::getRelayDevice()->IsOpen())
 		{
+			box->setChecked(false);
 			QMessageBoxEx::information(this, "提示", "请先连接继电器");
 			break;
 		}
 
-		QCheckBox* box = dynamic_cast<QCheckBox*>(QObject::sender());
-		RUN_BREAK(!box, "dynamic_cast<QCheckBox*>(QObject::sender())失败");
 		int io = box->objectName().mid(7).toInt(&convert);
 		RUN_BREAK(!convert, "无法控制IO,objectName转换失败");
 		if (!Dt::Base::getRelayDevice()->SetOneIO(io, checked))
@@ -571,7 +576,7 @@ void SettingDlg::currentGetValueSlot()
 			QMessageBoxEx::warning(this, "错误", "获取电流失败");
 			break;
 		}
-		ui.currentGetValue->setText(N_TO_Q_STR(current));
+		ui.currentValue->setText(N_TO_Q_STR(current));
 	} while (false);
 	return;
 }
@@ -1063,32 +1068,31 @@ bool SettingDlg::initHardwareWidget()
 		//继电器配置
 		connect(ui.relayConnect, &QPushButton::clicked, this, &SettingDlg::relayConnectSlot);
 
-		QList<QCheckBox*> boxList;
-		boxList.append(ui.relayIo0);
-		boxList.append(ui.relayIo1);
-		boxList.append(ui.relayIo2);
-		boxList.append(ui.relayIo3);
-		boxList.append(ui.relayIo4);
-		boxList.append(ui.relayIo5);
-		boxList.append(ui.relayIo6);
-		boxList.append(ui.relayIo7);
-		boxList.append(ui.relayIo8);
-		boxList.append(ui.relayIo9);
-		boxList.append(ui.relayIo10);
-		boxList.append(ui.relayIo11);
-		boxList.append(ui.relayIo12);
-		boxList.append(ui.relayIo13);
-		boxList.append(ui.relayIo14);
-		boxList.append(ui.relayIo15);
-		for (int i = 0; i < boxList.size(); i++)
+		m_relayBoxList.append(ui.relayIo0);
+		m_relayBoxList.append(ui.relayIo1);
+		m_relayBoxList.append(ui.relayIo2);
+		m_relayBoxList.append(ui.relayIo3);
+		m_relayBoxList.append(ui.relayIo4);
+		m_relayBoxList.append(ui.relayIo5);
+		m_relayBoxList.append(ui.relayIo6);
+		m_relayBoxList.append(ui.relayIo7);
+		m_relayBoxList.append(ui.relayIo8);
+		m_relayBoxList.append(ui.relayIo9);
+		m_relayBoxList.append(ui.relayIo10);
+		m_relayBoxList.append(ui.relayIo11);
+		m_relayBoxList.append(ui.relayIo12);
+		m_relayBoxList.append(ui.relayIo13);
+		m_relayBoxList.append(ui.relayIo14);
+		m_relayBoxList.append(ui.relayIo15);
+		for (int i = 0; i < m_relayBoxList.size(); i++)
 		{
-			connect(boxList[i], &QCheckBox::clicked, this, &SettingDlg::relayControlSlot);
+			connect(m_relayBoxList[i], &QCheckBox::clicked, this, &SettingDlg::relayControlSlot);
 			for (int j = 0; j < m_jsonTool->getRelayConfigCount(); j++)
 			{
 				int value = m_jsonTool->getRelayConfigValue(m_jsonTool->getRelayConfigKeyList()[j]).toInt();
 				if (i == value)
 				{
-					boxList[i]->setText(QString("%1[%2]").arg(i).arg(m_jsonTool->getRelayConfigKeyList()[j]));
+					m_relayBoxList[i]->setText(QString("%1[%2]").arg(i).arg(m_jsonTool->getRelayConfigKeyList()[j]));
 					break;
 				}
 			}
@@ -1114,6 +1118,36 @@ bool SettingDlg::initHardwareWidget()
 
 			ui.currentCombo->setEnabled(false);
 			ui.currentConnect->setEnabled(false);
+		}
+		else
+		{
+			if (Dt::Base::getPowerDevice()->IsOpen())
+			{
+				ui.powerConnect->setText("断开");
+				ui.powerConnect->setEnabled(false);
+				m_buttonList[DB_POWER_CONN] = true;
+			}
+
+			if (Dt::Base::getRelayDevice()->IsOpen())
+			{
+				ui.relayConnect->setText("断开");
+				ui.relayCombo->setEnabled(false);
+				m_buttonList[DB_RELAY_CONN] = true;
+			}
+
+			if (Dt::Base::getVoltageDevice()->IsOpen())
+			{
+				ui.voltageConnect->setText("断开");
+				ui.voltageCombo->setEnabled(false);
+				m_buttonList[DB_VOLTA_CONN] = true;
+			}
+
+			if (Dt::Base::getCurrentDevice()->isOpen())
+			{
+				ui.currentConnect->setText("断开");
+				ui.currentCombo->setEnabled(false);
+				m_buttonList[DB_CURRE_CONN] = true;
+			}
 		}
 		result = true;
 	} while (false);
@@ -1164,8 +1198,8 @@ bool SettingDlg::initPaintWidget()
 
 bool SettingDlg::initAboutWidget()
 {
-	ui.frameVersion->setText(m_jsonTool->getLibrayVersion());
-	ui.fileVersion->setText(m_jsonTool->getJsonFileVersion());
+	ui.frameVersion->setText(LIB_VERSION);
+	ui.fileVersion->setText(JSON_VERSION);
 	ui.appVersion->setText(Misc::getAppVersion());
 	return true;
 }

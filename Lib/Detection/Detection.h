@@ -24,8 +24,6 @@ namespace Nt {
 namespace Misc {
 	namespace Var {
 		static QString appendName;
-		static QString detectionType;
-		static QString detectionDir;
 	}
 
 	bool writeRunError(const QString& error);
@@ -50,7 +48,7 @@ namespace Misc {
 
 	/*获取APP版本号*/
 	const QString getAppVersion();
-	
+
 	/*设置APP附加名*/
 	void setAppAppendName(const QString& name);
 
@@ -59,8 +57,6 @@ namespace Misc {
 
 	/*通过版本号重命名APP*/
 	bool renameAppByVersion(QWidget* widget);
-
-	const QString getDetectionType();
 
 	/*启动应用程序*/
 	bool startApp(const QString& name, const int& show);
@@ -88,6 +84,8 @@ namespace Misc {
 
 	/*QString转多字符集*/
 	const char* qstringToMultiByte(const QString& str);
+
+	bool saveBitmapToFile(HBITMAP hBitmap, const QString& fileName);
 
 	class ThemeFactory {
 	public:
@@ -188,6 +186,40 @@ namespace Misc {
 	private:
 		QList<char*> m_list;
 	};
+
+	class UpdateSfr :public QThread {
+		Q_OBJECT
+	public:
+		UpdateSfr(QObject* parent = nullptr) { }
+
+		~UpdateSfr() { m_quit = true; if (this->isRunning()) { wait(1000); } }
+
+		void startUpdate() { /*this->start();*/ m_start = true; }
+
+		void stopUpdate() { m_start = false; }
+
+		void setInterval(const int& interval) { m_interval = interval; }
+	protected:
+		void run()
+		{
+			DEBUG_INFO_EX("更新SFR线程%lu已启动", (ulong)QThread::currentThreadId());
+			while (!m_quit)
+			{
+				if (m_start)
+					emit updateSfrSignal();
+				msleep(m_interval);
+			}
+			DEBUG_INFO_EX("更新SFR线程%lu已退出", (ulong)QThread::currentThreadId());
+		}
+	private:
+		bool m_start = false;
+
+		bool m_quit = false;
+
+		int m_interval = 100;
+	signals:
+		void updateSfrSignal();
+	};
 }
 
 /*Detection*/
@@ -201,7 +233,7 @@ namespace Dt {
 		Q_OBJECT
 	public:
 		/*构造*/
-		Base(QObject* parent = nullptr);
+		explicit Base(QObject* parent = nullptr);
 
 		/*虚析构*/
 		virtual ~Base();
@@ -215,13 +247,20 @@ namespace Dt {
 		/*设置检测类型*/
 		void setDetectionType(const BaseTypes::DetectionType& type);
 
+		/*设置SOC延时*/
+		void setSocDelay(const ulong& delay);
+
 		/*获取检测类型*/
-		const BaseTypes::DetectionType& getDetectionType();
+		static const BaseTypes::DetectionType& getDetectionType();
 
 		/*初始化实例*/
 		virtual bool initInstance();
 
-		/*初始化控制台窗口*/
+		/*
+		* 初始化控制台窗口
+		* @notice,调用此函数前,不可进行任何输出,
+		* 否则重定向流将失败,你无法看到打印内容.
+		*/
 		bool initConsoleWindow();
 
 		/*退出控制台窗口*/
@@ -245,7 +284,7 @@ namespace Dt {
 		 @param4,完全启动处理
 		 @return,bool
 		 */
-		virtual bool prepareTest(const int& id, const ulong& delay, const int& req = 0, MsgProc msgProc = nullptr);
+		virtual bool prepareTest(const int& id, const ulong& timeout, const int& req = 0, MsgProc msgProc = nullptr);
 
 		/*结束测试*/
 		virtual bool finishTest(bool success);
@@ -256,8 +295,14 @@ namespace Dt {
 		/*检测电流*/
 		virtual bool checkCurrent();
 
-		/*检测静态电流*/
-		virtual bool checkStaticCurrent(bool set16Vol = true, const ulong& delay = 6000U);
+		/*
+		* 检测静态电流
+		* @param1,是否打开ACC,如果接下来不检测休眠和唤醒则为true
+		* @param2,检测完成之后的延时,ACC为true时生效
+		* @param3,是否设置为16V电压
+		* @return,bool
+		*/
+		virtual bool checkStaticCurrent(bool setAcc = false, const ulong& delay = 15000U, bool set16Vol = true);
 
 		/*检测电压*/
 		virtual bool checkVoltage();
@@ -290,13 +335,28 @@ namespace Dt {
 		const int quickRecvCanMsg(MsgNode* msgNode, const int& maxSize, const int& ms);
 
 		/*自动处理CAN消息,[重载1]*/
-		bool autoProcessCanMsg(const int& id, const int& request, MsgProc msgProc, const ulong& delay = 10000U);
+		bool autoProcessCanMsg(const int& id, const int& request, MsgProc msgProc, const ulong& timeout = 10000U);
 
 		/*自动处理CAN消息拓展,[重载2]*/
-		bool autoProcessCanMsgEx(IdList idList, ReqList reqList, MsgProc msgProc, const ulong& delay = 10000U);
+		bool autoProcessCanMsgEx(IdList idList, ReqList reqList, MsgProc msgProc, const ulong& timeout = 10000U);
 
 		/*自动模板CAN函数*/
 		bool autoTemplateCanFnc(const char* name, const int& id, const int& req, MsgProc proc, MsgList msg = {}, const ulong& delay = 0);
+
+		/*设置Can处理函数[重载1]*/
+		bool setCanProcessFnc(const char* name, const CanMsg& msg, const CanProcInfo& procInfo);
+
+		/*设置Can处理函数[重载2]*/
+		bool setCanProcessFnc(const char* name, const CanMsg& msg, const int& id, const int& req, CanProc proc);
+
+		/*设置Can处理函数,拓展版[重载1]*/
+		bool setCanProcessFncEx(const char* name, CanList list, const CanProcInfo& procInfo);
+
+		/*设置Can处理函数,拓展版[重载2]*/
+		bool setCanProcessFncEx(const char* name, CanList list, const int& id, const int& req, CanProc proc);
+
+		/*设置UDS处理函数*/
+		bool setUdsProcessFnc(const char* name, DidList list, const int& req, const int& size, UdsProc proc, const ulong& timeout = 10000U);
 
 		/*
 		 *自动回收,用于处理下载下来的视频和照片,导致占用的问题
@@ -418,7 +478,7 @@ namespace Dt {
 		void setMessageBoxEx(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
 
 		/*询问对话框,只可以在子线程中使用*/
-		bool setQuestionBox(const QString& title, const QString& text, bool auth = false);
+		bool setQuestionBox(const QString& title, const QString& text);
 
 		/*询问对话框,拓展版*/
 		bool setQuestionBoxEx(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
@@ -438,8 +498,8 @@ namespace Dt {
 		/*清空列表控件*/
 		void clearListItem();
 
-		/*认证信号*/
-		bool setAuthDlg(const int& flag = 0);
+		/* 设置下载对话框槽*/
+		bool setDownloadDlg(BaseTypes::DownloadInfo* info);
 
 		bool callPythonFnc();
 	protected:
@@ -448,6 +508,9 @@ namespace Dt {
 
 		/*是否连接*/
 		bool m_connect = false;
+
+		/*等待SOC启动延时*/
+		ulong m_socDelay = 3000U;
 
 		/*测试顺序*/
 		int m_testSequence = TS_NO;
@@ -459,7 +522,7 @@ namespace Dt {
 		size_t m_total = 1;
 
 		/*检测类型*/
-		BaseTypes::DetectionType m_detectionType = BaseTypes::DT_AVM;
+		static BaseTypes::DetectionType m_detectionType;
 
 		/*JSON工具类*/
 		JsonTool* m_jsonTool = nullptr;
@@ -544,7 +607,7 @@ namespace Dt {
 		void setMessageBoxExSignal(const QString& title, const QString& text, const QPoint& point);
 
 		/*设置询问对话框信号*/
-		void setQuestionBoxSignal(const QString& title, const QString& text, bool* result, bool auth);
+		void setQuestionBoxSignal(const QString& title, const QString& text, bool* result);
 
 		/*设置询问对话框拓展版信号*/
 		void setQuestionBoxExSignal(const QString& title, const QString& text, bool* result, const QPoint& point);
@@ -567,17 +630,17 @@ namespace Dt {
 		/*清空列表控件信号*/
 		void clearListItemSignal();
 
-		/*认证信号*/
-		void setAuthDlgSignal(bool* result, const int& flag);
+		/*设置下载对话框信号*/
+		void setDownloadDlgSignal(BaseTypes::DownloadInfo* info);
 	};
 
 	/************************************************************************/
 	/* Hardware Class                                                       */
 	/************************************************************************/
-	class Hardware :public Base {
+	class Hardware : public Base {
 		Q_OBJECT
 	public:
-		Hardware(QObject* parent = nullptr);
+		explicit Hardware(QObject* parent = nullptr);
 
 		~Hardware();
 
@@ -595,7 +658,7 @@ namespace Dt {
 		Q_OBJECT
 	public:
 		/*构造*/
-		Function(QObject* parent = nullptr);
+		explicit Function(QObject* parent = nullptr);
 
 		/*析构*/
 		~Function();
@@ -625,7 +688,7 @@ namespace Dt {
 		 *@return,bool
 		*/
 		virtual bool checkCanRouseSleep(const MsgNode& msg, const ulong& delay, const int& id, const int& req = 0, MsgProc msgProc = nullptr);
-		
+
 		/*
 		* 检测CAN唤醒休眠,[重载2]
 		* @param1,总线状态报文ID
@@ -684,11 +747,11 @@ namespace Dt {
 		inline CMV800Mgr* getMv800() { return &m_mv800; }
 
 		inline bool isCapture() { return m_capture; };
-		
+
 		inline const int& getMilChannelId() { return m_cardConfig.channelId; }
 
 		inline const int& getMv800ChannelId() { return m_cardConfig.channelId; }
-		
+
 		inline const FcTypes::CardConfig& getCardConfig() { return m_cardConfig; };
 	protected:
 		/*必须重写线程*/
@@ -724,7 +787,7 @@ namespace Dt {
 		Q_OBJECT
 	public:
 		/*构造*/
-		Avm(QObject* parent = nullptr);
+		explicit Avm(QObject* parent = nullptr);
 
 		/*析构*/
 		~Avm();
@@ -732,11 +795,14 @@ namespace Dt {
 		/*初始化实例*/
 		virtual bool initInstance();
 
-		/*通过按键触发AVM*/
-		void tiggerAVMByKey(const ulong& delay = 300);
-
 		/*设置led灯*/
 		void setLedLight(bool _switch);
+
+		/*通过按键触发AVM*/
+		virtual bool setAvmByKey(const ulong& delay = 300, const int& id = 0, const int& req = 0, MsgProc msgProc = nullptr);
+
+		/*通过报文触发AVM*/
+		virtual bool setAvmByMsg(const CanMsg& msg, const int& id = 0, const int& req = 0, MsgProc msgProc = nullptr);
 
 		/*检测视频出画不使用任何*/
 		virtual bool checkVideoUseNot();
@@ -785,7 +851,7 @@ namespace Dt {
 		 *@param5,lambda
 		 *@return,bool
 		 */
-		virtual bool checkAVMFRView(MsgList msgList, const ulong& msgDelay, const int& id, ReqList reqList, MsgProc msgProc);
+		virtual bool checkAvmFRView(MsgList msgList, const ulong& msgDelay, const int& id, ReqList reqList, MsgProc msgProc);
 
 		/*检测按键电压*/
 		virtual bool checkKeyVoltage(const ulong& delay = 3000U);
@@ -799,11 +865,11 @@ namespace Dt {
 	/************************************************************************/
 	/* DVR Class                                                            */
 	/************************************************************************/
-	class Dvr :public Function {
+	class Dvr : public Function {
 		Q_OBJECT
 	public:
 		/*构造*/
-		Dvr(QObject* parent = nullptr);
+		explicit Dvr(QObject* parent = nullptr);
 
 		/*虚析构*/
 		~Dvr();
@@ -884,9 +950,6 @@ namespace Dt {
 		bool vlcRtspStop();
 
 		/*获取文件列表,重载1*/
-		bool getFileUrl(QString& url, const DvrTypes::FilePath& filePath, const QString& address, const ushort& port);
-
-		/*获取文件列表,重载2*/
 		bool getFileUrl(QString& url, const DvrTypes::FilePath& filePath);
 
 		/*下载紧急录制文件,重载1*/
@@ -905,15 +968,24 @@ namespace Dt {
 		bool checkSfr(const QString& url, const QString& dirName);
 
 		/*
-		 *检测光轴及图像解析度
-		 *@param1,拍照报文
-		 *@param2,报文延时
-		 *@param3,接收报文ID
-		 *@param4,请求结果
-		 *@param5,lambda
+		 *检测光轴及图像解析度拓展
+		 *@param1,CAN报文列表
+		 *@param2,接收报文ID
+		 *@param3,请求结果
+		 *@param4,lambda
 		 *@return,bool
 		*/
-		bool checkRayAxisSfr(const MsgNode& msg, const int& delay, const int& id, const int& req, MsgProc proc);
+		bool checkRayAxisSfrEx(CanList list, const int& id, const int& req, MsgProc proc);
+
+		/*
+		 *检测光轴及图像解析度
+		 *@param1,拍照报文
+		 *@param2,接收报文ID
+		 *@param3,请求结果
+		 *@param4,lambda
+		 *@return,bool
+		*/
+		bool checkRayAxisSfr(const CanMsg& msg, const int& id, const int& req, MsgProc proc);
 
 		/*格式化SD卡*/
 		virtual bool formatSdCard();
@@ -926,6 +998,10 @@ namespace Dt {
 
 		/*设置地址端口*/
 		void setAddressPort(const QString& address, const ushort& port);
+
+		Misc::UpdateSfr* getUpdateSfr();
+
+		Nt::SfrServer* getSfrServer();
 	protected:
 		/*必须重写线程*/
 		virtual void run() override = 0;
@@ -940,7 +1016,7 @@ namespace Dt {
 		WifiMgr m_wifiMgr;
 
 		/*WIFI信息结构体*/
-		DvrTypes::WIFIInfo m_wifiInfo = { 0 };
+		WIFIInfo m_wifiInfo = { 0 };
 	private:
 		/*声音和灯是否打开*/
 		bool m_soundLight = false;
@@ -978,6 +1054,8 @@ namespace Dt {
 
 		/*系统状态*/
 		DvrTypes::SystemStatus m_systemStatus = DvrTypes::SS_PAUSE_RECORD;
+
+		Misc::UpdateSfr m_updateSfr;
 
 		/*HASH码结构体用于模板判断*/
 		struct HashCode {
@@ -1021,7 +1099,7 @@ namespace Dt {
 	class Tap : public Function {
 		Q_OBJECT
 	public:
-		Tap(QObject* parent = nullptr);
+		explicit Tap(QObject* parent = nullptr);
 
 		~Tap();
 
@@ -1101,8 +1179,7 @@ namespace Dt {
 									addListItem(getLastError());
 									break;
 								}
-								success = m_wifiMgr.connect(m_wifiInfo.account,
-									m_wifiInfo.password, m_wifiInfo.mode, m_wifiInfo.auth);
+								success = m_wifiMgr.connect(m_wifiInfo);
 								addListItem(Q_SPRINTF("连接WIFI %s", OK_NG(success)));
 								if (!success)
 								{
@@ -1110,7 +1187,7 @@ namespace Dt {
 									break;
 								}
 								addListItem("正在进行网络优化,该过程大约需要10~40秒,请耐心等待...");
-								success = m_dvrClient->connect(m_address, m_port, 40);
+								success = m_dvrClient->connect(40);
 								if (success)
 								{
 									m_dvrClient->disconnect();
@@ -1121,7 +1198,7 @@ namespace Dt {
 						}
 						else if (statusCode == m_hashCode.ethernetStatus)
 						{
-							if (m_dvrClient->connect(m_address, m_port, 40))
+							if (m_dvrClient->connect(40))
 							{
 								setCurrentStatus("以太网已连接", true);
 								status = static_cast<T>(DvrTypes::ES_CONNECT);
@@ -1198,7 +1275,7 @@ namespace Dt {
 					break;
 				}
 
-				DEBUG_INFO_EX("status %d", (int)status);
+				DEBUG_INFO_EX("状态 %d", (int)status);
 				if (statusCode == m_hashCode.systemStatus)
 				{
 					if (status == static_cast<T>(DvrTypes::SS_GENERAL_RECORD))
@@ -1265,7 +1342,7 @@ namespace Dt {
 					break;
 				}
 
-				DEBUG_INFO_EX("status %d,value %d", (int)status, (int)value);
+				DEBUG_INFO_EX("状态 %d,数值 %d", (int)status, (int)value);
 				if (statusCode == m_hashCode.systemStatus)
 				{
 					if (status == value)
@@ -1322,7 +1399,7 @@ namespace Cc {
 		Q_OBJECT
 	public:
 		/*构造*/
-		Mil(QObject* parent = nullptr);
+		explicit Mil(QObject* parent = nullptr);
 
 		/*析构*/
 		~Mil();
@@ -1332,6 +1409,9 @@ namespace Cc {
 
 		/*关闭MIL设备驱动*/
 		void close();
+
+		/*是否打开*/
+		bool isOpen();
 
 		/*开始采集*/
 		void startCapture();
@@ -1352,8 +1432,8 @@ namespace Cc {
 		Dt::Function* m_function = nullptr;
 
 		/*MIL定义*/
-		MIL_ID MilApplication = 0, MilSystem = 0, MilDisplay = 0;
-		MIL_ID MilDigitizer = 0, MilImage = 0, MilImage0 = 0, MilImage2D = 0;
+		MIL_ID MilApplication = M_NULL, MilSystem = M_NULL, MilDisplay = M_NULL;
+		MIL_ID MilDigitizer = M_NULL, MilImage = M_NULL, MilImage0 = M_NULL, MilImage2D = M_NULL;
 
 		/*保存错误信息*/
 		QString m_lastError = "No Error";
@@ -1361,6 +1441,8 @@ namespace Cc {
 		bool m_capture = false;
 
 		bool m_quit = false;
+
+		bool m_open = false;
 
 		int m_channel[2] = { M_CH0,M_CH1 };
 	};
@@ -1415,7 +1497,13 @@ namespace Nt {
 	public:
 		DvrClient();
 
+		DvrClient(const QString& address, const ushort& port);
+
 		~DvrClient();
+
+		void setAddressPort(const QString& address, const ushort& port);
+
+		bool connect(const int& count = 10);
 
 		bool connect(const QString& address, const ushort& port, const int& count = 10);
 
@@ -1451,12 +1539,13 @@ namespace Nt {
 
 		SOCKADDR_IN m_sockAddr = { 0 };
 
-		char m_ipAddr[32] = { 0 };
+		char m_address[32] = { 0 };
 
 		ushort m_port = 2000;
 
-		bool m_init = false;
+		bool m_connected = false;
 
-		bool m_close = false;
+		bool m_disconnected = false;
 	};
 }
+

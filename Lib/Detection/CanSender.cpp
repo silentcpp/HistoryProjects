@@ -15,33 +15,38 @@ UINT WINAPI SendCanProc(void* pArgs)
 			iEndTime = pSSM->m_time.getEndTime();
 			for (int i = 0; i < MAX_MSG_COUNT; i++)
 			{
-				if (pSSM->m_msgs[i].bValid
-					&& iEndTime - pSSM->m_msgs[i].iTime >= pSSM->m_msgs[i].iCycle)
+				if (pSSM->m_msgs[i].valid && iEndTime - pSSM->m_msgs[i].time >= pSSM->m_msgs[i].delay)
 				{
-					pSSM->m_msgs[i].iTime = iEndTime;
+					pSSM->m_msgs[i].time = iEndTime;
+
+					if (pSSM->m_msgs[i].fnc)
+						pSSM->m_msgs[i].fnc(pSSM->m_msgs[i].msg);
+
 					memcpy(&msgs[iCount], &pSSM->m_msgs[i].msg, sizeof(MsgNode));
-					if (pSSM->m_msgs[i].emST == ST_Event)
+					if (pSSM->m_msgs[i].type == ST_Event)
 					{
-						pSSM->m_msgs[i].iSendCount--;
-						if (pSSM->m_msgs[i].iSendCount <= 0)
+						pSSM->m_msgs[i].count--;
+						if (pSSM->m_msgs[i].count <= 0)
 						{
 							//停止发送
-							pSSM->m_msgs[i].bValid = false;
+							pSSM->m_msgs[i].valid = false;
 						}
 					}
-					else if (pSSM->m_msgs[i].emST == ST_PE)
+					else if (pSSM->m_msgs[i].type == ST_PE)
 					{
-						if (pSSM->m_msgs[i].iSendCount > 0)
+						if (pSSM->m_msgs[i].count > 0)
 						{
-							pSSM->m_msgs[i].iSendCount--;
-							if (pSSM->m_msgs[i].iSendCount <= 0)
+							pSSM->m_msgs[i].count--;
+							if (pSSM->m_msgs[i].count <= 0)
 							{
 								//发送默认值
 								for (int j = 0; j < MAX_MSG_COUNT; j++)
 								{
 									if (pSSM->m_msgs[i].msg.id == pSSM->m_msgBackup[j].msg.id)
 									{
-										memcpy(&pSSM->m_msgs[i], &pSSM->m_msgBackup[j], sizeof(CanMsg));
+										//memcpy(&pSSM->m_msgs[i], &pSSM->m_msgBackup[j], sizeof(CanMsg));
+										pSSM->m_msgs[i] = pSSM->m_msgBackup[j];
+										break;
 									}
 								}
 							}
@@ -69,23 +74,12 @@ UINT WINAPI SendCanProc(void* pArgs)
 }
 CanSender::CanSender()
 {
-	m_bQuit = false;
-	m_bStart = false;
-	m_hSend = nullptr;
-	m_pIConnMgr = nullptr;
-	memset(m_msgs, 0, sizeof(CanMsg) * MAX_MSG_COUNT);
-	memset(m_msgBackup, 0, sizeof(CanMsg) * MAX_MSG_COUNT);
 	m_hSend = (HANDLE)_beginthreadex(nullptr, 0, &SendCanProc, this, 0, 0);
 }
 
 CanSender::CanSender(IConnMgr* const pIConnMgr)
 {
-	m_bQuit = false;
-	m_bStart = false;
-	m_hSend = nullptr;
 	m_pIConnMgr = pIConnMgr;
-	memset(m_msgs, 0, sizeof(CanMsg) * MAX_MSG_COUNT);
-	memset(m_msgBackup, 0, sizeof(CanMsg) * MAX_MSG_COUNT);
 	m_hSend = (HANDLE)_beginthreadex(nullptr, 0, &SendCanProc, this, 0, 0);
 }
 
@@ -113,13 +107,16 @@ bool CanSender::Init(IConnMgr* const pIConnMgr)
 			break;
 		}
 
-		memcpy(m_msgBackup, m_msgs, sizeof(CanMsg) * MAX_MSG_COUNT);
+		//memcpy(m_msgBackup, m_msgs, sizeof(CanMsg) * MAX_MSG_COUNT);
+		for (int i = 0; i < MAX_MSG_COUNT; i++)
+			m_msgBackup[i] = m_msgs[i];
+
 		bRet = true;
 	} while (false);
 	return bRet;
 }
 
-bool CanSender::AddMsg(const MsgNode& msg, const int& iDelay, const SendType& emST, const int& iSendCount)
+bool CanSender::AddMsg(const MsgNode& msg, const int& iDelay, const SendType& emST, const int& iSendCount, SendProc fnc)
 {
 	bool bRet = false;
 	do
@@ -127,15 +124,16 @@ bool CanSender::AddMsg(const MsgNode& msg, const int& iDelay, const SendType& em
 		bool bFind = false;
 		for (int i = 0; i < MAX_MSG_COUNT; i++)
 		{
-			if (m_msgs[i].bValid)
+			if (m_msgs[i].valid)
 			{
 				//如果存在则直接覆盖
 				if (m_msgs[i].msg.id == msg.id)
 				{
 					memcpy(&m_msgs[i].msg, &msg, sizeof(MsgNode));
-					m_msgs[i].iCycle = iDelay;
-					m_msgs[i].iSendCount = iSendCount;
-					m_msgs[i].emST = emST;
+					m_msgs[i].delay = iDelay;
+					m_msgs[i].count = iSendCount;
+					m_msgs[i].type = emST;
+					m_msgs[i].fnc = fnc;
 					bFind = true;
 					break;
 				}
@@ -147,18 +145,20 @@ bool CanSender::AddMsg(const MsgNode& msg, const int& iDelay, const SendType& em
 			//新增
 			for (int i = 0; i < MAX_MSG_COUNT; i++)
 			{
-				if (!m_msgs[i].bValid)
+				if (!m_msgs[i].valid)
 				{
 					memcpy(&m_msgs[i].msg, &msg, sizeof(MsgNode));
-					m_msgs[i].iSendCount = iSendCount;
-					m_msgs[i].emST = emST;
-					m_msgs[i].iCycle = iDelay;
-					m_msgs[i].bValid = true;
-					m_msgs[i].iTime = 0;
+					m_msgs[i].count = iSendCount;
+					m_msgs[i].type = emST;
+					m_msgs[i].delay = iDelay;
+					m_msgs[i].fnc = fnc;
+					m_msgs[i].valid = true;
+					m_msgs[i].time = 0;
 
 					if (emST != ST_Event)
 					{
-						memcpy(&m_msgBackup[i], &m_msgs[i], sizeof(CanMsg));
+						//memcpy(&m_msgBackup[i], &m_msgs[i], sizeof(CanMsg));
+						m_msgBackup[i] = m_msgs[i];
 					}
 					bFind = true;
 					break;
@@ -177,61 +177,14 @@ bool CanSender::AddMsg(const MsgNode& msg, const int& iDelay, const SendType& em
 	return bRet;
 }
 
+bool CanSender::AddMsg(SendProc fnc, const int& delay, const SendType& type, const int& count)
+{
+	return AddMsg({}, delay, type, count, fnc);
+}
+
 bool CanSender::AddMsg(const CanMsg& msg)
 {
-	bool bRet = false;
-	do
-	{
-		bool bFind = false;
-		for (int i = 0; i < MAX_MSG_COUNT; i++)
-		{
-			if (m_msgs[i].bValid)
-			{
-				//如果存在则直接覆盖
-				if (m_msgs[i].msg.id == msg.msg.id)
-				{
-					memcpy(&m_msgs[i].msg, &msg, sizeof(MsgNode));
-					m_msgs[i].iCycle = msg.iCycle;
-					m_msgs[i].iSendCount = msg.iSendCount;
-					m_msgs[i].emST = msg.emST;
-					bFind = true;
-					break;
-				}
-			}
-		}
-		if (!bFind)
-		{
-			//新增
-			for (int i = 0; i < MAX_MSG_COUNT; i++)
-			{
-				if (!m_msgs[i].bValid)
-				{
-					memcpy(&m_msgs[i].msg, &msg, sizeof(MsgNode));
-					m_msgs[i].iSendCount = msg.iSendCount;
-					m_msgs[i].emST = msg.emST;
-					m_msgs[i].iCycle = msg.iCycle;
-					m_msgs[i].bValid = true;
-					m_msgs[i].iTime = 0;
-
-					if (msg.emST != ST_Event)
-					{
-						memcpy(&m_msgBackup[i], &m_msgs[i], sizeof(CanMsg));
-					}
-					bFind = true;
-					break;
-				}
-			}
-		}
-
-		if (!bFind)
-		{
-			SetLastError("报文已满");
-			break;
-		}
-
-		bRet = true;
-	} while (false);
-	return bRet;
+	return AddMsg(msg.msg, msg.delay, msg.type, msg.count, msg.fnc);
 }
 
 bool CanSender::AddMsg(const std::initializer_list<CanMsg>& msg)
@@ -254,51 +207,26 @@ bool CanSender::AddMsg(const std::initializer_list<CanMsg>& msg)
 		}
 		bRet = true;
 	} while (false);
-	return true;
+	return bRet;
 }
 
 void CanSender::DeleteMsgs(const std::initializer_list<MsgNode>& msgs)
 {
-	for (int i = 0; i < MAX_MSG_COUNT; i++)
-	{
-		for (int j = 0; j < msgs.size(); j++)
-		{
-			if (m_msgs[i].msg.id == msgs.begin()[j].id)
-			{
-				memset(&m_msgs[i], 0, sizeof(CanMsg));
-				break;
-			}
-		}
-	}
+	for (auto& x : msgs)
+		DeleteOneMsg(x.id);
 	return;
 }
 
 void CanSender::DeleteMsgs(const std::initializer_list<int>& ids)
 {
-	for (int i = 0; i < MAX_MSG_COUNT; i++)
-	{
-		for (int j = 0; j < ids.size(); j++)
-		{
-			if (m_msgs[i].msg.id == ids.begin()[j])
-			{
-				memset(&m_msgs[i], 0, sizeof(CanMsg));
-				break;
-			}
-		}
-	}
+	for (auto& x : ids)
+		DeleteOneMsg(x);
 	return;
 }
 
 void CanSender::DeleteOneMsg(const MsgNode& msg)
 {
-	for (int i = 0; i < MAX_MSG_COUNT; i++)
-	{
-		if (m_msgs[i].msg.id == msg.id)
-		{
-			memset(&m_msgs[i], 0, sizeof(CanMsg));
-			break;
-		}
-	}
+	DeleteOneMsg(msg.id);
 	return;
 }
 
@@ -319,7 +247,7 @@ void CanSender::DeleteAllMsgs()
 {
 	for (int i = 0; i < MAX_MSG_COUNT; i++)
 	{
-		if (m_msgs[i].bValid)
+		if (m_msgs[i].valid)
 		{
 			memset(&m_msgs[i], 0x00, sizeof(CanMsg));
 		}
@@ -335,7 +263,7 @@ bool CanSender::GetMsgData(const int& ID, UCHAR* ucData)
 		bool bFind = false;
 		for (int i = 0; i < MAX_MSG_COUNT; i++)
 		{
-			if (!m_msgs[i].bValid)
+			if (!m_msgs[i].valid)
 			{
 				continue;
 			}
@@ -365,7 +293,7 @@ bool CanSender::SetMsgData(const int& ID, const UCHAR* const ucData)
 		bool bFind = false;
 		for (int i = 0; i < MAX_MSG_COUNT; i++)
 		{
-			if (!m_msgs[i].bValid)
+			if (!m_msgs[i].valid)
 			{
 				continue;
 			}
@@ -390,9 +318,9 @@ void CanSender::Start()
 	m_time.getStartTime();
 	for (int i = 0; i < MAX_MSG_COUNT; i++)
 	{
-		if (m_msgs[i].bValid)
+		if (m_msgs[i].valid)
 		{
-			m_msgs[i].iTime = 0;
+			m_msgs[i].time = 0;
 		}
 	}
 	m_bStart = true;
@@ -420,12 +348,12 @@ bool CanSender::EnableExternalMsg(bool enable)
 		bool bFind = false;
 		for (int i = 0; i < MAX_MSG_COUNT; i++)
 		{
-			if (m_msgs[i].bValid)
+			if (m_msgs[i].valid)
 			{
 				continue;
 			}
 			stcmsg = &m_msgs[i];
-			stcmsg->bValid = true;
+			stcmsg->valid = true;
 			bFind = true;
 			break;
 		}
@@ -438,9 +366,9 @@ bool CanSender::EnableExternalMsg(bool enable)
 		for (int i = 0; i < m_jsonTool->getCanMsgCount(); i++)
 		{
 			stcmsg->msg.id = m_jsonTool->getParsedCanMsg()[i].msg.id;
-			stcmsg->iCycle = m_jsonTool->getParsedCanMsg()[i].iCycle;
+			stcmsg->delay = m_jsonTool->getParsedCanMsg()[i].delay;
 			stcmsg->msg.dlc = m_jsonTool->getParsedCanMsg()[i].msg.dlc;
-			stcmsg->emST = m_jsonTool->getParsedCanMsg()[i].emST;
+			stcmsg->type = m_jsonTool->getParsedCanMsg()[i].type;
 			memcpy(stcmsg->msg.data, m_jsonTool->getParsedCanMsg()[i].msg.data, sizeof(stcmsg->msg.data));
 		}
 		bRet = true;
@@ -456,7 +384,7 @@ void CanSender::PauseMsg(const std::initializer_list<MsgNode>& msg)
 		{
 			if (m_msgs[i].msg.id == msg.begin()[j].id)
 			{
-				m_msgs[i].bValid = false;
+				m_msgs[i].valid = false;
 				break;
 			}
 		}
@@ -472,7 +400,7 @@ void CanSender::ProceedMsg(const std::initializer_list<MsgNode>& msg)
 		{
 			if (m_msgs[i].msg.id == msg.begin()[j].id)
 			{
-				m_msgs[i].bValid = true;
+				m_msgs[i].valid = true;
 				break;
 			}
 		}

@@ -101,8 +101,6 @@ bool Dt::Base::initInstance()
 
 		RUN_BREAK(!initConsoleWindow(), getLastError());
 
-		saveCanLog(m_defConfig->enable.saveCanLog);
-
 		m_udsApplyMgr = m_udsFactory.GetConnMgrInstance(m_defConfig->device.udsName.toLatin1());
 
 		RUN_BREAK(!m_udsApplyMgr, "UDS通信协议初始化失败");
@@ -238,6 +236,8 @@ bool Dt::Base::prepareTest(const ulong& delay)
 	{
 		m_lastError = "No Error";
 
+		saveCanLog(m_defConfig->enable.saveCanLog);
+
 		setCanLogName(m_defConfig->device.modelName, g_code);
 
 		clearListItem();
@@ -260,8 +260,10 @@ bool Dt::Base::prepareTest(const ulong& delay)
 		{
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "打开ACC失败");
 			msleep(300);
+
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.gnd, true), "打开GND失败");
 			msleep(300);
+
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.pinboard, true), "打开转接板失败");
 			msleep(300);
 
@@ -269,8 +271,10 @@ bool Dt::Base::prepareTest(const ulong& delay)
 			{
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.white, true), "打开白色信号灯失败");
 				msleep(300);
+
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.red, false), "关闭红色信号灯失败");
 				msleep(300);
+
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.green, false), "关闭绿色信号灯失败");
 				msleep(300);
 			}
@@ -306,6 +310,8 @@ bool Dt::Base::prepareTest(const int& id, const ulong& timeout, const int& req, 
 	{
 		m_lastError = "No Error";
 
+		saveCanLog(m_defConfig->enable.saveCanLog);
+
 		setCanLogName(m_defConfig->device.modelName, g_code);
 
 		clearListItem();
@@ -328,8 +334,10 @@ bool Dt::Base::prepareTest(const int& id, const ulong& timeout, const int& req, 
 		{
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, true), "打开ACC失败");
 			msleep(300);
+
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.gnd, true), "打开GND失败");
 			msleep(300);
+
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.pinboard, true), "打开转接板失败");
 			msleep(300);
 
@@ -337,8 +345,10 @@ bool Dt::Base::prepareTest(const int& id, const ulong& timeout, const int& req, 
 			{
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.white, true), "打开白色信号灯失败");
 				msleep(300);
+
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.red, false), "关闭红色信号灯失败");
 				msleep(300);
+
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.green, false), "关闭绿色信号灯失败");
 				msleep(300);
 			}
@@ -393,8 +403,10 @@ bool Dt::Base::finishTest(bool success)
 		{
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.acc, false), "关闭ACC失败");
 			msleep(300);
+
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.gnd, false), "关闭GND失败");
 			msleep(300);
+
 			RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.pinboard, false), "关闭转接板失败");
 			msleep(300);
 
@@ -402,6 +414,7 @@ bool Dt::Base::finishTest(bool success)
 			{
 				RUN_BREAK(!m_relay.SetOneIO(m_defConfig->relay.white, false), "关闭白色信号灯失败");
 				msleep(300);
+
 				RUN_BREAK(!(success ? m_relay.SetOneIO(m_defConfig->relay.green, true) :
 					m_relay.KeySimulate(m_defConfig->relay.red, 3000)), 
 					Q_SPRINTF("关闭%s信号灯失败",success ? "绿色":"红色"));
@@ -426,17 +439,17 @@ bool Dt::Base::saveLog(bool success)
 	bool result = false;
 	do
 	{
-		if (!finishTest(success))
-		{
-			break;
-		}
-
 		if (success ? true : setQuestionBox("提示", getLastError() + "\n\n检测NG是否要保存日志?"))
 		{
 			if (!writeLog(success))
 			{
 				break;
 			}
+		}
+
+		if (!finishTest(success))
+		{
+			break;
 		}
 
 		if (!success && m_defConfig->enable.unlockDlg)
@@ -695,16 +708,16 @@ tryAngin:
 		{
 			if (setQuestionBox("友情提示", "检测版本数据不匹配,\n是否自动修改为正确数据?"))
 			{
-				bool complete = false;
+				bool complete = true;
 				for (int i = 0; i < modify.size(); i++)
 				{
-					complete = m_jsonTool->setVerConfigValue(info[modify[i]].name, "值", info[modify[i]].read);
+					if (!m_jsonTool->setVerConfigValue(info[modify[i]].name, "值", info[modify[i]].read))
+						complete = false;
 				}
 
 				if (complete && m_jsonTool->initInstance(true))
 				{
 					setDetectionLog(BaseTypes::DL_VER);
-
 					addListItem("已自动修正,重新检测版本号");
 					goto tryAngin;
 				}
@@ -788,7 +801,8 @@ tryAgain:
 				bool complete = true;
 				for (int i = 0; i < modify.size(); i++)
 				{
-					complete = m_jsonTool->setDtcConfigValue(config[modify[i]].name, "忽略", "1");
+					if (!m_jsonTool->setDtcConfigValue(config[modify[i]].name, "忽略", "1"))
+						complete = false;
 				}
 
 				if (complete && m_jsonTool->initInstance(true))
@@ -825,7 +839,9 @@ void Dt::Base::saveCanLog(bool enable)
 
 void Dt::Base::setCanLogName(const QString& modelName, const QString& code)
 {
-	m_canConnMgr->SetDetectionData(GET_DT_DIR(), Q_TO_C_STR(modelName), Q_TO_C_STR(code));
+	auto nameBytes = modelName.toLocal8Bit();
+	auto codeBytes = code.toLocal8Bit();
+	m_canConnMgr->SetDetectionData(GET_DT_DIR(), nameBytes.data(), codeBytes.data());
 }
 
 void Dt::Base::flushCanLogBuffer()
@@ -2665,20 +2681,34 @@ bool Dt::Dvr::checkDvr(const QString& rtspUrl, bool useWifi, bool useCard, bool 
 		}
 
 		addListItem("正在检测网络状态,请耐心等待...");
-		size_t&& startTime = GetTickCount();
-		success = useWifi ? autoProcessStatus<DvrTypes::WifiStatus>() : autoProcessStatus<DvrTypes::EthernetStatus>();
-		addListItem(Q_SPRINTF("检测网络状态%s,用时:%.3f秒", success ? "正常" : "异常", float(GetTickCount() - startTime) / 1000.00f));
+		ulong&& startTime = GetTickCount();
+		success = useWifi ? autoProcessStatus<DvrTypes::WifiStatus>() :
+			autoProcessStatus<DvrTypes::EthernetStatus>();
+		addListItem(Q_SPRINTF("检测网络状态%s,用时:%.3f秒", success ? "正常" : "异常",
+			float(GetTickCount() - startTime) / 1000.00f));
 		RUN_BREAK(!success, "网络状态异常");
 
 		addListItem("检测网络出画");
+		int repalyCount = 1;
+	replay1:
 		success = vlcRtspStart(rtspUrl);
 		RUN_BREAK(!success, "RTSP协议出画失败");
 
-		success = setQuestionBoxEx("提示", "网络出画是否成功?", QPoint(50, 0));
+		//success = setQuestionBoxEx("提示", "网络出画是否成功?", QPoint(50, 0));
+		int play = setPlayQuestionBox("提示", "网络出画是否成功?", QPoint(130, 0));
+		if (play == DvrTypes::PR_OK) success = true;
+		else if (play == DvrTypes::PR_NG) success = false;
+		else
+		{
+			vlcRtspStop();
+			addListItem(Q_SPRINTF("网络出画重播第%d次", repalyCount));
+			if (repalyCount++ >= 5) success = false; else goto replay1;
+		}
+		vlcRtspStop();
 		addListItem(Q_SPRINTF("检测网络出画 %s", OK_NG(success)));
 		WRITE_LOG("%s 网络出画", OK_NG(success));
 		RUN_BREAK(!success, "网络出画失败");
-		vlcRtspStop();
+
 		if (getSoundLigth())
 		{
 			RUN_BREAK(!setSoundLight(false), "关闭音响和灯光失败");
@@ -2696,25 +2726,33 @@ bool Dt::Dvr::checkDvr(const QString& rtspUrl, bool useWifi, bool useCard, bool 
 			//success = downloadFile(url, "EVTDownload");
 			success = downloadFile(url, DvrTypes::FileType::FT_VIDEO);
 			addListItem(Q_SPRINTF("下载紧急录制文件 %s", OK_NG(success)));
-			RUN_BREAK(!success, "下载紧急录制文件失败");
+			RUN_BREAK(!success, "下载紧急录制文件失败," + getLastError());
 		}
 
 		msleep(1000);
 
 		addListItem("播放紧急录制视频中...");
+		repalyCount = 1;
+	replay2:
 		success = vlcRtspStart(url);
 		RUN_BREAK(!success, "播放紧急录制视频失败");
-
-		success = setQuestionBoxEx("提示", "紧急录制视频是否回放?", QPoint(80, 0));
+		//success = setQuestionBoxEx("提示", "紧急录制是否回放?", QPoint(80, 0));
+		play = setPlayQuestionBox("提示", "紧急录制视频是否回放?", QPoint(130, 0));
+		if (play == DvrTypes::PR_OK) success = true;
+		else if (play == DvrTypes::PR_NG) success = false;
+		else
+		{
+			vlcRtspStop();
+			addListItem(Q_SPRINTF("紧急录制视频重播第%d次", repalyCount));
+			if (repalyCount++ >= 5) success = false; else goto replay2;
+		}
 		addListItem(Q_SPRINTF("紧急录制视频回放 %s", OK_NG(success)));
-		WRITE_LOG("%s 紧急录制", OK_NG(success));
-
-		RUN_BREAK(!success, "紧急录制视频回放失败");
 		vlcRtspStop();
+		WRITE_LOG("%s 紧急录制", OK_NG(success));
+		RUN_BREAK(!success, "紧急录制视频回放失败");
 		result = true;
 	} while (false);
 	addListItem(Q_SPRINTF("检测DVR %s", OK_NG(result)), false);
-	if (!result) { vlcRtspStop(); }
 	return result;
 }
 
@@ -2849,7 +2887,7 @@ bool Dt::Dvr::getFileUrl(QString& url, const DvrTypes::FilePath& filePath)
 		RUN_BREAK(!m_dvrClient->connect(), m_dvrClient->getLastError());
 
 	tryAgain:
-		DEBUG_INFO() << "发送获取文件列表报文";
+		DEBUG_INFO_EX("发送获取%s文件列表报文", dirName);
 		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ (char)filePath, (char)filePath, 0x01, 0x01 },
 			DvrTypes::NC_FILE_CTRL, DvrTypes::NS_GET_FILE_LIST), m_dvrClient->getLastError());
 
@@ -2962,7 +3000,7 @@ bool Dt::Dvr::downloadFile(const QString& url, const QString& dirName, bool isVi
 		_stat64i32(Q_TO_C_STR(destFile), &stat);
 		float fileSize = stat.st_size / 1024.0f / 1024.0f;
 		float networkSpeed = fileSize / endDownloadTime;
-		QString downloadInfo = Q_SPRINTF("文件大小:%.2fM,下载用时:%.2f秒,平均速度:%.2fM/秒", fileSize, endDownloadTime, networkSpeed);
+		QString downloadInfo = Q_SPRINTF("文件大小:%.2fMB,下载用时:%.2f秒,平均速度:%.2fM/秒", fileSize, endDownloadTime, networkSpeed);
 		/*视频下载需要做网速处理*/
 		if (isVideo)
 		{
@@ -2984,15 +3022,24 @@ bool Dt::Dvr::downloadFile(const QString& url, const DvrTypes::FileType& types)
 	bool result = false, success = true;
 	do
 	{
+		int tryAgainCount = 1;
+	tryAgain:
 		bool isVideo = (types == DvrTypes::FT_VIDEO);
 		BaseTypes::DownloadInfo info;
 		info.title.sprintf("下载DVR%s", isVideo ? "紧急录制视频" : "照片");
 		info.url = url;
 		info.path = QString("%1\\%2").arg(isVideo ? m_videoPath : m_photoPath).arg(Misc::getCurrentDate());
-		RUN_BREAK(!setDownloadDlg(&info), info.error);
+		//RUN_BREAK(!setDownloadDlg(&info), info.error);
+		if (!setDownloadDlg(&info)/* && info.error == "Connection closed"*/)
+		{
+			addListItem(Q_SPRINTF("网络连接不稳定下载失败%s,重试第%d次", Q_TO_C_STR(info.error), tryAgainCount));
+			RUN_BREAK(tryAgainCount++ >= 3, info.error);
+			msleep(100);
+			goto tryAgain;
+		}
 
 		info.speed /= 1024;
-		QString downloadInfo = Q_SPRINTF("下载用时:%.2f秒,平均速度:%.2fM/秒", float(info.time) / 1000.00f, info.speed);
+		QString downloadInfo = Q_SPRINTF("文件大小:%.2fMB,下载用时:%.2f秒,平均速度:%.2fM/秒", info.size, float(info.time) / 1000.00f, info.speed);
 		/*视频下载需要做网速处理*/
 		if (isVideo)
 		{
@@ -3125,7 +3172,7 @@ bool Dt::Dvr::checkRayAxisSfrEx(CanList list, const int& id, const int& req, Msg
 		success = autoProcessCanMsg(id, req, proc);
 		for (auto& x : list)
 		{
-			if (x.type != ST_Event)
+			if (x.type == ST_Period)
 				m_canSender.DeleteOneMsg(x.msg);
 		}
 
@@ -3164,7 +3211,7 @@ bool Dt::Dvr::checkRayAxisSfr(const CanMsg& msg, const int& id, const int& req, 
 	return checkRayAxisSfrEx({ msg }, id, req, proc);
 }
 
-bool Dt::Dvr::formatSdCard()
+bool Dt::Dvr::formatSdCard(bool pauseRecord)
 {
 	setCurrentStatus("格式化SD卡");
 	bool result = false;
@@ -3172,21 +3219,23 @@ bool Dt::Dvr::formatSdCard()
 tryAgain:
 	do
 	{
-		msleep(500);
+		msleep(1000);
 		char data[BUFF_SIZE] = { 0 };
 		int len = 0;
-		DEBUG_INFO() << "发送暂停循环录制报文";
-		addListItem("发送暂停循环录制报文");
 		RUN_BREAK(!m_dvrClient->connect(), m_dvrClient->getLastError());
-		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ 0x00 }, 0x02, 0x00), m_dvrClient->getLastError());
-		RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, DvrTypes::NC_FAST_CONTROL,
-			DvrTypes::NS_FAST_CYCLE_RECORD), m_dvrClient->getLastError());
-
-		addListItem(Q_SPRINTF("暂停循环录制 %s", OK_NG(*(uint*)&data[2] == 0)));
-		//writeNetLog("pauseRecord", data, len, *(int*)&data[2] == 0);
-		RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("暂停循环录制失败,操作错误代码:0x%X", *(uint*)&data[2]));
-		msleep(1000);
-		memset(data, 0x00, BUFF_SIZE);
+		if (pauseRecord)
+		{
+			DEBUG_INFO() << "发送暂停循环录制报文";
+			addListItem("发送暂停循环录制报文");
+			RUN_BREAK(!m_dvrClient->sendFrameDataEx({ 0x00 }, 0x02, 0x00), m_dvrClient->getLastError());
+			RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, DvrTypes::NC_FAST_CONTROL,
+				DvrTypes::NS_FAST_CYCLE_RECORD), m_dvrClient->getLastError());
+			addListItem(Q_SPRINTF("暂停循环录制 %s", OK_NG(*(uint*)&data[2] == 0)));
+			//writeNetLog("pauseRecord", data, len, *(int*)&data[2] == 0);
+			RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("暂停循环录制失败,操作错误代码:0x%X", *(uint*)&data[2]));
+			msleep(1000);
+			memset(data, 0x00, BUFF_SIZE);
+		}
 		DEBUG_INFO() << "发送格式化SD卡报文";
 		addListItem("发送格式化SD卡报文");
 		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ }, 0x12, 0x20), m_dvrClient->getLastError());
@@ -3196,9 +3245,10 @@ tryAgain:
 		result = true;
 	} while (false);
 	m_dvrClient->disconnect();
-	if (!result && ++tryAgainCount <= 3)
+	if (!result && ++tryAgainCount <= 3 && m_sysStatusMsg != DvrTypes::SSM_CHJ)
 	{
-		addListItem(Q_SPRINTF("格式化SD卡失败,重试第%d次", tryAgainCount));
+		addListItem(Q_SPRINTF("操作失败,重试第%d次", tryAgainCount));
+		msleep(1000);
 		goto tryAgain;
 	}
 	addListItemEx(Q_SPRINTF("格式化SD卡 %s", OK_NG(result)));
@@ -3232,6 +3282,7 @@ bool Dt::Dvr::changeWifiPassword()
 {
 	setCurrentStatus("修改WIFI密码");
 	bool result = false, success = false;
+	QString newPassword;
 	do
 	{
 		QString oldPassword = m_wifiInfo.password;
@@ -3253,7 +3304,6 @@ bool Dt::Dvr::changeWifiPassword()
 		};
 
 		srand((uint)time(NULL));
-		QString newPassword;
 		for (int i = 0; i < 8; i++)
 		{
 			newPassword.append(word[rand() % 62]);
@@ -3297,7 +3347,7 @@ bool Dt::Dvr::changeWifiPassword()
 		result = true;
 	} while (false);
 	m_dvrClient->disconnect();
-	WRITE_LOG("%s 修改WIFI密码", OK_NG(result));
+	WRITE_LOG("%s 修改WIFI密码 %s", OK_NG(result), Q_TO_C_STR(newPassword));
 	addListItemEx(Q_SPRINTF("修改WIFI密码 %s", OK_NG(result)));
 	return result;
 }
@@ -3354,6 +3404,14 @@ Misc::UpdateSfr* Dt::Dvr::getUpdateSfr()
 Nt::SfrServer* Dt::Dvr::getSfrServer()
 {
 	return m_sfrServer;
+}
+
+const int Dt::Dvr::setPlayQuestionBox(const QString& title, const QString& text, const QPoint& point)
+{
+	int result = DvrTypes::PR_NG;
+	emit setPlayQuestionBoxSignal(title, text, &result, point);
+	threadPause();
+	return result;
 }
 
 void WINAPI Cc::Mv800Proc(const uchar* head, const uchar* bits, LPVOID param)
@@ -3434,7 +3492,7 @@ bool Nt::DvrClient::connect(const int& count)
 
 bool Nt::DvrClient::connect(const QString& address, const ushort& port, const int& count)
 {
-	bool result = false;
+	bool result = false, success = false;
 	do
 	{
 		if (m_connected)
@@ -3447,30 +3505,28 @@ bool Nt::DvrClient::connect(const QString& address, const ushort& port, const in
 		WSADATA wsaData;
 		RUN_BREAK(WSAStartup(sockVersion, &wsaData) != 0, Q_SPRINTF("WSAStartup初始化失败,错误代码:%d", WSAGetLastError()));
 
-		m_socket = ::socket(AF_INET, SOCK_STREAM, 0);
-		RUN_BREAK(m_socket == INVALID_SOCKET, Q_SPRINTF("套接字初始化失败,错误代码:%d", WSAGetLastError()));
-
-		int timeout = 3000;
-		setsockopt(m_socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
-		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-
-		memset(&m_sockAddr, 0x00, sizeof(sockaddr_in));
-		m_sockAddr.sin_addr.S_un.S_addr = inet_addr(Q_TO_C_STR(address));
-		m_sockAddr.sin_family = AF_INET;
-		m_sockAddr.sin_port = htons(port);
-
-		timeval tv = { 0 };
-		fd_set set = { 0 };
-		ulong argp = 1;
-		ioctlsocket(m_socket, FIONBIO, &argp);
-		bool success = false;
-		int error = -1;
-		int length = sizeof(int);
 		for (size_t i = 0; i < count; i++)
 		{
+			m_socket = ::socket(AF_INET, SOCK_STREAM, 0);
+			RUN_BREAK(m_socket == INVALID_SOCKET, Q_SPRINTF("套接字初始化失败,错误代码:%d", WSAGetLastError()));
+
+			int timeout = 3000;
+			setsockopt(m_socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
+			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+
+			memset(&m_sockAddr, 0x00, sizeof(sockaddr_in));
+			m_sockAddr.sin_addr.S_un.S_addr = inet_addr(Q_TO_C_STR(address));
+			m_sockAddr.sin_family = AF_INET;
+			m_sockAddr.sin_port = htons(port);
+
+			timeval tv = { 0 };
+			fd_set set = { 0 };
+			ulong argp = 1;
+			ioctlsocket(m_socket, FIONBIO, &argp);
+			int error = -1;
+			int length = sizeof(int);
 			if (::connect(m_socket, (const sockaddr*)&m_sockAddr, sizeof(m_sockAddr)) == SOCKET_ERROR)
 			{
-				DEBUG_INFO_EX("连接失败,正在轮询重连,剩余连接次数%d次", count - i - 1);
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 				FD_ZERO(&set);
@@ -3487,11 +3543,14 @@ bool Nt::DvrClient::connect(const QString& address, const ushort& port, const in
 					}
 					else
 					{
+						closesocket(m_socket);
 						success = false;
 					}
 				}
 				else
 				{
+					DEBUG_INFO_EX("连接失败,正在轮询重连,剩余连接次数%d次", count - i - 1);
+					closesocket(m_socket);
 					success = false;
 				}
 			}
@@ -3502,10 +3561,15 @@ bool Nt::DvrClient::connect(const QString& address, const ushort& port, const in
 			}
 		}
 
-		argp = 0;
+		ulong argp = 0;
 		ioctlsocket(m_socket, FIONBIO, &argp);
 
-		RUN_BREAK(!success, "连接服务器超时");
+		if (!success)
+		{
+			setLastError("连接服务器超时");
+			WSACleanup();
+			break;
+		}
 		m_connected = result = true;
 		m_disconnected = false;
 	} while (false);
@@ -3514,9 +3578,13 @@ bool Nt::DvrClient::connect(const QString& address, const ushort& port, const in
 
 void Nt::DvrClient::disconnect()
 {
+	if (!m_connected)
+		return;
+
 	if (m_socket != INVALID_SOCKET)
 	{
 		closesocket(m_socket);
+		m_socket = INVALID_SOCKET;
 	}
 	WSACleanup();
 	m_connected = false;
@@ -3837,6 +3905,8 @@ bool Cc::Mil::open(const QString& name, const int& channel)
 
 		RUN_BREAK(channel < 0 || channel > 1, Q_SPRINTF("MIL采集卡通道编号为%d,不支持的通道编号", channel));
 
+		//MappControl(M_DEFAULT, M_ERROR, M_PRINT_DISABLE);//禁用对话框报错
+
 		RUN_BREAK(!MappAlloc(M_DEFAULT, &MilApplication), "MappAlloc失败");
 
 		RUN_BREAK(!MsysAlloc(M_SYSTEM_MORPHIS, M_DEF_SYSTEM_NUM, M_SETUP, &MilSystem), "MsysAlloc失败");
@@ -3923,7 +3993,7 @@ Nt::SfrServer::~SfrServer()
 	closeListen();
 }
 
-static void Nt::sfrProcThread(void* arg)
+void Nt::SfrServer::sfrProcThread(void* arg)
 {
 	Nt::SfrServer* sfrServer = static_cast<Nt::SfrServer*>(arg);
 	while (!sfrServer->m_quit)
@@ -3989,7 +4059,7 @@ bool Nt::SfrServer::startListen(const ushort& port)
 			break;
 		}
 
-		_beginthread(Nt::sfrProcThread, 0, this);
+		_beginthread(Nt::SfrServer::sfrProcThread, 0, this);
 		result = true;
 	} while (false);
 	return result;
@@ -4202,7 +4272,7 @@ bool Misc::makePath(const QString& path)
 	return result;
 }
 
-const QString Misc::getAppVersion()
+const QString Misc::_getAppVersion()
 {
 	QString result = "0.0.0";
 	char* nameBuffer = nullptr;
@@ -4262,6 +4332,12 @@ const QString Misc::getAppVersion()
 	return result;
 }
 
+const QString Misc::getAppVersion()
+{
+	static QString version = _getAppVersion();
+	return version;
+}
+
 void Misc::setAppAppendName(const QString& name)
 {
 	Misc::Var::appendName = name;
@@ -4285,7 +4361,7 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		}
 
 		QString title, newName;
-		title = newName = QString("%1%2检测[%3]").arg(device.modelName, GET_DT_TYPE(), getAppVersion());
+		title = newName = QString("%1%2检测[%3]").arg(device.modelName, GET_DT_TYPE(), Misc::getAppVersion());
 		title = QString("%1[权限:%3]").arg(title, user);
 
 		widget->setWindowTitle(title);
@@ -4294,7 +4370,8 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		newName.append(".exe");
 		if (oldName != newName)
 		{
-			QFile::rename(oldName, newName);
+			//QFile::rename(oldName, newName);
+			MoveFileEx(Q_TO_WC_STR(oldName), Q_TO_WC_STR(newName), MOVEFILE_REPLACE_EXISTING);
 		}
 		result = true;
 	} while (false);

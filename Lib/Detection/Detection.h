@@ -47,6 +47,8 @@ namespace Misc {
 	bool makePath(const QString& path);
 
 	/*获取APP版本号*/
+	const QString _getAppVersion();
+
 	const QString getAppVersion();
 
 	/*设置APP附加名*/
@@ -320,7 +322,7 @@ namespace Dt {
 		void outputCanLog(bool enable = true);
 
 		/*保存CAN日志*/
-		void saveCanLog(bool enable = true);
+		void saveCanLog(bool enable);
 
 		/*设置CAN日志名*/
 		void setCanLogName(const QString& modelName, const QString& code);
@@ -988,7 +990,7 @@ namespace Dt {
 		bool checkRayAxisSfr(const CanMsg& msg, const int& id, const int& req, MsgProc proc);
 
 		/*格式化SD卡*/
-		virtual bool formatSdCard();
+		virtual bool formatSdCard(bool pauseRecord = true);
 
 		/*卸载SD卡*/
 		virtual bool umountSdCard();
@@ -1002,6 +1004,11 @@ namespace Dt {
 		Misc::UpdateSfr* getUpdateSfr();
 
 		Nt::SfrServer* getSfrServer();
+
+		/*播放询问对话框*/
+		const int setPlayQuestionBox(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
+	signals:
+		void setPlayQuestionBoxSignal(const QString&, const QString&, int* result, const QPoint& point);
 	protected:
 		/*必须重写线程*/
 		virtual void run() override = 0;
@@ -1186,28 +1193,20 @@ namespace Dt {
 									addListItem(G_TO_Q_STR(m_wifiMgr.getLastError()));
 									break;
 								}
-								addListItem("正在进行网络优化,该过程大约需要10~40秒,请耐心等待...");
-								success = m_dvrClient->connect(40);
-								if (success)
-								{
-									m_dvrClient->disconnect();
-									status = static_cast<T>(DvrTypes::WS_CONNECTED);
-								}
-								addListItem(Q_SPRINTF("网络优化 %s", OK_NG(success)));
+								addListItem("正在连接服务端,该过程大约需要1~20秒,请耐心等待...");
+								success = m_dvrClient->connect(20);
+								status = static_cast<T>(success ? DvrTypes::WS_CONNECTED : DvrTypes::WS_ERROR);
+								addListItem(Q_SPRINTF("连接服务端 %s", OK_NG(success)));
+								m_dvrClient->disconnect();
 							}
 						}
 						else if (statusCode == m_hashCode.ethernetStatus)
 						{
-							if (m_dvrClient->connect(40))
-							{
-								setCurrentStatus("以太网已连接", true);
-								status = static_cast<T>(DvrTypes::ES_CONNECT);
-							}
-							else
-							{
-								setCurrentStatus("以太网未连接", true);
-								status = static_cast<T>(DvrTypes::ES_ERROR);
-							}
+							addListItem("正在连接服务端,该过程大约需要1~20秒,请耐心等待...");
+							success = m_dvrClient->connect(20);
+							status = static_cast<T>(success ? DvrTypes::ES_CONNECT : DvrTypes::ES_ERROR);
+							setCurrentStatus(Q_SPRINTF("以太网%s连接", success ? "已" : "未"), true);
+							addListItem(Q_SPRINTF("连接服务端 %s", OK_NG(success)));
 							m_dvrClient->disconnect();
 						}
 						else if (statusCode == m_hashCode.sdCardStatus)
@@ -1451,9 +1450,6 @@ namespace Cc {
 /*Network transmission*/
 namespace Nt {
 
-	/*SFR处理线程*/
-	static void sfrProcThread(void* arg);
-
 	/************************************************************************/
 	/* SFR服务端,用于与SFR APP进行通讯,此处用作服务端                       */
 	/************************************************************************/
@@ -1475,7 +1471,7 @@ namespace Nt {
 
 		const QString& getLastError();
 
-		friend static void sfrProcThread(void* arg);
+		static void sfrProcThread(void* arg);
 	protected:
 		void setLastError(const QString& error);
 	private:

@@ -17,13 +17,17 @@ public:
 
 	void download(const QString& title, const QString& url, const QString& path);
 
-	bool result();
+	bool getResult();
 
-	const ulong elapsedTime();
+	const ulong getElapsedTime();
 
-	const float averageSpeed();
+	const float getAverageSpeed();
+
+	const float getFileSize();
 
 	const QString& getLastError();
+
+	bool resetNetwork();
 protected:
 	void setLastError(const QString& error);
 
@@ -37,13 +41,13 @@ protected:
 private slots:
 	void resultSlot(const DownloadResult& result, const QString& error);
 
-	void progressSlot(const int& value, const float& speed);
+	void progressSlot(const qint64& receive, const qint64& total, const float& speed);
 private:
 	Ui::DownloadDlg ui;
 
 	QString m_lastError = "No Error";
 
-	Downloader m_manager;
+	Downloader* m_manager = nullptr;
 
 	DownloadResult m_result = DR_ERROR;
 

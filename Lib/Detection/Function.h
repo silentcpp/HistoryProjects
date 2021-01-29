@@ -8,7 +8,6 @@
 #endif //!USE_NEW_MSG_NODE
 
 #include "MainDlg.h"
-#include "Detection.h"
 
 /************************************************************************/
 /* ¹¦ÄÜ                                                                 */
@@ -19,7 +18,7 @@ namespace Fnc {
 	class GAC : public Dt::Avm {
 		Q_OBJECT
 	public:
-		GAC(QObject* parent = nullptr) {};
+		explicit GAC(QObject* parent = nullptr) {};
 
 		~GAC() {};
 
@@ -37,11 +36,15 @@ namespace Fnc {
 	class BAIC : public Dt::Dvr {
 		Q_OBJECT
 	public:
-		BAIC(QObject* parent = nullptr);
+		explicit BAIC(QObject* parent = nullptr);
 
 		~BAIC();
 
 		virtual bool setOtherAction();
+
+		bool checkSn();
+
+		bool checkRecord();
 
 	protected:
 		virtual void run() = 0;
@@ -53,7 +56,7 @@ namespace Fnc {
 	class CHJAutoMotive : public Dt::Dvr {
 		Q_OBJECT
 	public:
-		CHJAutoMotive(QObject* parent = nullptr);
+		explicit CHJAutoMotive(QObject* parent = nullptr);
 
 		~CHJAutoMotive();
 

@@ -109,6 +109,7 @@ bool MainDlg::initInstance()
 			Dt::Dvr* dvr = nullptr;
 			RUN_BREAK(!(dvr = dynamic_cast<Dt::Dvr*>(m_base)), "父类不为Dt::Dvr,设置VLC句柄失败");
 			dvr->setVlcMediaHwnd((HWND)ui.imageLabel->winId());
+			connect(dvr, &Dvr::setPlayQuestionBoxSignal, this, &MainDlg::setPlayQuestionBoxSlot);
 			//connect(dvr->getUpdateSfr(), &Misc::UpdateSfr::updateSfrSignal, this, &MainDlg::updateSfrSlot);
 		}
 
@@ -145,13 +146,27 @@ void MainDlg::setAuthDlgSlot(bool* result)
 
 void MainDlg::setDownloadDlgSlot(BaseTypes::DownloadInfo* info)
 {
-	m_downloadDlg->download(info->title, info->url, info->path);
-	m_downloadDlg->exec();
-	info->result = m_downloadDlg->result();
-	info->time = m_downloadDlg->elapsedTime();
-	info->speed = m_downloadDlg->averageSpeed();
-	info->error = m_downloadDlg->getLastError();
+	int tryAgainCount = 1;
+	do 
+	{
+	tryAgain:
+		m_downloadDlg->download(info->title, info->url, info->path);
+		m_downloadDlg->exec();
+		info->result = m_downloadDlg->getResult();
+		info->size = m_downloadDlg->getFileSize();
+		info->time = m_downloadDlg->getElapsedTime();
+		info->speed = m_downloadDlg->getAverageSpeed();
+		info->error = m_downloadDlg->getLastError();
+		if (info->error == "Network access is disabled.")
+		{
+			m_downloadDlg->resetNetwork();
+			m_base->addListItem(Q_SPRINTF("网络访问权限被禁用已重置网络,重试第%d次", tryAgainCount));
+			if (tryAgainCount++ >= 5) break;
+			goto tryAgain;
+		}
+	} while (false);
 	m_base->threadContinue();
+	return;
 }
 
 void MainDlg::settingButtonSlot()
@@ -238,6 +253,25 @@ void MainDlg::setQuestionBoxExSlot(const QString& title, const QString& text, bo
 	msgBox.move(width - point.x(), point.y());
 	*result = (msgBox.exec() == QMessageBox::Yes);
 	m_base->threadContinue();
+}
+
+void MainDlg::setPlayQuestionBoxSlot(const QString& title, const QString& text, int* result, const QPoint& point)
+{
+	QMessageBox msgBox(QMessageBox::Question, title, text);
+	auto replay = msgBox.addButton("重播", QMessageBox::HelpRole);
+	auto yes = msgBox.addButton("是", QMessageBox::YesRole);
+	auto no = msgBox.addButton("否", QMessageBox::NoRole);
+	msgBox.setParent(ui.recordList);
+	msgBox.setStyleSheet("color:red");
+	int width = ui.recordList->width() - msgBox.widthMM();
+	msgBox.move(width - point.x(), point.y());
+	yes->setFocus();
+	msgBox.exec();
+	if (msgBox.clickedButton() == yes) *result = DvrTypes::PR_OK;
+	else if (msgBox.clickedButton() == no) *result = DvrTypes::PR_NG;
+	else *result = DvrTypes::PR_REPLAY;
+	m_base->threadContinue();
+	return;
 }
 
 void MainDlg::setCurrentStatusSlot(const QString& status, bool systemStatus)

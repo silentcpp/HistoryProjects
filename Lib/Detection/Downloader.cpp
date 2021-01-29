@@ -17,10 +17,9 @@ const QString& Downloader::getLastError()
 	return m_lastError;
 }
 
-const qint64 Downloader::getFileSize(const QUrl& url, const int& times)
+const qint64 Downloader::getFileSize(const QUrl& url, int times)
 {
 	qint64 size = -1;
-	int _times = times;
 	do
 	{
 		QNetworkAccessManager manager;
@@ -45,7 +44,7 @@ const qint64 Downloader::getFileSize(const QUrl& url, const int& times)
 		size = var.toLongLong();
 		reply->deleteLater();
 		break;
-	} while (_times-- > 0);
+	} while (times-- > 0);
 	return size;
 }
 
@@ -77,17 +76,22 @@ QNetworkReply* Downloader::getReply()
 	return m_reply;
 }
 
-const ulong Downloader::elapsedTime()
+const ulong Downloader::getElapsedTime()
 {
 	return m_endTime;
 }
 
-const float Downloader::averageSpeed()
+const float Downloader::getAverageSpeed()
 {
 	float sum = 0.0f;
 	for (auto& x : m_speedV)
 		sum += x;
 	return sum / m_speedV.size();
+}
+
+const float Downloader::getFileSize()
+{
+	return (float)m_fileSize / 1024.0f / 1024.0f;
 }
 
 void Downloader::sslErrorsSlot(const QList<QSslError>& sslErrors)
@@ -98,9 +102,10 @@ void Downloader::sslErrorsSlot(const QList<QSslError>& sslErrors)
 
 void Downloader::progressSlot(qint64 recvBytes, qint64 totalBytes)
 {
-	float speed = (recvBytes - m_recvBytes) / 1024.0;
+	m_fileSize = totalBytes;
+	float speed = (recvBytes - m_recvBytes) / 1024.0 * 8;
 	m_speedV.push_back(speed);
-	emit progressSignal(((float)recvBytes / totalBytes) * 100, speed);
+	emit progressSignal(recvBytes, totalBytes, speed);
 	m_recvBytes = recvBytes;
 }
 

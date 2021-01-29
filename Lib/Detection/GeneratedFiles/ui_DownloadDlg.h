@@ -19,6 +19,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QVBoxLayout>
 
 QT_BEGIN_NAMESPACE
@@ -28,6 +29,10 @@ class Ui_DownloadDlg
 public:
     QVBoxLayout *verticalLayout;
     QLabel *titleLabel;
+    QHBoxLayout *horizontalLayout_3;
+    QLabel *label;
+    QLabel *sizeLabel;
+    QSpacerItem *horizontalSpacer;
     QHBoxLayout *horizontalLayout_2;
     QLabel *urlLabel;
     QLabel *speedLabel;
@@ -39,7 +44,7 @@ public:
     {
         if (DownloadDlg->objectName().isEmpty())
             DownloadDlg->setObjectName(QStringLiteral("DownloadDlg"));
-        DownloadDlg->resize(455, 98);
+        DownloadDlg->resize(492, 124);
         verticalLayout = new QVBoxLayout(DownloadDlg);
         verticalLayout->setSpacing(6);
         verticalLayout->setContentsMargins(11, 11, 11, 11);
@@ -56,6 +61,26 @@ public:
         titleLabel->setAlignment(Qt::AlignCenter);
 
         verticalLayout->addWidget(titleLabel);
+
+        horizontalLayout_3 = new QHBoxLayout();
+        horizontalLayout_3->setSpacing(6);
+        horizontalLayout_3->setObjectName(QStringLiteral("horizontalLayout_3"));
+        label = new QLabel(DownloadDlg);
+        label->setObjectName(QStringLiteral("label"));
+
+        horizontalLayout_3->addWidget(label);
+
+        sizeLabel = new QLabel(DownloadDlg);
+        sizeLabel->setObjectName(QStringLiteral("sizeLabel"));
+
+        horizontalLayout_3->addWidget(sizeLabel);
+
+        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_3->addItem(horizontalSpacer);
+
+
+        verticalLayout->addLayout(horizontalLayout_3);
 
         horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setSpacing(6);
@@ -103,6 +128,8 @@ public:
     {
         DownloadDlg->setWindowTitle(QApplication::translate("DownloadDlg", "DownloadDlg", 0));
         titleLabel->setText(QApplication::translate("DownloadDlg", "\346\255\243\345\234\250\344\270\213\350\275\275\346\233\264\346\226\260\347\250\213\345\272\217", 0));
+        label->setText(QApplication::translate("DownloadDlg", "\346\226\207\344\273\266\345\244\247\345\260\217/\345\267\262\344\270\213\350\275\275:", 0));
+        sizeLabel->setText(QApplication::translate("DownloadDlg", "00.00MB/00.00MB", 0));
         urlLabel->setText(QApplication::translate("DownloadDlg", "http://download.osgeo.org/libtiff/old/tiff-3.7.0beta.zip", 0));
         speedLabel->setText(QApplication::translate("DownloadDlg", "0.00Mb/s", 0));
         abortBtn->setText(QApplication::translate("DownloadDlg", "\347\273\210\346\255\242", 0));

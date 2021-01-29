@@ -34,7 +34,7 @@ public:
 	const QString& getLastError();
 
 	/*获取文件大小*/
-	const qint64 getFileSize(const QUrl& url, const int& times = 0);
+	const qint64 getFileSize(const QUrl& url, int times = 0);
 
 	/*下载*/
 	void download(const QUrl& url);
@@ -48,17 +48,20 @@ public:
 	/*获取应答*/
 	QNetworkReply* getReply();
 
-	/*所用时间*/
-	const ulong elapsedTime();
+	/*所用时间,单位MS*/
+	const ulong getElapsedTime();
 
-	/*平均网速*/
-	const float averageSpeed();
+	/*平均网速,单位KB*/
+	const float getAverageSpeed();
+
+	/*文件大小,单位MB*/
+	const float getFileSize();
 signals:
 	/*结果信号*/
 	void resultSignal(const DownloadResult& result, const QString& error);
 
 	/*进度信号*/
-	void progressSignal(const int& value, const float& speed);
+	void progressSignal(const qint64& receive, const qint64& total, const float& speed);
 public slots:
 	/*完成槽*/
 	void finishedSlot(QNetworkReply* reply);
@@ -95,7 +98,9 @@ private:
 
 	ulong m_endTime = 0;
 
-	quint64 m_recvBytes = 0;
+	qint64 m_recvBytes = 0;
+
+	qint64 m_fileSize = 0;
 
 	QVector<float> m_speedV;
 

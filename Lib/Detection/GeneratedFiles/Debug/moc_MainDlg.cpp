@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_MainDlg_t {
-    QByteArrayData data[35];
-    char stringdata0[471];
+    QByteArrayData data[37];
+    char stringdata0[499];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -50,20 +50,22 @@ QT_MOC_LITERAL(17, 207, 19), // "setMessageBoxExSlot"
 QT_MOC_LITERAL(18, 227, 5), // "point"
 QT_MOC_LITERAL(19, 233, 18), // "setQuestionBoxSlot"
 QT_MOC_LITERAL(20, 252, 20), // "setQuestionBoxExSlot"
-QT_MOC_LITERAL(21, 273, 20), // "setCurrentStatusSlot"
-QT_MOC_LITERAL(22, 294, 6), // "status"
-QT_MOC_LITERAL(23, 301, 12), // "systemStatus"
-QT_MOC_LITERAL(24, 314, 17), // "setTestResultSlot"
-QT_MOC_LITERAL(25, 332, 21), // "BaseTypes::TestResult"
-QT_MOC_LITERAL(26, 354, 15), // "addListItemSlot"
-QT_MOC_LITERAL(27, 370, 4), // "item"
-QT_MOC_LITERAL(28, 375, 7), // "logItem"
-QT_MOC_LITERAL(29, 383, 17), // "clearListItemSlot"
-QT_MOC_LITERAL(30, 401, 15), // "updateImageSlot"
-QT_MOC_LITERAL(31, 417, 5), // "image"
-QT_MOC_LITERAL(32, 423, 14), // "coordinateSlot"
-QT_MOC_LITERAL(33, 438, 18), // "usageRateTimerSlot"
-QT_MOC_LITERAL(34, 457, 13) // "updateSfrSlot"
+QT_MOC_LITERAL(21, 273, 22), // "setPlayQuestionBoxSlot"
+QT_MOC_LITERAL(22, 296, 4), // "int*"
+QT_MOC_LITERAL(23, 301, 20), // "setCurrentStatusSlot"
+QT_MOC_LITERAL(24, 322, 6), // "status"
+QT_MOC_LITERAL(25, 329, 12), // "systemStatus"
+QT_MOC_LITERAL(26, 342, 17), // "setTestResultSlot"
+QT_MOC_LITERAL(27, 360, 21), // "BaseTypes::TestResult"
+QT_MOC_LITERAL(28, 382, 15), // "addListItemSlot"
+QT_MOC_LITERAL(29, 398, 4), // "item"
+QT_MOC_LITERAL(30, 403, 7), // "logItem"
+QT_MOC_LITERAL(31, 411, 17), // "clearListItemSlot"
+QT_MOC_LITERAL(32, 429, 15), // "updateImageSlot"
+QT_MOC_LITERAL(33, 445, 5), // "image"
+QT_MOC_LITERAL(34, 451, 14), // "coordinateSlot"
+QT_MOC_LITERAL(35, 466, 18), // "usageRateTimerSlot"
+QT_MOC_LITERAL(36, 485, 13) // "updateSfrSlot"
 
     },
     "MainDlg\0setScanCodeDlgSlot\0\0show\0"
@@ -74,6 +76,7 @@ QT_MOC_LITERAL(34, 457, 13) // "updateSfrSlot"
     "exitButtonSlot\0setMessageBoxSlot\0title\0"
     "text\0setMessageBoxExSlot\0point\0"
     "setQuestionBoxSlot\0setQuestionBoxExSlot\0"
+    "setPlayQuestionBoxSlot\0int*\0"
     "setCurrentStatusSlot\0status\0systemStatus\0"
     "setTestResultSlot\0BaseTypes::TestResult\0"
     "addListItemSlot\0item\0logItem\0"
@@ -89,7 +92,7 @@ static const uint qt_meta_data_MainDlg[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-      19,   14, // methods
+      20,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -97,25 +100,26 @@ static const uint qt_meta_data_MainDlg[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    1,  109,    2, 0x0a /* Public */,
-       4,    1,  112,    2, 0x0a /* Public */,
-       5,    1,  115,    2, 0x0a /* Public */,
-       8,    1,  118,    2, 0x0a /* Public */,
-      11,    0,  121,    2, 0x0a /* Public */,
-      12,    0,  122,    2, 0x0a /* Public */,
-      13,    0,  123,    2, 0x0a /* Public */,
-      14,    2,  124,    2, 0x0a /* Public */,
-      17,    3,  129,    2, 0x0a /* Public */,
-      19,    3,  136,    2, 0x0a /* Public */,
-      20,    4,  143,    2, 0x0a /* Public */,
-      21,    2,  152,    2, 0x0a /* Public */,
-      24,    1,  157,    2, 0x0a /* Public */,
-      26,    2,  160,    2, 0x0a /* Public */,
-      29,    0,  165,    2, 0x0a /* Public */,
-      30,    1,  166,    2, 0x0a /* Public */,
-      32,    1,  169,    2, 0x0a /* Public */,
-      33,    0,  172,    2, 0x0a /* Public */,
-      34,    0,  173,    2, 0x0a /* Public */,
+       1,    1,  114,    2, 0x0a /* Public */,
+       4,    1,  117,    2, 0x0a /* Public */,
+       5,    1,  120,    2, 0x0a /* Public */,
+       8,    1,  123,    2, 0x0a /* Public */,
+      11,    0,  126,    2, 0x0a /* Public */,
+      12,    0,  127,    2, 0x0a /* Public */,
+      13,    0,  128,    2, 0x0a /* Public */,
+      14,    2,  129,    2, 0x0a /* Public */,
+      17,    3,  134,    2, 0x0a /* Public */,
+      19,    3,  141,    2, 0x0a /* Public */,
+      20,    4,  148,    2, 0x0a /* Public */,
+      21,    4,  157,    2, 0x0a /* Public */,
+      23,    2,  166,    2, 0x0a /* Public */,
+      26,    1,  171,    2, 0x0a /* Public */,
+      28,    2,  174,    2, 0x0a /* Public */,
+      31,    0,  179,    2, 0x0a /* Public */,
+      32,    1,  180,    2, 0x0a /* Public */,
+      34,    1,  183,    2, 0x0a /* Public */,
+      35,    0,  186,    2, 0x0a /* Public */,
+      36,    0,  187,    2, 0x0a /* Public */,
 
  // slots: parameters
     QMetaType::Void, QMetaType::Bool,    3,
@@ -129,11 +133,12 @@ static const uint qt_meta_data_MainDlg[] = {
     QMetaType::Void, QMetaType::QString, QMetaType::QString, QMetaType::QPoint,   15,   16,   18,
     QMetaType::Void, QMetaType::QString, QMetaType::QString, 0x80000000 | 6,   15,   16,    7,
     QMetaType::Void, QMetaType::QString, QMetaType::QString, 0x80000000 | 6, QMetaType::QPoint,   15,   16,    7,   18,
-    QMetaType::Void, QMetaType::QString, QMetaType::Bool,   22,   23,
-    QMetaType::Void, 0x80000000 | 25,    7,
-    QMetaType::Void, QMetaType::QString, QMetaType::Bool,   27,   28,
+    QMetaType::Void, QMetaType::QString, QMetaType::QString, 0x80000000 | 22, QMetaType::QPoint,   15,   16,    7,   18,
+    QMetaType::Void, QMetaType::QString, QMetaType::Bool,   24,   25,
+    QMetaType::Void, 0x80000000 | 27,    7,
+    QMetaType::Void, QMetaType::QString, QMetaType::Bool,   29,   30,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::QImage,   31,
+    QMetaType::Void, QMetaType::QImage,   33,
     QMetaType::Void, QMetaType::QPoint,   18,
     QMetaType::Void,
     QMetaType::Void,
@@ -158,14 +163,15 @@ void MainDlg::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, voi
         case 8: _t->setMessageBoxExSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< const QPoint(*)>(_a[3]))); break;
         case 9: _t->setQuestionBoxSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< bool*(*)>(_a[3]))); break;
         case 10: _t->setQuestionBoxExSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< bool*(*)>(_a[3])),(*reinterpret_cast< const QPoint(*)>(_a[4]))); break;
-        case 11: _t->setCurrentStatusSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
-        case 12: _t->setTestResultSlot((*reinterpret_cast< const BaseTypes::TestResult(*)>(_a[1]))); break;
-        case 13: _t->addListItemSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
-        case 14: _t->clearListItemSlot(); break;
-        case 15: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
-        case 16: _t->coordinateSlot((*reinterpret_cast< const QPoint(*)>(_a[1]))); break;
-        case 17: _t->usageRateTimerSlot(); break;
-        case 18: _t->updateSfrSlot(); break;
+        case 11: _t->setPlayQuestionBoxSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< int*(*)>(_a[3])),(*reinterpret_cast< const QPoint(*)>(_a[4]))); break;
+        case 12: _t->setCurrentStatusSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
+        case 13: _t->setTestResultSlot((*reinterpret_cast< const BaseTypes::TestResult(*)>(_a[1]))); break;
+        case 14: _t->addListItemSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
+        case 15: _t->clearListItemSlot(); break;
+        case 16: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
+        case 17: _t->coordinateSlot((*reinterpret_cast< const QPoint(*)>(_a[1]))); break;
+        case 18: _t->usageRateTimerSlot(); break;
+        case 19: _t->updateSfrSlot(); break;
         default: ;
         }
     }
@@ -196,13 +202,13 @@ int MainDlg::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 19)
+        if (_id < 20)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 19;
+        _id -= 20;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 19)
+        if (_id < 20)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 19;
+        _id -= 20;
     }
     return _id;
 }

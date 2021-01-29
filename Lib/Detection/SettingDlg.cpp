@@ -636,15 +636,15 @@ void SettingDlg::addCanTableItemSlot(const char* type, const MsgNode& msg)
 	static ulong number = 0;
 	int rowCount = ui.canTable->rowCount();
 	ui.canTable->insertRow(rowCount);
-	ui.canTable->setItem(rowCount, 0, new QTableWidgetItem({ QString::number(++number) }));
-	ui.canTable->setItem(rowCount, 1, new QTableWidgetItem({ type }));
-	ui.canTable->setItem(rowCount, 2, new QTableWidgetItem({ Misc::getCurrentTime() }));
-	ui.canTable->setItem(rowCount, 3, new QTableWidgetItem({ QString::number(msg.id,16) }));
-	ui.canTable->setItem(rowCount, 4, new QTableWidgetItem({ "数据帧" }));
-	ui.canTable->setItem(rowCount, 5, new QTableWidgetItem({ msg.extFrame ? "拓展帧" : "标准帧" }));
-	ui.canTable->setItem(rowCount, 6, new QTableWidgetItem({ QString::number(msg.dlc) }));
-	ui.canTable->setItem(rowCount, 7, new QTableWidgetItem({ Q_SPRINTF("%02x %02x %02x %02x %02x %02x %02x %02x",
-	msg.data[0],msg.data[1],msg.data[2],msg.data[3],msg.data[4],msg.data[5],msg.data[6],msg.data[7]) }));
+	ui.canTable->setItem(rowCount, 0, new QTableWidgetItem(QString::number(++number)));
+	ui.canTable->setItem(rowCount, 1, new QTableWidgetItem(type));
+	ui.canTable->setItem(rowCount, 2, new QTableWidgetItem(Misc::getCurrentTime()));
+	ui.canTable->setItem(rowCount, 3, new QTableWidgetItem(QString::number(msg.id, 16)));
+	ui.canTable->setItem(rowCount, 4, new QTableWidgetItem("数据帧"));
+	ui.canTable->setItem(rowCount, 5, new QTableWidgetItem(msg.extFrame ? "拓展帧" : "标准帧"));
+	ui.canTable->setItem(rowCount, 6, new QTableWidgetItem(QString::number(msg.dlc)));
+	ui.canTable->setItem(rowCount, 7, new QTableWidgetItem(Q_SPRINTF("%02x %02x %02x %02x %02x %02x %02x %02x",
+		msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], msg.data[7])));
 	ui.canTable->scrollToBottom();
 }
 

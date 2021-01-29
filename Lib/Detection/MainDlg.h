@@ -69,6 +69,8 @@ public slots:
 
 	void setQuestionBoxExSlot(const QString& title, const QString& text, bool* result, const QPoint& point);
 
+	void setPlayQuestionBoxSlot(const QString& title, const QString& text, int* result, const QPoint& point);
+
 	/*…Ë÷√µ±«∞◊¥Ã¨≤€*/
 	void setCurrentStatusSlot(const QString& status, bool systemStatus);
 

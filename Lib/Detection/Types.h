@@ -361,14 +361,14 @@ success = true;\
 m_testSequence = NEXT;\
 break
 
-template<class T> static void privateCall(const T& arg)
+template<class T> static void _assertProcCall(const T& arg)
 {
 	(static_cast<const std::function<void()>&>(arg))();
 }
 
-template<class T, class ...args> static void privateCall(const T& fnc, args... arg)
-{
-	privateCall(arg...);
+template<class T, class ...args> static void _assertProcCall(const T& fnc, args... arg)
+{ 
+	_assertProcCall(arg...);
 }
 
 #define ASSERT_PROC_FNC(...) [__VA_ARGS__]()mutable->void
@@ -394,7 +394,7 @@ case CURR:\
 			GO_SAVE_LOG();\
 		}\
 	}\
-	privateCall(ASSERT_PROC_FNC(){},__VA_ARGS__);\
+	_assertProcCall(ASSERT_PROC_FNC(){},__VA_ARGS__);\
 	GO_NEXT_TEST(NEXT);\
 }
 
@@ -436,19 +436,21 @@ namespace BaseTypes {
 	* @param1,对话框标题
 	* @param2,URL链接
 	* @param3,保存路径
-	* @param4,结果
+	* @param4,文件大小
 	* @param5,所用时间
 	* @param6,平均速度
 	* @param7,错误内容
+	* @param8,结果
 	*/
 	struct DownloadInfo {
 		QString title;
 		QString url;
 		QString path;
-		bool result;
+		float size;
 		ulong time;
 		float speed;
 		QString error;
+		bool result;
 	};
 
 	/*检测类型*/
@@ -500,6 +502,12 @@ namespace DvrTypes {
 	enum SysStatusMsg {
 		SSM_BAIC = 0x5A0,
 		SSM_CHJ = 0x514,
+	};
+
+	enum PlayResult {
+		PR_OK,
+		PR_NG,
+		PR_REPLAY
 	};
 
 	/*网络类型*/

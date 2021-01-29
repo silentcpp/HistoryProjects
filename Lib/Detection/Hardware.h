@@ -8,7 +8,6 @@
 #endif //!USE_NEW_MSG_NODE
 
 #include "MainDlg.h"
-#include "Detection.h"
 
 /************************************************************************/
 /* Ó²¼þ                                                                 */

@@ -54,6 +54,8 @@ public:
 
 	void DeleteOneMsg(const MsgNode& msg);
 
+	void DeleteOneMsg(const CanMsg& msg);
+
 	void DeleteOneMsg(const int& id);
 
 	void DeleteAllMsgs();

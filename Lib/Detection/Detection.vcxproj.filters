@@ -73,9 +73,6 @@
     <ClCompile Include="RayAxis.cpp">
       <Filter>Source Files\Algorithm</Filter>
     </ClCompile>
-    <ClCompile Include="CanMatrix.cpp">
-      <Filter>Source Files\Algorithm</Filter>
-    </ClCompile>
     <ClCompile Include="JsonTool.cpp">
       <Filter>Source Files\Manage</Filter>
     </ClCompile>
@@ -115,19 +112,19 @@
     <ClCompile Include="Downloader.cpp">
       <Filter>Source Files\Network</Filter>
     </ClCompile>
+    <ClCompile Include="Types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CanMatrix.h">
-      <Filter>Header Files\Algorithm</Filter>
-    </ClInclude>
     <ClInclude Include="RayAxis.h">
       <Filter>Header Files\Algorithm</Filter>
     </ClInclude>
     <ClInclude Include="CanSender.h">
       <Filter>Header Files\Manage</Filter>
     </ClInclude>
-    <ClInclude Include="Types.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CanMatrix.hpp">
+      <Filter>Header Files\Algorithm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +175,9 @@
     </QtMoc>
     <QtMoc Include="Downloader.h">
       <Filter>Header Files\Network</Filter>
+    </QtMoc>
+    <QtMoc Include="Types.h">
+      <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>

@@ -1,11 +1,12 @@
 #include "ScanCodeDlg.h"
+
 extern bool g_threadWait;
 extern QString g_code;
 
 BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 {
-	wchar_t windowName[256] = { 0 };
-	GetWindowTextW(hwnd, windowName, 255);
+	wchar_t windowName[MAX_PATH] = { 0 };
+	GetWindowTextW(hwnd, windowName, MAX_PATH);
 	if (!wcsncmp(windowName, L"数采客户端.for.RT", wcslen(L"数采客户端.for.RT")))
 	{
 		(*(HWND*)lParam) = hwnd;
@@ -18,6 +19,15 @@ bool ScanCodeDlg::sendCode(const QString& code)
 	bool result = false;
 	do
 	{
+		if (code.mid(0, 2) == "$^")
+		{
+			g_code = code.mid(2, code.length() - 2);
+			this->hide();
+			g_threadWait = false;
+			result = true;
+			break;
+		}
+
 		HWND hWnd = NULL;
 		EnumWindows(EnumWindowsProc, (LPARAM)&hWnd);
 		if (!hWnd)
@@ -68,7 +78,6 @@ void ScanCodeDlg::mouseMoveEvent(QMouseEvent* event)
 
 bool ScanCodeDlg::eventFilter(QObject* obj, QEvent* event)
 {
-	/*通过事件过滤器,屏蔽ESC键,来连接对话框退出*/
 	if (obj == &m_minimize)
 	{
 		if (event->type() == QEvent::MouseButtonPress)
@@ -86,8 +95,6 @@ bool ScanCodeDlg::eventFilter(QObject* obj, QEvent* event)
 	{
 		if (reinterpret_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape)
 		{
-			//this->close();
-			//QMessageBox::information(this, "友情提示", "好好工作,不要调皮");
 			return true;
 		}
 	}
@@ -99,19 +106,23 @@ bool ScanCodeDlg::judgeCode(const QString& code)
 	bool result = false;
 	do
 	{
-#if QT_NO_DEBUG
 		if (!m_deviceConfig.codeLength.toInt() && m_deviceConfig.codeJudge == "NULL")
 		{
 			result = true;
 			break;
 		}
 
-		if (code.length() != m_deviceConfig.codeLength.toInt() 
-			|| code.mid(0, m_deviceConfig.codeJudge.length()) != m_deviceConfig.codeJudge)
+		QString temp = code;
+		if (temp.mid(0, 2) == "$^")
+		{
+			temp = temp.mid(2, temp.length() - 2);
+		}
+
+		if (temp.length() != m_deviceConfig.codeLength.toInt()
+			|| temp.mid(0, m_deviceConfig.codeJudge.length()) != m_deviceConfig.codeJudge)
 		{
 			break;
 		}
-#endif
 		result = true;
 	} while (false);
 	return result;
@@ -165,9 +176,9 @@ ScanCodeDlg::ScanCodeDlg(QWidget* parent)
 	: QDialog(parent)
 	,m_deviceConfig(JsonTool::getInstance()->getParsedDeviceConfig())
 {
-	this->ui.setupUi(this);
-	this->setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-	this->setWindowTitle("TvsA56ScanCode.INVO.R&D");
+	ui.setupUi(this);
+	setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+	setWindowTitle("TvsA56ScanCode.INVO.R&D");
 	installEventFilter(this); 
 	m_minimize.setParent(ui.titleLabel);
 	m_minimize.setText("-");
@@ -199,8 +210,7 @@ void ScanCodeDlg::returnPressedSlot()
 	g_code = ui.codeLine->text();
 	this->hide();
 	g_threadWait = false;
-	return;
-#endif
+#else
 	if (!judgeCode(ui.codeLine->text()))
 	{
 		ui.titleLabel->setText("条码格式错误");
@@ -212,6 +222,7 @@ void ScanCodeDlg::returnPressedSlot()
 		ui.titleLabel->setText("发送到采集端失败,请开启采集软件");
 		goto clear;
 	}
+#endif
 clear:
 	ui.codeLine->clear();
 }

@@ -4,10 +4,12 @@ JsonTool* JsonTool::m_self = nullptr;
 
 void JsonTool::setLastError(const QString& error)
 {
-#ifdef QT_DEBUG
-	qDebug() << error;
-#endif
 	m_lastError = error;
+	if (m_errorList.size() > 1024)
+	{
+		m_errorList.clear();
+	}
+	m_errorList.append(error);
 }
 
 bool JsonTool::parseDeviceConfigData()
@@ -451,10 +453,10 @@ bool JsonTool::parseResConfigData()
 
 bool JsonTool::parseVerConfigData()
 {
-	bool result = false, convert = false, success = true;
+	bool result = false, convert = false, success = false;
 	do
 	{
-		const char* code[] = { "ASCII", "ASCR4", "INT", "USN", "BIN", "BCD" };
+		const char* code[] = { "ASCII", "ASCR4", "INT", "USN", "BIN", "BCD","U08","ASCBCD44" };
 
 		SAFE_DELETE_A(m_udsConfig.ver);
 
@@ -471,7 +473,9 @@ bool JsonTool::parseVerConfigData()
 		{
 			strcpy(ver[i].name, Q_TO_C_STR(getParentVerConfigKeyList()[i]));
 
+			success = true;
 			ushort did = getVerConfigValue(getParentVerConfigKeyList()[i], "DID").toUShort(&convert, 16);
+
 			if (!convert)
 			{
 				success = false;
@@ -484,6 +488,8 @@ bool JsonTool::parseVerConfigData()
 
 			strcpy(ver[i].setup, Q_TO_C_STR(getVerConfigValue(getParentVerConfigKeyList()[i], "值")));
 			strcpy(ver[i].encode, Q_TO_C_STR(getVerConfigValue(getParentVerConfigKeyList()[i], "编码").toUpper()));
+
+			success = false;
 			for (int j = 0; j < sizeof(code) / sizeof(char*); j++)
 			{
 				if (!strcmp(ver[i].encode, code[j]))
@@ -491,13 +497,11 @@ bool JsonTool::parseVerConfigData()
 					success = true;
 					break;
 				}
-				success = false;
 			}
 
 			if (!success)
 			{
 				setLastError(QString("版本配置[%1]编码格式错误").arg(getParentVerConfigKeyList()[i]));
-				break;
 			}
 		}
 
@@ -731,6 +735,11 @@ void JsonTool::deleteInstance()
 const QString& JsonTool::getLastError()
 {
 	return m_lastError;
+}
+
+const QStringList& JsonTool::getErrorList()
+{
+	return m_errorList;
 }
 
 bool JsonTool::initInstance(bool update, const QString& folderName, const QStringList& fileName)
@@ -1200,7 +1209,7 @@ bool JsonTool::updateHwdJsonFile(const QString& name)
 
 bool JsonTool::readUdsJsonFile(const QString& name)
 {
-	bool result = false;
+	bool result = false, success = false;
 	do
 	{
 		QFile file(name);
@@ -1231,6 +1240,7 @@ bool JsonTool::readUdsJsonFile(const QString& name)
 			m_dtcConfigObj = root.value("诊断配置").toObject();
 			parseDtcConfigData();
 		}
+
 		result = true;
 	} while (false);
 	return result;
@@ -1555,9 +1565,9 @@ bool JsonTool::setRelayConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getRelayConfigExplain()
 {
-	static QStringList explain = { "地线","自适应巡航控制电源","用于检测静态电流",
-		"用于检测硬按键电压","用于采集全景出画","用于紧急录制",
-		"用于播放音乐","检测中亮","结果NG亮","结果OK亮" };
+	static QStringList explain = { "地线","自适应巡航控制电源","用于检测电流",
+		"用于检测电压","用于图像转换","用于紧急录制",
+		"用于播放音乐","运行TS亮","结果NG亮","结果OK亮" };
 	return explain;
 }
 
@@ -1790,7 +1800,7 @@ bool JsonTool::setImageConfigValue(const QString& parentKey, const QString& chil
 
 const QStringList JsonTool::getImageConfigExplain(const int& i)
 {
-	static QStringList explain0 = { "1启用,0禁用,启用将R,G,B,误差参数判断失效,颜色参数判断生效","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
+	static QStringList explain0 = { "1启用,0禁用","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
 	static QStringList explain1 = { "判断语法,!=黑色(不等于黑色),==黑色(等于黑色)",
 		"三原色:Red(红色)","三原色:Green(绿色)","三原色:Blue(蓝色)","单位:PX(像素)",
 		"单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)" };
@@ -1804,7 +1814,7 @@ const QStringList JsonTool::getImageConfigExplain(const int& i)
 
 const QStringList& JsonTool::getImageConfigExplain()
 {
-	static QStringList explain0 = { "1启用,0禁用,启用将R,G,B,误差参数判断失效,颜色参数判断生效","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
+	static QStringList explain0 = { "1启用,0禁用","1启用,0禁用","1启用,0禁用","1启用,0禁用" };
 	static QStringList explain1 = { "判断语法,!=黑色(不等于黑色),==黑色(等于黑色)",
 		"三原色:Red(红色)","三原色:Green(绿色)","三原色:Blue(蓝色)","单位:PX(像素)",
 			"单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)","单位:MM(毫米)" };
@@ -2349,10 +2359,10 @@ bool JsonTool::setVerConfigValue(const QString& parentKey, const QString& childK
 		}
 		else if (childKey == "编码")
 		{
-			QStringList data = {"ASCII","ASCR4","INT","USN","BIN","BCD"};
+			QStringList data = { "ASCII","ASCR4","INT","USN","BIN","BCD","U08","ASCBCD44" };
 			if (!data.contains(newValue))
 			{
-				setLastError("%1,%2不支持的格式");
+				setLastError(QString("%1,%2不支持的格式").arg(childKey, newValue));
 				break;
 			}
 		}
@@ -2383,7 +2393,7 @@ QJsonObject& JsonTool::getVerConfigObj()
 
 const QStringList& JsonTool::getVerConfigExplain()
 {
-	static QStringList explain = { "数据标识符","支持编码[ASCII ASCR4 INT USN BIN BCD]","标识符数据" };
+	static QStringList explain = { "数据标识符","支持编码[ASCII ASCR4 INT USN BIN BCD U08 ASCBCD44]","标识符数据" };
 	return explain;
 }
 

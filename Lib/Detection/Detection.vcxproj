@@ -121,7 +121,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AuthDlg.cpp" />
-    <ClCompile Include="CanMatrix.cpp" />
     <ClCompile Include="Detection.cpp" />
     <ClCompile Include="DownloadDlg.cpp" />
     <ClCompile Include="Downloader.cpp" />
@@ -136,6 +135,7 @@
     <ClCompile Include="SerialPortTool.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="CanSender.cpp" />
+    <ClCompile Include="Types.cpp" />
     <ClCompile Include="UnlockDlg.cpp" />
     <ClCompile Include="UpdateApp.cpp" />
   </ItemGroup>
@@ -149,7 +149,13 @@
     <QtMoc Include="Hardware.h" />
     <QtMoc Include="DownloadDlg.h" />
     <QtMoc Include="Downloader.h" />
-    <ClInclude Include="Types.h" />
+    <ClInclude Include="CanMatrix.hpp" />
+    <QtMoc Include="Types.h">
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;$(QTDIR)\include\QtNetwork;$(QTDIR)\include\QtSerialPort</IncludePath>
+      <Define Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">UNICODE;WIN32;WIN64;DETECTION_LIB;BUILD_STATIC;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB;QT_NETWORK_LIB;QT_SERIALPORT_LIB;USE_NEW_MSG_NODE;%(PreprocessorDefinitions)</Define>
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;$(QTDIR)\include\QtNetwork;$(QTDIR)\include\QtSerialPort</IncludePath>
+      <Define Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">UNICODE;WIN32;WIN64;QT_NO_DEBUG;NDEBUG;DETECTION_LIB;BUILD_STATIC;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB;QT_NETWORK_LIB;QT_SERIALPORT_LIB;USE_NEW_MSG_NODE;%(PreprocessorDefinitions)</Define>
+    </QtMoc>
     <QtMoc Include="Detection.h" />
     <ClInclude Include="CanSender.h" />
     <QtMoc Include="UnlockDlg.h" />
@@ -159,7 +165,6 @@
     <QtMoc Include="MainDlg.h" />
     <ClInclude Include="RayAxis.h" />
     <QtMoc Include="JsonTool.h" />
-    <ClInclude Include="CanMatrix.h" />
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="AuthDlg.ui" />

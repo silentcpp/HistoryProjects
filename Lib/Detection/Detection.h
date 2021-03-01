@@ -21,209 +21,6 @@ namespace Nt {
 	class SfrServer;
 }
 
-namespace Misc {
-	namespace Var {
-		static QString appendName;
-	}
-
-	bool writeRunError(const QString& error);
-
-	/*Cv图像转Qt图像*/
-	bool cvImageToQtImage(IplImage* cv, QImage* qt);
-
-	/*通过URL获取文件名*/
-	const QString getFileNameByUrl(const QString& url);
-
-	/*通过路径获取文件名*/
-	const QString getFileNameByPath(const QString& path);
-
-	/*获取当前文件名*/
-	const QString getCurrentFileName();
-
-	/*获取当前目录*/
-	const QString getCurrentDir();
-
-	/*创建路径*/
-	bool makePath(const QString& path);
-
-	/*获取APP版本号*/
-	const QString _getAppVersion();
-
-	const QString getAppVersion();
-
-	/*设置APP附加名*/
-	void setAppAppendName(const QString& name);
-
-	/*获取APP附加名*/
-	const QString getAppAppendName();
-
-	/*通过版本号重命名APP*/
-	bool renameAppByVersion(QWidget* widget);
-
-	/*启动应用程序*/
-	bool startApp(const QString& name, const int& show);
-
-	/*结束应用程序*/
-	bool finishApp(const QString& name);
-
-	/*获取当前时间*/
-	const QString getCurrentTime(bool fileFormat = false);
-
-	/*获取当前日期*/
-	const QString getCurrentDate(bool fileFormat = false);
-
-	/*获取当前时间日期*/
-	const QString getCurrentDateTime(bool fileFormat = false);
-
-	/*通过路径获取文件列表*/
-	void getFileListByPath(const QString& path, QStringList& fileList);
-
-	/*通过后缀名获取文件列表*/
-	const QStringList getFileListBySuffixName(const QString& path, const QStringList& suffix);
-
-	/*UNICODE转多字符集*/
-	const char* wideCharToMultiByte(const wchar_t* wide);
-
-	/*QString转多字符集*/
-	const char* qstringToMultiByte(const QString& str);
-
-	bool saveBitmapToFile(HBITMAP hBitmap, const QString& fileName);
-
-	class ThemeFactory {
-	public:
-		/*构造*/
-		inline ThemeFactory() {}
-
-		/*析构*/
-		inline ~ThemeFactory() {}
-
-		/*获取主题列表*/
-		inline static const QStringList getThemeList()
-		{
-			return QStyleFactory::keys();
-		}
-
-		/*随机选择一个主题*/
-		inline static void randomTheme()
-		{
-			setTheme(getThemeList().value(qrand() % getThemeList().size()));
-		}
-
-		/*设置主题*/
-		inline static void setTheme(const QString& theme = QString("Fusion"))
-		{
-			qApp->setStyle(QStyleFactory::create(theme));
-			QPalette palette;
-			palette.setColor(QPalette::Window, QColor(53, 53, 53));
-			palette.setColor(QPalette::WindowText, Qt::white);
-			palette.setColor(QPalette::Base, QColor(15, 15, 15));
-			palette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-			palette.setColor(QPalette::ToolTipBase, Qt::white);
-			palette.setColor(QPalette::ToolTipText, Qt::white);
-			palette.setColor(QPalette::Text, Qt::white);
-			palette.setColor(QPalette::Button, QColor(53, 53, 53));
-			palette.setColor(QPalette::ButtonText, Qt::white);
-			palette.setColor(QPalette::BrightText, Qt::red);
-			palette.setColor(QPalette::Highlight, QColor(142, 45, 197).lighter());
-			palette.setColor(QPalette::HighlightedText, Qt::black);
-			qApp->setPalette(palette);
-		}
-
-		/*设置边框为圆角*/
-		inline static void setBorderRadius(QWidget* widget)
-		{
-			QBitmap bmp(widget->size());
-			bmp.fill();
-			QPainter p(&bmp);
-			p.setPen(Qt::NoPen);
-			p.setBrush(Qt::black);
-			p.drawRoundedRect(bmp.rect(), 20, 20);
-			widget->setMask(bmp);
-		}
-	};
-
-	class CharSet {
-	public:
-		inline CharSet() {}
-
-		inline CharSet(const QString& str) { qstringToMultiByte(str); }
-
-		inline CharSet(const wchar_t* str) { wideCharToMultiByte(str); }
-
-		inline ~CharSet() { for (auto& x : m_list) SAFE_DELETE_A(x); }
-
-		inline operator const char* () { return m_list.back(); }
-
-		inline const char* getData() { return m_list.back(); }
-
-		const char* wideCharToMultiByte(const wchar_t* wide)
-		{
-			do
-			{
-				int size = ::WideCharToMultiByte(CP_OEMCP, 0, wide, -1, NULL, 0, NULL, FALSE);
-				if (size <= 0) break;
-				char* buffer = NO_THROW_NEW char[size];
-				m_list.append(buffer);
-				if (!buffer) break;
-				memset(buffer, 0x00, size);
-				if (::WideCharToMultiByte(CP_OEMCP, 0, wide, -1, buffer, size, NULL, FALSE) <= 0) break;
-			} while (false);
-			return m_list.back();
-		}
-
-		const char* qstringToMultiByte(const QString& str)
-		{
-			do
-			{
-				wchar_t* buffer = NO_THROW_NEW wchar_t[(str.length() + 1) * 2];
-				if (!buffer) break;
-				memset(buffer, 0x00, (str.length() + 1) * 2);
-				int size = str.toWCharArray(buffer);
-				buffer[size] = '\0';
-				wideCharToMultiByte(buffer);
-				SAFE_DELETE_A(buffer);
-			} while (false);
-			return m_list.back();
-		}
-	private:
-		QList<char*> m_list;
-	};
-
-	class UpdateSfr :public QThread {
-		Q_OBJECT
-	public:
-		UpdateSfr(QObject* parent = nullptr) { }
-
-		~UpdateSfr() { m_quit = true; if (this->isRunning()) { wait(1000); } }
-
-		void startUpdate() { /*this->start();*/ m_start = true; }
-
-		void stopUpdate() { m_start = false; }
-
-		void setInterval(const int& interval) { m_interval = interval; }
-	protected:
-		void run()
-		{
-			DEBUG_INFO_EX("更新SFR线程%lu已启动", (ulong)QThread::currentThreadId());
-			while (!m_quit)
-			{
-				if (m_start)
-					emit updateSfrSignal();
-				msleep(m_interval);
-			}
-			DEBUG_INFO_EX("更新SFR线程%lu已退出", (ulong)QThread::currentThreadId());
-		}
-	private:
-		bool m_start = false;
-
-		bool m_quit = false;
-
-		int m_interval = 100;
-	signals:
-		void updateSfrSignal();
-	};
-}
-
 /*Detection*/
 namespace Dt {
 	/************************************************************************/
@@ -299,12 +96,13 @@ namespace Dt {
 
 		/*
 		* 检测静态电流
-		* @param1,是否打开ACC,如果接下来不检测休眠和唤醒则为true
-		* @param2,检测完成之后的延时,ACC为true时生效
-		* @param3,是否设置为16V电压
+		* @param1,是否打开ACC
+		* @notice,如果接下来不检测休眠和唤醒setAcc则为true,
+		* 记得调用waitStartup函数,否则将会导致测试不稳定和失败
+		* @param2,是否设置为16V电压
 		* @return,bool
 		*/
-		virtual bool checkStaticCurrent(bool setAcc = false, const ulong& delay = 15000U, bool set16Vol = true);
+		virtual bool checkStaticCurrent(bool setAcc = false, bool set16Vol = true);
 
 		/*检测电压*/
 		virtual bool checkVoltage();
@@ -342,9 +140,6 @@ namespace Dt {
 		/*自动处理CAN消息拓展,[重载2]*/
 		bool autoProcessCanMsgEx(IdList idList, ReqList reqList, MsgProc msgProc, const ulong& timeout = 10000U);
 
-		/*自动模板CAN函数*/
-		bool autoTemplateCanFnc(const char* name, const int& id, const int& req, MsgProc proc, MsgList msg = {}, const ulong& delay = 0);
-
 		/*设置Can处理函数[重载1]*/
 		bool setCanProcessFnc(const char* name, const CanMsg& msg, const CanProcInfo& procInfo);
 
@@ -361,14 +156,14 @@ namespace Dt {
 		bool setUdsProcessFnc(const char* name, DidList list, const int& req, const int& size, UdsProc proc, const ulong& timeout = 10000U);
 
 		/*
-		 *自动回收,用于处理下载下来的视频和照片,导致占用的问题
+		 *自动回收,用于处理缓存,导致占用空间的问题
 		 *@param1,路径列表
 		 *@param2,后缀名列表
 		 *@param3,几个月回收一次
 		 *@return,void
 		*/
 		void autoRecycle(const QStringList& path,
-			const QStringList& suffixName = { ".mp4",".jpg",".png",".bmp",".net",".run" },
+			const QStringList& suffixName = { ".mp4",".jpg",".png",".bmp",".net",".run",".can" },
 			const int& interval = 1);
 
 		/*启用自动回收*/
@@ -504,6 +299,14 @@ namespace Dt {
 		bool setDownloadDlg(BaseTypes::DownloadInfo* info);
 
 		bool callPythonFnc();
+		
+		/*
+		* 等待启动
+		* @param1,启动延时
+		* @return,bool
+		*/
+		bool waitStartup(const ulong& delay);
+
 	protected:
 		/*线程是否退出*/
 		bool m_quit = false;
@@ -573,6 +376,9 @@ namespace Dt {
 
 		/*唤醒电流*/
 		float m_rouseCurrent = 0.0f;
+		
+		/*矩阵算法*/
+		CanMatrix m_matrix;
 	protected:
 		/*设置错误信息,重载1*/
 		void setLastError(const QString& error);
@@ -714,6 +520,12 @@ namespace Dt {
 		/*停止采集卡采集数据*/
 		void endCaptureCard();
 
+		/*打开采集卡*/
+		bool openCaptureCard();
+
+		/*关闭采集卡*/
+		bool closeCaptureCard();
+
 		/*循环抓图,效率最高*/
 		bool cycleCapture();
 
@@ -748,6 +560,8 @@ namespace Dt {
 
 		inline CMV800Mgr* getMv800() { return &m_mv800; }
 
+		bool getCardConnect();
+
 		inline bool isCapture() { return m_capture; };
 
 		inline const int& getMilChannelId() { return m_cardConfig.channelId; }
@@ -755,6 +569,8 @@ namespace Dt {
 		inline const int& getMv800ChannelId() { return m_cardConfig.channelId; }
 
 		inline const FcTypes::CardConfig& getCardConfig() { return m_cardConfig; };
+
+		void setCallOpen(bool enable) { m_callOpen = enable; }
 	protected:
 		/*必须重写线程*/
 		virtual void run() override = 0;
@@ -780,6 +596,9 @@ namespace Dt {
 
 		/*抓图*/
 		bool m_capture = false;
+
+		/*调用打开*/
+		bool m_callOpen = false;
 	};
 
 	/************************************************************************/
@@ -797,54 +616,59 @@ namespace Dt {
 		/*初始化实例*/
 		virtual bool initInstance();
 
-		/*设置led灯*/
+		/*
+		* 设置led灯
+		* @param1,开关
+		* @return,bool
+		*/
 		void setLedLight(bool _switch);
 
-		/*通过按键触发AVM*/
-		virtual bool setAvmByKey(const ulong& delay = 300, const int& id = 0, const int& req = 0, MsgProc msgProc = nullptr);
+		/*
+		* 通过按键触发AVM
+		* @param1,高电平延时
+		* @param2,AVM反馈报文ID
+		* @param3,AVM反馈成功的值
+		* @param4,处理AVM反馈函数
+		* @return,bool
+		*/
+		virtual bool triggerAvmByKey(const ulong& delay = 300, const int& id = 0, const int& req = 0,
+			MsgProc proc = nullptr);
 
-		/*通过报文触发AVM*/
-		virtual bool setAvmByMsg(const CanMsg& msg, const int& id = 0, const int& req = 0, MsgProc msgProc = nullptr);
+		/*
+		* 通过报文触发AVM
+		* @param1,触发AVM的报文
+		* @param2,AVM反馈报文ID
+		* @param3,AVM反馈成功的值
+		* @param4,处理AVM反馈函数
+		* @return,bool
+		*/
+		virtual bool triggerAvmByMsg(const CanMsg& msg, const int& id = 0, const int& req = 0,
+			MsgProc proc = nullptr);
 
 		/*检测视频出画不使用任何*/
 		virtual bool checkVideoUseNot();
 
-		/*检测视频出画使用报文
-		* @param1,触发全景报文
-		* @param2,报文延时
-		* @param3,触发全景成功报文
-		* @param4,触发全景成功的值
-		* @param5,触发全景成功函数处理
-		* @return,bool
-		*/
-		virtual bool checkVideoUseMsg(const MsgNode& msg, const ulong& delay, const int& id, const int& req, MsgProc msgProc);
-
 		/*检测视频出画使用报文[拓展版]
 		* @param1,触发全景报文
-		* @param2,报文延时
-		* @param3,触发全景成功报文
-		* @param4,触发全景成功的值
-		* @param5,触发全景成功函数处理
-		* @param6,如果无法获取启动成功状态,则此处填写延时,否则0
-		* @param7,系统启动成功的值
-		* @param8,系统启动成功函数处理
+		* @param2,触发全景成功报文
+		* @param3,触发全景成功的值
+		* @param4,触发全景成功函数处理
 		* @return,bool
 		*/
-		virtual bool checkVideoUseMsgEx(const MsgNode& msg, const ulong& msgDelay, const int& id, const int& req0, MsgProc msgProc0,
-			const ulong& delay = 15000, const int& req1 = 0, MsgProc msgProc1 = nullptr);
+		virtual bool checkVideoUseMsg(const CanMsg& msg, const int& id, const int& req0, MsgProc msgProc0);
 
 		/*检测视频出画使用按键
 		 *@param1,总线状态报文ID
 		 *@param2,进入全景成功的值
 		 *@param3,处理全景报文函数
-		 *@param4,如果无法获取启动成功状态,则此处填写延时,否则0
-		 *@param5,系统启动成功的值
-		 *@param6,系统启动成功函数处理
+		 *@param4,高电平延时
+		 *@param5,触发成功延时
 		 *@return,bool
 		*/
-		virtual bool checkVideoUseKey(const int& id, const int& req0, MsgProc msgProc0, const ulong& delay = 15000, const int& req1 = 0, MsgProc msgProc1 = nullptr);
+		virtual bool checkVideoUseKey(const int& id, const int& req, MsgProc msgProc, const ulong& hDelay = 300,
+			const ulong& sDelay = 3000);
 
-		/*检测AVM前后视图
+		/*检测AVM前后视图使用报文
 		 *@notice,[F]代表前,[R]代表后
 		 *@param1,前后景报文列表
 		 *@param2,报文延时
@@ -853,10 +677,34 @@ namespace Dt {
 		 *@param5,lambda
 		 *@return,bool
 		 */
-		virtual bool checkAvmFRView(MsgList msgList, const ulong& msgDelay, const int& id, ReqList reqList, MsgProc msgProc);
+		virtual bool checkFRViewUseMsg(CanList msgList, const int& id, ReqList reqList, MsgProc proc);
 
-		/*检测按键电压*/
-		virtual bool checkKeyVoltage(const ulong& delay = 3000U);
+
+		/*
+		* 检测按键电压
+		* @param1,高电平延时
+		* @param1,成功之后延时
+		* @notice,延时取决于高电平电压是否准确
+		* @param2,进入全景成功报文ID
+		* @param3,进入全景成功的值
+		* @param4,处理进入全景的报文
+		* @return,bool
+		*/
+		virtual bool checkFRViewUseKey(const int& id, const int& req, MsgProc proc, const ulong& hDelay = 300U,
+			const ulong& sDelay = 3000U);
+
+		/*
+		* 检测按键电压
+		* @param1,高电平延时
+		* @param1,成功之后延时
+		* @notice,延时取决于高电平电压是否准确
+		* @param2,进入全景成功报文ID
+		* @param3,进入全景成功的值
+		* @param4,处理进入全景的报文
+		* @return,bool
+		*/
+		virtual bool checkKeyVoltage(const ulong& hDelay = 300U, const ulong& sDelay = 3000U,
+			const int& id = 0, const int& req = 0, MsgProc proc = nullptr);
 
 	protected:
 		/*必须重写线程*/

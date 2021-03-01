@@ -26,6 +26,10 @@ namespace Fnc {
 		bool writeSn();
 
 		bool checkSn();
+
+		bool checkOldSn();
+
+		bool writeSet(const uchar& value);
 	protected:
 		virtual void run() = 0;
 	private:
@@ -40,7 +44,7 @@ namespace Fnc {
 
 		~BAIC();
 
-		virtual bool setOtherAction();
+		bool setOtherAction();
 
 		bool checkSn();
 

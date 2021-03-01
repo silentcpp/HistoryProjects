@@ -18,11 +18,15 @@ namespace Hwd {
 	class GAC : public Dt::Hardware {
 		Q_OBJECT
 	public:
-		GAC(QObject* parent = nullptr) {};
+		explicit GAC(QObject* parent = nullptr) {};
 
 		~GAC() {};
 
 		bool writeSn();
+
+		bool writeOldSn();
+
+		bool writeDate();
 	protected:
 		virtual void run() = 0;
 	private:
@@ -32,7 +36,7 @@ namespace Hwd {
 	class BAIC : public Dt::Hardware {
 		Q_OBJECT
 	public:
-		BAIC(QObject* parent = nullptr) {};
+		explicit BAIC(QObject* parent = nullptr) {};
 
 		~BAIC() {};
 	protected:
@@ -45,7 +49,7 @@ namespace Hwd {
 	class CHJAutoMotive : public Dt::Hardware {
 		Q_OBJECT
 	public:
-		CHJAutoMotive(QObject* parent = nullptr) {};
+		explicit CHJAutoMotive(QObject* parent = nullptr) {};
 
 		~CHJAutoMotive() {};
 	protected:

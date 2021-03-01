@@ -8,7 +8,7 @@
 #include <QDebug>
 #include "GeneratedFiles/ui_ScanCodeDlg.h"
 #include "JsonTool.h"
-//9AMS30-7930010E2190315001
+
 typedef enum WorkstationType
 {
 	WT_HARDWARE_TEST,   //硬件测试
@@ -29,14 +29,13 @@ typedef enum QueryResult
 class ScanCodeDlg : public QDialog
 {
 	Q_OBJECT
-private:
-	Ui::ScanCodeDlg ui;
+public:
+	ScanCodeDlg(QWidget* parent = Q_NULLPTR);
 
-	const DeviceConfig& m_deviceConfig;
+	~ScanCodeDlg();
 
-	QLabel m_minimize;
+	void setLineEditText(const QString& text);
 protected:
-	/*重写虚方法实现移动*/
 	bool m_isPress = false;
 
 	QPoint m_point;
@@ -54,12 +53,12 @@ protected:
 	bool nativeEvent(const QByteArray& eventType, void* message, long* result);
 	
 	bool sendCode(const QString& code);
-public:
-	ScanCodeDlg(QWidget* parent = Q_NULLPTR);
-
-	~ScanCodeDlg();
-
-	void setLineEditText(const QString& text);
 private slots:
 	void returnPressedSlot();
+private:
+	Ui::ScanCodeDlg ui;
+
+	const DeviceConfig& m_deviceConfig;
+
+	QLabel m_minimize;
 };

@@ -11,6 +11,7 @@ bool Hwd::GAC::writeSn()
 	bool result = false, convert = false;
 	do
 	{
+		RUN_BREAK(g_code.isEmpty(), "条码为空");
 		int&& seriesNumber = g_code.right(3).toInt();
 		QString lineNumber = g_code.right(5).left(2);
 		int&& year = g_code.right(10).left(2).toInt();
@@ -34,5 +35,43 @@ bool Hwd::GAC::writeSn()
 	} while (false);
 	WRITE_LOG("%s 写入序列号", OK_NG(result));
 	addListItemEx(Q_SPRINTF("写入序列号 %s", OK_NG(result)));
+	return result;
+}
+
+bool Hwd::GAC::writeOldSn()
+{
+	setCurrentStatus("写入序列号");
+	bool result = false;
+	do 
+	{
+		RUN_BREAK(g_code.isEmpty(), "条码为空");
+
+		RUN_BREAK(!writeDataByDid(0x0e, 0x01, g_code.size(), (uchar*)Q_TO_C_STR(g_code)),
+			"写入序列号失败," + getUdsLastError());
+		result = true;
+	} while (false);
+	WRITE_LOG("%s 写入序列号", OK_NG(result));
+	addListItemEx(Q_SPRINTF("写入序列号 %s", OK_NG(result)));
+	return result;
+}
+
+bool Hwd::GAC::writeDate()
+{
+	setCurrentStatus("写入生产日期");
+	bool result = false;
+	do 
+	{
+		SYSTEMTIME time;
+		GetLocalTime(&time);
+		uchar data[4] = { 0 };
+		data[0] = time.wYear / 100;
+		data[1] = time.wYear % 100;
+		data[2] = time.wMonth;
+		data[3] = time.wDay;
+		RUN_BREAK(!writeDataByDid(0xf1, 0x8b, 4, data), "写入生产日期失败," + getUdsLastError());
+		result = true;
+	} while (false);
+	WRITE_LOG("%s 写入生产日期", OK_NG(result));
+	addListItemEx(Q_SPRINTF("写入生产日期 %s", OK_NG(result)));
 	return result;
 }

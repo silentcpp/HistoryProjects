@@ -15,7 +15,7 @@
 #include <memory>
 #include <Common/Types.h>
 
-#define LIB_VERSION "1.0.0.4"
+#define LIB_VERSION "1.0.0.6"
 
 #define DCF_VERSION "1.0.0.0"
 
@@ -40,7 +40,7 @@ if (X)\
 }
 
 /************************************************************************/
-/* 设备配置用于															*/
+/* 设备配置														*/
 /************************************************************************/
 typedef struct DeviceConfig
 {
@@ -299,13 +299,13 @@ struct DefConfig {
 	DeviceConfig device;
 
 	HardwareConfig hardware;
-	
+
 	RelayConfig relay;
-	
+
 	ImageConfig image;
-	
+
 	RangeConfig range;
-	
+
 	ThresholdConfig threshold;
 
 	EnableConfig enable;
@@ -511,353 +511,6 @@ struct CanMsg {
 class JsonTool : public QObject
 {
 	Q_OBJECT
-private:
-	/*构造*/
-	JsonTool(QObject* parent = nullptr);
-
-	/*析构*/
-	~JsonTool();
-
-	/*保存错误信息*/
-	QString m_lastError = "No Error";
-
-	/*静态指针*/
-	static JsonTool* m_self;
-
-	/*设备配置对象*/
-	QJsonObject m_deviceConfigObj;
-
-	/*硬件配置对象*/
-	QJsonObject m_hardwareConfigObj;
-
-	/*继电器IO配置*/
-	QJsonObject m_relayConfigObj;
-
-	/*范围配置*/
-	QJsonObject m_rangeConfigObj;
-
-	/*用户配置对象*/
-	QJsonObject m_userConfigObj;
-
-	/*图像父配置对象*/
-	QJsonObject m_imageConfigObj;
-
-	/*阈值配置对象*/
-	QJsonObject m_thresholdConfigObj;
-
-	/*启用配置对象*/
-	QJsonObject m_enableConfigObj;
-
-	/*默认配置*/
-	DefConfig m_defConfig;
-
-	/*硬件检测结构体*/
-	HwdConfig m_hwdConfig = { 0 };
-
-	/*电压配置*/
-	QJsonObject m_voltageConfigObj;
-
-	/*按键配置*/
-	QJsonObject m_keyVolConfigObj;
-
-	/*电流配置*/
-	QJsonObject m_currentConfigObj;
-
-	/*静态电流配置*/
-	QJsonObject m_staticConfigObj;
-
-	/*电阻配置*/
-	QJsonObject m_resConfigObj;
-
-	/*UDS结构体*/
-	UdsConfig m_udsConfig = { 0 };
-
-	/*版本配置*/
-	QJsonObject m_verConfigObj;
-
-	/*DTC配置*/
-	QJsonObject m_dtcConfigObj;
-
-	/*CanSender配置*/
-	QJsonObject m_canMsgObj;
-
-	CanMsg m_canMsg[MAX_MSG_COUNT] = { 0 };
-protected:
-	/*设备配置键列表*/
-	QStringList m_deviceConfigKeyList = {
-		"机种名称",
-		"UDS名称",//0
-		"CAN名称",//1
-		"采集卡名称",
-		"采集卡通道数",
-		"采集卡通道号",
-		"条码判断",
-		"条码长度"
-	};
-
-	/*设备配置值列表*/
-	QStringList m_deviceConfigValueList = {
-		"未知",
-		"GuangQiA56",//0
-		"ZLG",//1
-		"MV800",
-		"1",
-		"1",
-		"ABC",
-		"6"
-	};
-
-	/*硬件配置键列表*/
-	QStringList m_hardwareConfigKeyList{
-		"电源串口",//2
-		"电源波特率",//3
-		"电源电压",//4
-		"电源电流",
-		"继电器串口",//6
-		"继电器波特率",//7
-		"电压表串口",//8
-		"电压表波特率",//9
-		"静流表串口",//10
-		"静流表波特率",//11
-		"拓展串口1",//12
-		"拓展波特率1",//13
-		"拓展串口2",//14
-		"拓展波特率2",//15
-		"拓展串口3",//16
-		"拓展波特率3",//17
-		"拓展串口4",
-		"拓展波特率4"
-	};
-
-	/*硬件配置值列表*/
-	QStringList m_hardwareConfigValueList{
-		"4",//2
-		"19200",//3
-		"12.0",//4
-		"1.0",
-		"5",//6
-		"19200",//7
-		"2",//8
-		"9600",//9	
-		"3",//10
-		"9600",//11
-		"6",//12
-		"9600",//13
-		"7",//14
-		"9600",//15
-		"8",//16
-		"9600",//17
-		"9",
-		"9600"
-	};
-
-	/*继电器IO配置键列表*/
-	QStringList m_relayConfigKeyList = {
-		"GND",//10
-		"ACC",//11
-		"静态电流表",//12
-		"硬按键",//13
-		"转接板",//14
-		"跑马灯",
-		"音箱",
-		"白灯",
-		"红灯",
-		"绿灯"
-	};
-
-	/*继电器IO配置值列表*/
-	QStringList m_relayConfigValueList = {
-		"0",//10
-		"2",//11
-		"1",//12
-		"3",//13
-		"4",//14
-		"6",
-		"7",
-		"15",
-		"14",
-		"13"
-	};
-
-	/*范围配置键列表*/
-	QStringList m_rangeConfigKeyList = {
-		"网速",//1
-		"光轴X坐标",//2
-		"光轴Y坐标",//3
-		"光轴角度",//4
-		"解像度",//5
-		"最小电流",//6
-		"最大电流"//7
-	};
-
-	/*范围配置值列表*/
-	QStringList m_rangeConfigValueList = {
-		"0.0~9999.0",//1
-		"-9999.0~9999.0",//2
-		"-9999.0~9999.0",//3
-		"-9999.0~9999.0",//4
-		"-9999.0~9999.0",//5
-		"0.0~1000.0",//6
-		"0.0~1000.0"//7
-	};
-
-	/*用户配置键列表*/
-	/*ROOT用户权限0,用于此程序开发者*/
-	/*INVO用户权限1,用于现场调试者*/
-	/*TEST用户权限2,用于作业员*/
-
-	QStringList m_userConfigKeyList = {
-		"用户名",
-		"密码"
-	};
-
-	/*用户配置值列表*/
-	QStringList m_userConfigValueList = {
-		"INVO",
-		"1."
-	};
-
-	/*父图像键列表*/
-	QStringList m_parentImageKeyList = {
-		"前小图矩形框",
-		"后小图矩形框",
-		"左小图矩形框",
-		"右小图矩形框",
-		"前大图矩形框",
-		"后大图矩形框",
-		"左大图矩形框",
-		"右大图矩形框",
-		"检测启用状态"
-	};
-
-	/*子图像键列表*/
-	QStringList m_childImageKeyList[IMAGE_CHECK_COUNT] = {
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"颜色",("R"),("G"),("B"),("误差"),("X坐标"),("Y坐标"),("宽"),("高")},
-		QStringList{"忽略RGB","显示小图","显示大图","保存日志"}
-	};
-
-	/*子图像值列表*/
-	QStringList m_childImageValueList[IMAGE_CHECK_COUNT] = {
-		QStringList{"!=黑色",("201"),("212"),("85"),("100"),("55"),("20"),("50"),("80")},
-		QStringList{"!=黑色",("255"),("255"),("255"),("100"),("75"),("380"),("40"),("60")},
-		QStringList{"!=黑色",("176"),("58"),("177"),("100"),("5"),("100"),("40"),("180")},
-		QStringList{"!=黑色",("164"),("78"),("7"),("100"),("120"),("130"),("40"),("180")},
-		QStringList{"!=黑色",("153"),("212"),("81"),("100"),("320"),("80"),("110"),("250")},
-		QStringList{"!=黑色",("113"),("50"),("34"),("100"),("300"),("50"),("110"),("250")},
-		QStringList{"!=黑色",("100"),("108"),("30"),("18"),("96"),("88"),("10"),("25")},
-		QStringList{"!=黑色",("168"),("55"),("66"),("77"),("88"),("100"),("99"),("68")},
-		QStringList{"1","1","1","0"}
-	};
-
-	int m_childImageSubscript = 0;
-
-	/*阈值键列表*/
-	QStringList m_thresholdKeyList =
-	{
-		"CAN唤醒电流",
-		"CAN休眠电流"
-	};
-
-	/*阈值值列表*/
-	QStringList m_thresholdValueList = {
-		"0.3",
-		"0.005"
-	};
-
-	/*启用配置键列表*/
-	QStringList m_enableConfigKeyList = {
-		"解锁对话框",//1
-		"错误对话框",//2
-		"保存CAN日志",//3
-		"忽略失败",//4
-		"输出运行日志",
-		"保存运行日志",//5
-		"信号灯"
-	};
-
-	/*启用配置值列表*/
-	QStringList m_enableConfigValueList = {
-		"0",//1
-		"1",//2
-		"0",//3
-		"0",//4
-		"0",//5
-		"0",
-		"0"
-	};
-protected:
-	/*设置错误*/
-	void setLastError(const QString& error);
-
-	/*解析范围*/
-	bool parseRangeValue(const QString& value, float& min, float& max);
-
-	/*解析设备配置数据*/
-	bool parseDeviceConfigData();
-
-	/*解析硬件配置数据*/
-	bool parseHardwareConfigData();
-
-	/*解析继电器IO口配置*/
-	bool parseRelayPortConfigData();
-
-	/*解析用户配置*/
-	bool parseUserConfigData();
-
-	/*解析图像检测配置数据*/
-	bool parseImageConfigData();
-
-	/*解析范围配置数据*/
-	bool parseRangeConfigData();
-
-	/*解析阈值配置数据*/
-	bool parseThresholdConfigData();
-
-	/*解析启用配置数据*/
-	bool parseEnableConfigData();
-
-	/************************************************************************/
-	/* 硬件检测配置                                                         */
-	/************************************************************************/
-	/*解析电压配置*/
-	bool parseVoltageConfigData();
-
-	/*解析LED配置*/
-	bool parseKeyVolConfigData();
-
-	/*解析电流配置*/
-	bool parseCurrentConfigData();
-
-	/*解析静态电流配置*/
-	bool parseStaticConfigData();
-
-	/*解析电阻配置*/
-	bool parseResConfigData();
-
-	/************************************************************************/
-	/* UDS检测配置                                                          */
-	/************************************************************************/
-	/*解析版本配置*/
-	bool parseVerConfigData();
-
-	/*解析DTC配置*/
-	bool parseDtcConfigData();
-
-	/*DTC种类转换*/
-	const QString dtcCategoryConvert(const QString& dtc);
-
-	/************************************************************************/
-	/* CanSender配置                                                        */
-	/************************************************************************/
-
-	bool parseCanMsgData();
 public:
 	/************************************************************************/
 	/* 基本操作                                                             */
@@ -877,12 +530,15 @@ public:
 	/*获取错误信息*/
 	const QString& getLastError();
 
+	/*获取错误列表*/
+	const QStringList& getErrorList();
+
 	/*初始化实例*/
 	bool initInstance(bool update = false, const QString& folderName = "Config", const QStringList& fileName = { "def.json","hwd.json","uds.json","can.json" });
 
 	/*获取所有主键*/
 	const QStringList getAllMainKey();
-	
+
 	/*获取库版本*/
 	static const QString getLibVersion();
 
@@ -1140,7 +796,7 @@ public:
 
 	/*获取电压配置值*/
 	const QString getVoltageConfigValue(const QString& parentKey, const QString& childKey);
-	
+
 	/*设置电压配置键*/
 	void setVoltageConfigKey(const QString& oldParentKey, const QString& newParentKey);
 
@@ -1183,7 +839,7 @@ public:
 
 	/*获取子电流配置键列表*/
 	const QStringList& getChildCurrentConfigKeyList();
-	
+
 	/*获取电流配置值列表*/
 	const QStringList& getChildCurrentConfigValueList();
 
@@ -1318,13 +974,12 @@ public:
 
 	/*设置诊断故障码配置值*/
 	bool setDtcConfigValue(const QString& parentKey, const QString& childKey, const QString& value);
-	
+
 	/*获取诊断故障码JSON配置对象*/
 	QJsonObject& getDtcConfigObj();
 
 	/*获取诊断故障码说明*/
 	const QStringList& getDtcConfigExplain();
-
 
 	/************************************************************************/
 	/* 获取以上总配置                                                       */
@@ -1355,5 +1010,356 @@ public:
 
 	/*获取CAN报文JSON配置对象*/
 	QJsonObject& getCanMsgObj();
+
+protected:
+	/*设置错误*/
+	void setLastError(const QString& error);
+
+	/*解析范围*/
+	bool parseRangeValue(const QString& value, float& min, float& max);
+
+	/*解析设备配置数据*/
+	bool parseDeviceConfigData();
+
+	/*解析硬件配置数据*/
+	bool parseHardwareConfigData();
+
+	/*解析继电器IO口配置*/
+	bool parseRelayPortConfigData();
+
+	/*解析用户配置*/
+	bool parseUserConfigData();
+
+	/*解析图像检测配置数据*/
+	bool parseImageConfigData();
+
+	/*解析范围配置数据*/
+	bool parseRangeConfigData();
+
+	/*解析阈值配置数据*/
+	bool parseThresholdConfigData();
+
+	/*解析启用配置数据*/
+	bool parseEnableConfigData();
+
+	/************************************************************************/
+	/* 硬件检测配置                                                         */
+	/************************************************************************/
+	/*解析电压配置*/
+	bool parseVoltageConfigData();
+
+	/*解析LED配置*/
+	bool parseKeyVolConfigData();
+
+	/*解析电流配置*/
+	bool parseCurrentConfigData();
+
+	/*解析静态电流配置*/
+	bool parseStaticConfigData();
+
+	/*解析电阻配置*/
+	bool parseResConfigData();
+
+	/************************************************************************/
+	/* UDS检测配置                                                          */
+	/************************************************************************/
+	/*解析版本配置*/
+	bool parseVerConfigData();
+
+	/*解析DTC配置*/
+	bool parseDtcConfigData();
+
+	/*DTC种类转换*/
+	const QString dtcCategoryConvert(const QString& dtc);
+
+	/************************************************************************/
+	/* CanSender配置                                                        */
+	/************************************************************************/
+	bool parseCanMsgData();
+
+private:
+	/*设备配置键列表*/
+	QStringList m_deviceConfigKeyList = {
+		"机种名称",
+		"UDS名称",//0
+		"CAN名称",//1
+		"采集卡名称",
+		"采集卡通道数",
+		"采集卡通道号",
+		"条码判断",
+		"条码长度"
+	};
+
+	/*设备配置值列表*/
+	QStringList m_deviceConfigValueList = {
+		"未知",
+		"GuangQiA56",//0
+		"ZLG",//1
+		"MV800",
+		"1",
+		"1",
+		"ABC",
+		"6"
+	};
+
+	/*硬件配置键列表*/
+	QStringList m_hardwareConfigKeyList{
+		"电源串口",//2
+		"电源波特率",//3
+		"电源电压",//4
+		"电源电流",
+		"继电器串口",//6
+		"继电器波特率",//7
+		"电压表串口",//8
+		"电压表波特率",//9
+		"静流表串口",//10
+		"静流表波特率",//11
+		"拓展串口1",//12
+		"拓展波特率1",//13
+		"拓展串口2",//14
+		"拓展波特率2",//15
+		"拓展串口3",//16
+		"拓展波特率3",//17
+		"拓展串口4",
+		"拓展波特率4"
+	};
+
+	/*硬件配置值列表*/
+	QStringList m_hardwareConfigValueList{
+		"4",//2
+		"19200",//3
+		"12.0",//4
+		"1.0",
+		"5",//6
+		"19200",//7
+		"2",//8
+		"9600",//9	
+		"3",//10
+		"9600",//11
+		"6",//12
+		"9600",//13
+		"7",//14
+		"9600",//15
+		"8",//16
+		"9600",//17
+		"9",
+		"9600"
+	};
+
+	/*继电器IO配置键列表*/
+	QStringList m_relayConfigKeyList = {
+		"GND",//10
+		"ACC",//11
+		"静态电流表",//12
+		"硬按键",//13
+		"转接板",//14
+		"跑马灯",
+		"音箱",
+		"白灯",
+		"红灯",
+		"绿灯"
+	};
+
+	/*继电器IO配置值列表*/
+	QStringList m_relayConfigValueList = {
+		"0",//10
+		"2",//11
+		"1",//12
+		"3",//13
+		"4",//14
+		"6",
+		"7",
+		"15",
+		"14",
+		"13"
+	};
+
+	/*范围配置键列表*/
+	QStringList m_rangeConfigKeyList = {
+		"网速",//1
+		"光轴X坐标",//2
+		"光轴Y坐标",//3
+		"光轴角度",//4
+		"解像度",//5
+		"最小电流",//6
+		"最大电流"//7
+	};
+
+	/*范围配置值列表*/
+	QStringList m_rangeConfigValueList = {
+		"0.0~9999.0",//1
+		"-9999.0~9999.0",//2
+		"-9999.0~9999.0",//3
+		"-9999.0~9999.0",//4
+		"-9999.0~9999.0",//5
+		"0.0~1000.0",//6
+		"0.0~1000.0"//7
+	};
+
+	/*用户配置键列表*/
+	/*ROOT用户权限0,用于此程序开发者*/
+	/*INVO用户权限1,用于现场调试者*/
+	/*TEST用户权限2,用于作业员*/
+
+	QStringList m_userConfigKeyList = {
+		"用户名",
+		"密码"
+	};
+
+	/*用户配置值列表*/
+	QStringList m_userConfigValueList = {
+		"INVO",
+		"1."
+	};
+
+	/*父图像键列表*/
+	QStringList m_parentImageKeyList = {
+		"前小图矩形框",
+		"后小图矩形框",
+		"左小图矩形框",
+		"右小图矩形框",
+		"前大图矩形框",
+		"后大图矩形框",
+		"左大图矩形框",
+		"右大图矩形框",
+		"检测启用状态"
+	};
+
+	/*子图像键列表*/
+	QStringList m_childImageKeyList[IMAGE_CHECK_COUNT] = {
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"颜色","R","G","B","误差","X坐标","Y坐标","宽","高"},
+		{"忽略RGB","显示小图","显示大图","保存日志"}
+	};
+
+	/*子图像值列表*/
+	QStringList m_childImageValueList[IMAGE_CHECK_COUNT] = {
+		{"!=黑色","201","212","85","100","55","20","50","80"},
+		{"!=黑色","255","255","255","100","75","380","40","60"},
+		{"!=黑色","176","58","177","100","5","100","40","180"},
+		{"!=黑色","164","78","7","100","120","130","40","180"},
+		{"!=黑色","153","212","81","100","320","80","110","250"},
+		{"!=黑色","113","50","34","100","300","50","110","250"},
+		{"!=黑色","100","108","30","18","96","88","10","25"},
+		{"!=黑色","168","55","66","77","88","100","99","68"},
+		{"1","1","1","0"}
+	};
+
+	int m_childImageSubscript = 0;
+
+	/*阈值键列表*/
+	QStringList m_thresholdKeyList =
+	{
+		"CAN唤醒电流",
+		"CAN休眠电流"
+	};
+
+	/*阈值值列表*/
+	QStringList m_thresholdValueList = {
+		"0.3",
+		"0.005"
+	};
+
+	/*启用配置键列表*/
+	QStringList m_enableConfigKeyList = {
+		"解锁对话框",//1
+		"错误对话框",//2
+		"保存CAN日志",//3
+		"忽略失败",//4
+		"输出运行日志",
+		"保存运行日志",//5
+		"信号灯"
+	};
+
+	/*启用配置值列表*/
+	QStringList m_enableConfigValueList = {
+		"0",//1
+		"1",//2
+		"0",//3
+		"0",//4
+		"0",//5
+		"0",
+		"0"
+	};
+
+	/*构造*/
+	JsonTool(QObject* parent = nullptr);
+
+	/*析构*/
+	~JsonTool();
+
+	/*保存错误信息*/
+	QString m_lastError = "No Error";
+
+	/*保存错误列表*/
+	QStringList m_errorList;
+
+	/*静态指针*/
+	static JsonTool* m_self;
+
+	/*设备配置对象*/
+	QJsonObject m_deviceConfigObj;
+
+	/*硬件配置对象*/
+	QJsonObject m_hardwareConfigObj;
+
+	/*继电器IO配置*/
+	QJsonObject m_relayConfigObj;
+
+	/*范围配置*/
+	QJsonObject m_rangeConfigObj;
+
+	/*用户配置对象*/
+	QJsonObject m_userConfigObj;
+
+	/*图像父配置对象*/
+	QJsonObject m_imageConfigObj;
+
+	/*阈值配置对象*/
+	QJsonObject m_thresholdConfigObj;
+
+	/*启用配置对象*/
+	QJsonObject m_enableConfigObj;
+
+	/*默认配置*/
+	DefConfig m_defConfig;
+
+	/*硬件检测结构体*/
+	HwdConfig m_hwdConfig = { 0 };
+
+	/*电压配置*/
+	QJsonObject m_voltageConfigObj;
+
+	/*按键配置*/
+	QJsonObject m_keyVolConfigObj;
+
+	/*电流配置*/
+	QJsonObject m_currentConfigObj;
+
+	/*静态电流配置*/
+	QJsonObject m_staticConfigObj;
+
+	/*电阻配置*/
+	QJsonObject m_resConfigObj;
+
+	/*UDS结构体*/
+	UdsConfig m_udsConfig = { 0 };
+
+	/*版本配置*/
+	QJsonObject m_verConfigObj;
+
+	/*DTC配置*/
+	QJsonObject m_dtcConfigObj;
+
+	/*CanSender配置*/
+	QJsonObject m_canMsgObj;
+
+	CanMsg m_canMsg[MAX_MSG_COUNT] = { 0 };
 };
 

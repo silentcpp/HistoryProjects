@@ -5,6 +5,21 @@
 	Manage		,管理目录
 	Network	    ,网络目录
 
+2021.2.23
+修改内容:
+	1.SettingDlg
+		(1)增加可独立控制采集卡,CAN卡功能.
+		(2)画图增加可画大矩形框检测坐标.
+
+	2.Detection
+		(1)增加openCaptureCard,closeCaptureCard,getCardConnect API.
+		(2)每次打开采集卡之前,判断采集卡是否处于打开状态中.
+		(3)Avm类中修改部分API参数,增加checkFRViewUseKey接口.
+
+	3.Other
+		(1)增加CAN矩阵算法类库,CanMatrix.hpp.
+		(2)LIB_VERSION升至1.0.0.5
+
 2021.1.4
 修改内容:
 	1.Detection

@@ -125,8 +125,14 @@ bool Dt::Base::initConsoleWindow()
 			break;
 		}
 
+
 		RUN_BREAK(!AllocConsole(), "分配控制台失败");
 		SetConsoleTitleW(Q_TO_WC_STR(Q_SPRINTF("检测框架[%s]调试控制台", LIB_VERSION)));
+		HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (output != INVALID_HANDLE_VALUE)
+		{
+			SetConsoleTextAttribute(output, FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+		}
 		RUN_BREAK(!freopen("CONOUT$", "w", stderr), "重定向输出流stderr失败");
 
 		DEBUG_INFO() << "初始化控制台成功";
@@ -138,6 +144,15 @@ bool Dt::Base::initConsoleWindow()
 		DEBUG_INFO() << "UDS协议:" << m_defConfig->device.udsName;
 		DEBUG_INFO() << "采集卡:" << m_defConfig->device.cardName;
 		DEBUG_INFO() << "采集卡通道:" << m_defConfig->device.cardChannelId << "[没有画面请仔细确认此处]";
+
+		for (int i = 0; i < m_jsonTool->getErrorList().size(); i++)
+		{
+			if (!i)
+			{
+				DEBUG_INFO() << "Json配置文件出现严重性错误:";
+			}
+			DEBUG_INFO() << m_jsonTool->getErrorList()[i];
+		}
 		result = true;
 	} while (false);
 	return result;
@@ -499,7 +514,7 @@ bool Dt::Base::checkCurrent()
 	return result;
 }
 
-bool Dt::Base::checkStaticCurrent(bool setAcc, const ulong& delay, bool set16Vol)
+bool Dt::Base::checkStaticCurrent(bool setAcc, bool set16Vol)
 {
 	setCurrentStatus("检测静态电流");
 	bool result = false, success = false;
@@ -609,7 +624,6 @@ bool Dt::Base::checkStaticCurrent(bool setAcc, const ulong& delay, bool set16Vol
 		if (setAcc)
 		{
 			RUN_BREAK(!m_relay.SetOneIO(relay.acc, true), "继电器ACC端口打开失败");
-			msleep(delay);
 		}
 
 		result = true;
@@ -977,30 +991,6 @@ bool Dt::Base::autoProcessCanMsgEx(IdList idList, ReqList reqList, MsgProc msgPr
 		}
 		result = true;
 	} while (false);
-	return result;
-}
-
-bool Dt::Base::autoTemplateCanFnc(const char* name, const int& id, const int& req, MsgProc proc, MsgList msg, const ulong& delay)
-{
-	setCurrentStatus(name);
-	bool result = false;
-	do 
-	{
-		if (msg.size() != 0)
-		{
-			m_canSender.AddMsg(msg.begin()[0], delay);
-			m_canSender.Start();
-		}
-
-		RUN_BREAK(!autoProcessCanMsg(id, req, proc), Q_SPRINTF("%s失败", name));
-		result = true;
-	} while (false);
-	if (msg.size() != 0)
-	{
-		m_canSender.DeleteOneMsg(msg.begin()[0]);
-	}
-	WRITE_LOG("%s %s", OK_NG(result), name);
-	addListItemEx(Q_SPRINTF("%s %s", name, OK_NG(result)));
 	return result;
 }
 
@@ -1620,6 +1610,13 @@ bool Dt::Base::callPythonFnc()
 	return result;
 }
 
+bool Dt::Base::waitStartup(const ulong& delay)
+{
+	addListItem(Q_SPRINTF("等待系统稳定中,大约需要%u秒,请耐心等待...", delay / 1000));
+	msleep(delay);
+	return true;
+}
+
 void Dt::Base::setLastError(const QString& error)
 {
 	DEBUG_INFO() << error;
@@ -1733,6 +1730,7 @@ Dt::Hardware::~Hardware()
 /************************************************************************/
 /* Dt::Function realize                                                 */
 /************************************************************************/
+
 Dt::Function::Function(QObject* parent)
 {
 
@@ -1803,41 +1801,9 @@ bool Dt::Function::openDevice()
 			break;
 		}
 
-		if (m_cardConfig.name == "MV800")
+		if (!openCaptureCard())
 		{
-			if (m_cardConfig.channelCount == 1)
-			{
-				if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, 
-					Cc::Mv800Proc, m_cardConfig.channelId, this))
-				{
-					setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(m_cardConfig.channelId)
-						.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
-				}
-			}
-			else
-			{
-				for (int i = 0; i < m_cardConfig.channelCount; ++i)
-				{
-					if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, 
-						Cc::Mv800Proc, i, this))
-					{
-						setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(i)
-							.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
-					}
-				}
-			}
-		}
-		else
-		{
-			QString&& dcfFile = QString("Config/DcfFile_%1/ntsc.dcf").arg(DCF_VERSION);
-			if (!QFileInfo(dcfFile).exists())
-			{
-				setLastError("MOR采集卡丢失DCF配置文件", false, true);
-			}
-			else
-			{
-				m_mil->open(dcfFile, m_cardConfig.channelId) ? m_mil->startCapture() : setLastError("打开MOR采集卡失败," + m_mil->getLastError(), false, true);
-			}
+			break;
 		}
 		result = true;
 	} while (false);
@@ -1853,7 +1819,8 @@ bool Dt::Function::closeDevice()
 		{
 			break;
 		}
-		m_cardConfig.name == "MV800" ? m_mv800.DisConnect() : m_mil->close();
+
+		closeCaptureCard();
 		result = true;
 	} while (false);
 	return result;
@@ -1946,12 +1913,79 @@ void Dt::Function::endCaptureCard()
 	return (m_cardConfig.name == "MV800" ? m_mv800.EndCapture() : m_mil->endCapture());
 }
 
+bool Dt::Function::openCaptureCard()
+{
+	bool result = true;
+	do 
+	{
+		if (m_cardConfig.name == "MV800")
+		{
+			if (m_cardConfig.channelCount == 1)
+			{
+				if (m_mv800.IsConnected())
+				{
+					break;
+				}
+
+				if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, 
+					Cc::Mv800Proc, m_cardConfig.channelId, this))
+				{
+					setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(m_cardConfig.channelId)
+						.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
+				}
+			}
+			else
+			{
+				for (int i = 0; i < m_cardConfig.channelCount; ++i)
+				{
+					if (m_mv800.IsConnected())
+					{
+						break;
+					}
+
+					if (!m_mv800.Connect(NULL, NULL, m_cardConfig.width, m_cardConfig.height, 
+						Cc::Mv800Proc, i, this))
+					{
+						setLastError(QString("打开MV800采集卡通道%1失败,%2").arg(i)
+							.arg(G_TO_Q_STR(m_mv800.GetLastError())), false, true);
+					}
+				}
+			}
+		}
+		else
+		{
+			QString&& dcfFile = QString("Config/DcfFile_%1/ntsc.dcf").arg(DCF_VERSION);
+			if (!QFileInfo(dcfFile).exists())
+			{
+				setLastError("MOR采集卡丢失DCF配置文件", false, true);
+			}
+			else
+			{
+				if (m_mil->isOpen())
+				{
+					break;
+				}
+				m_mil->open(dcfFile, m_cardConfig.channelId) ? m_mil->startCapture() : setLastError("打开MOR采集卡失败," + m_mil->getLastError(), false, true);
+			}
+		}
+	} while (false);
+	return result;
+}
+
+bool Dt::Function::closeCaptureCard()
+{
+	if (getCardConnect())
+	{
+		m_cardConfig.name == "MV800" ? m_mv800.Disconnect() : m_mil->close();
+	}
+	return true;
+}
+
 bool Dt::Function::cycleCapture()
 {
 	bool result = false, success = true;
 	do
 	{
-		addListItem(Q_SPRINTF("正在捕捉%s采集卡通道%d图像...", Q_TO_C_STR(m_cardConfig.name), m_cardConfig.channelId));
 		m_capture = true;
 		int count = 0;
 		while (m_capture)
@@ -1971,7 +2005,6 @@ bool Dt::Function::cycleCapture()
 		}
 		result = true;
 	} while (false);
-	addListItem(Q_SPRINTF("捕捉%s采集卡通道%d图像 %s", Q_TO_C_STR(m_cardConfig.name), m_cardConfig.channelId, OK_NG(result)));
 	return result;
 }
 
@@ -2254,6 +2287,15 @@ void Dt::Function::showImage(const IplImage* image, const QString& name)
 #endif
 }
 
+bool Dt::Function::getCardConnect()
+{
+	if (m_cardConfig.name == "MV800")
+	{
+		return m_mv800.IsConnected();
+	}
+	return m_mil->isOpen();
+}
+
 /************************************************************************/
 /* Dt::Avm realize                                                          */
 /************************************************************************/
@@ -2286,31 +2328,31 @@ void Dt::Avm::setLedLight(bool _switch)
 	msleep(300);
 }
 
-bool Dt::Avm::setAvmByKey(const ulong& delay, const int& id, const int& req, MsgProc msgProc)
+bool Dt::Avm::triggerAvmByKey(const ulong& delay, const int& id, const int& req, MsgProc proc)
 {
 	bool result = false;
 	do 
 	{
 		RUN_BREAK(!m_relay.KeySimulate(m_defConfig->relay.key, delay), "按键闭合失败");
-		if (id && req && msgProc)
+		if (id && req && proc)
 		{
-			RUN_BREAK(!autoProcessCanMsg(id, req, msgProc), "按键设置AVM失败");
+			RUN_BREAK(!autoProcessCanMsg(id, req, proc), "按键触发AVM失败");
 		}
 		result = true;
 	} while (false);
 	return result;
 }
 
-bool Dt::Avm::setAvmByMsg(const CanMsg& msg, const int& id, const int& req, MsgProc msgProc)
+bool Dt::Avm::triggerAvmByMsg(const CanMsg& msg, const int& id, const int& req, MsgProc proc)
 {
 	bool result = false;
 	do 
 	{
 		m_canSender.AddMsg(msg);
 		msleep(msg.type == ST_Event ? msg.delay * msg.count : msg.delay);
-		if (id && req && msgProc)
+		if (id && req && proc)
 		{
-			RUN_BREAK(!autoProcessCanMsg(id, req, msgProc), "报文设置AVM失败");
+			RUN_BREAK(!autoProcessCanMsg(id, req, proc), "报文触发AVM失败");
 		}
 		result = true;
 	} while (false);
@@ -2352,20 +2394,13 @@ bool Dt::Avm::checkVideoUseNot()
 	return result;
 }
 
-bool Dt::Avm::checkVideoUseMsg(const MsgNode& msg, const ulong& delay, const int& id, const int& req, MsgProc msgProc)
-{
-	return checkVideoUseMsgEx(msg, delay, id, req, msgProc, 1);
-}
-
-bool Dt::Avm::checkVideoUseMsgEx(const MsgNode& msg, const ulong& msgDelay, const int& id, const int& req0, MsgProc msgProc0, const ulong& delay, const int& req1, MsgProc msgProc1)
+bool Dt::Avm::checkVideoUseMsg(const CanMsg& msg, const int& id, const int& req0, MsgProc msgProc0)
 {
 	setCurrentStatus("检测视频出画");
 	bool result = false, success = true;
 	do 
 	{
-		if (msgProc1) RUN_BREAK(!autoProcessCanMsg(id, req1, msgProc1, 20000), "启动失败") else msleep(delay);
-
-		m_canSender.AddMsg(msg, msgDelay);
+		m_canSender.AddMsg(msg);
 		m_canSender.Start();
 
 		RUN_BREAK(!autoProcessCanMsg(id, req0, msgProc0, 10000), "进入全景失败");
@@ -2389,43 +2424,26 @@ bool Dt::Avm::checkVideoUseMsgEx(const MsgNode& msg, const ulong& msgDelay, cons
 		RUN_BREAK(!success, "检测视频出画失败");
 		result = true;
 	} while (false);
-	m_canSender.DeleteOneMsg(msg);
+	m_canSender.DeleteOneMsg(msg.msg.id);
 	restoreRectType();
 	WRITE_LOG("%s 检测视频出画", OK_NG(result));
 	addListItem(Q_SPRINTF("检测视频出画 %s", OK_NG(result)), false);
 	return result;
 }
 
-bool Dt::Avm::checkVideoUseKey(const int& id, const int& req0, MsgProc msgProc0, const ulong& delay, const int& req1, MsgProc msgProc1)
+bool Dt::Avm::checkVideoUseKey(const int& id, const int& req, MsgProc msgProc, const ulong& hDelay,
+	const ulong& sDelay)
 {
 	setCurrentStatus("检测视频出画");
 	bool result = false, success = true;
 	do
 	{
-		if (msgProc1) RUN_BREAK(!autoProcessCanMsg(id, req1, msgProc1, 20000), "启动失败") else msleep(delay);
-
-		/*此处增加检测按键电压*/
-		KeyVolConfig& keyVol = m_hwdConfig->keyVol;
-		RUN_BREAK(!m_voltage.ReadVol(&keyVol.lRead), "读取电压表失败");
-
-		(keyVol.lRead >= keyVol.lLLimit) && (keyVol.lRead <= keyVol.lULimit) ? keyVol.lResult = true : keyVol.lResult = success = false;
-
-		addListItem(Q_SPRINTF("按键低电平  %.3f  %s", keyVol.lRead, OK_NG(keyVol.lResult)));
-
-		//tiggerAVMByKey();
-
-		//RUN_BREAK(!autoProcessCanMsg(id, req0, msgProc0, 10000), "进入全景失败");
-		RUN_BREAK(!setAvmByKey(300, id, req0, msgProc0), "进入全景失败");
-
 		setRectType(FcTypes::RT_SMALL);
-		msleep(3000);
 
-		RUN_BREAK(!m_voltage.ReadVol(&keyVol.hRead), "读取电压表失败");
-
-		(keyVol.hRead >= keyVol.hLLimit) && (keyVol.hRead <= keyVol.hULimit) ? keyVol.hResult = true : keyVol.hResult = success = false;
-		addListItem(Q_SPRINTF("按键高电平  %.3f  %s", keyVol.hRead, OK_NG(keyVol.hResult)));
-
-		RUN_BREAK(!success, "检测按键电压失败");
+		if (!checkKeyVoltage(hDelay, sDelay, id, req, msgProc))
+		{
+			break;
+		}
 
 		RUN_BREAK(!cycleCapture(), "抓图失败");
 
@@ -2449,13 +2467,13 @@ bool Dt::Avm::checkVideoUseKey(const int& id, const int& req0, MsgProc msgProc0,
 	return result;
 }
 
-bool Dt::Avm::checkAvmFRView(MsgList msgList, const ulong& msgDelay, const int& id, ReqList reqList, MsgProc msgProc)
+bool Dt::Avm::checkFRViewUseMsg(CanList msgList, const int& id, ReqList reqList, MsgProc proc)
 {
 	setCurrentStatus("检测前后视图");
 	bool result = false, success = true;
 	do
 	{
-		RUN_BREAK(msgList.size() != 2, "前后视图msg.size()!=2");
+		RUN_BREAK(msgList.size() != 2, "检测前后视图msgList.size()!=2");
 
 		QStringList viewName = { "前","后","左","右" };
 		QString colorData;
@@ -2466,11 +2484,11 @@ bool Dt::Avm::checkAvmFRView(MsgList msgList, const ulong& msgDelay, const int& 
 
 			setRectType(static_cast<FcTypes::RectType>(subscript));
 
-			m_canSender.AddMsg(msgList.begin()[subscript], msgDelay);
+			m_canSender.AddMsg(msgList.begin()[subscript]);
 
 			m_canSender.Start();
 
-			if (!autoProcessCanMsg(id, reqList.begin()[subscript], msgProc))
+			if (!autoProcessCanMsg(id, reqList.begin()[subscript], proc))
 			{
 				success = false;
 				setLastError(Q_SPRINTF("进入%s大视图失败", viewName.at(subscript)));
@@ -2506,34 +2524,89 @@ bool Dt::Avm::checkAvmFRView(MsgList msgList, const ulong& msgDelay, const int& 
 	return result;
 }
 
-bool Dt::Avm::checkKeyVoltage(const ulong& delay)
+bool Dt::Avm::checkFRViewUseKey(const int& id, const int& req, MsgProc proc, const ulong& hDelay, const ulong& sDelay)
+{
+	setCurrentStatus("检测前后视图");
+	bool result = false, success = true;
+	do
+	{
+		QStringList viewName = { "前","后","左","右" };
+		QString colorData;
+		//先检测后视图在检测前视图
+		for (int i = 1; i >= 0; i--)
+		{
+			if (i == 0)
+			{
+				if (!checkKeyVoltage(hDelay, sDelay, id, req, proc))
+				{
+					success = false;
+					break;
+				}
+			}
+
+			setRectType(static_cast<FcTypes::RectType>(i));
+
+			if (!cycleCapture())
+			{
+				setLastError("抓图失败");
+				success = false;
+				break;
+			}
+
+			if (!checkRectOnImage(m_cvAnalyze, m_defConfig->image.bigRect[i], colorData))
+			{
+				success = false;
+				setLastError("检测前后视图失败");
+			}
+			addListItem(QString("%1摄像头大图,%2").arg(viewName[i], colorData));
+		}
+
+		if (!success)
+		{
+			break;
+		}
+		msleep(1000);
+		result = true;
+	} while (false);
+	restoreRectType();
+	WRITE_LOG("%s 检测前后视图", OK_NG(result));
+	addListItem(Q_SPRINTF("检测前后视图 %s", OK_NG(result)), false);
+	return result;
+}
+
+bool Dt::Avm::checkKeyVoltage(const ulong& hDelay, const ulong& sDelay, const int& id, const int& req, MsgProc proc)
 {
 	setCurrentStatus("检测按键电压");
 	bool result = false, success = true;
-	do 
+	do
 	{
-		/*此处增加检测按键电压*/
 		KeyVolConfig& keyVol = m_hwdConfig->keyVol;
 		RUN_BREAK(!m_voltage.ReadVol(&keyVol.lRead), "读取电压表失败");
 
 		(keyVol.lRead >= keyVol.lLLimit) && (keyVol.lRead <= keyVol.lULimit) ? keyVol.lResult = true : keyVol.lResult = success = false;
 
 		addListItem(Q_SPRINTF("按键低电平  %.3f  %s", keyVol.lRead, OK_NG(keyVol.lResult)));
+		WRITE_LOG("%s 按键低电平 %.3f", OK_NG(keyVol.lResult), keyVol.lRead);
 
-		setAvmByKey();
+		if (!triggerAvmByKey(hDelay, id, req, proc))
+		{
+			break;
+		}
 
-		msleep(delay);
+		msleep(sDelay);
 
 		RUN_BREAK(!m_voltage.ReadVol(&keyVol.hRead), "读取电压表失败");
 
 		(keyVol.hRead >= keyVol.hLLimit) && (keyVol.hRead <= keyVol.hULimit) ? keyVol.hResult = true : keyVol.hResult = success = false;
+
 		addListItem(Q_SPRINTF("按键高电平  %.3f  %s", keyVol.hRead, OK_NG(keyVol.hResult)));
+		WRITE_LOG("%s 按键高电平 %.3f", OK_NG(keyVol.hResult), keyVol.hRead);
 
 		RUN_BREAK(!success, "检测按键电压失败");
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 检测按键电压", OK_NG(result));
-	addListItem(Q_SPRINTF("检测按键电压 %s", OK_NG(result)), false);
+	addListItemEx(Q_SPRINTF("检测按键电压 %s", OK_NG(result)));
 	return result;
 }
 
@@ -2584,8 +2657,16 @@ bool Dt::Dvr::initInstance()
 
 		Misc::finishApp("win32_demo.exe");
 
-		QString appName = "\\App\\sfr_client\\bin\\win32_demo.exe";
-		RUN_BREAK(!Misc::startApp(appName, SW_NORMAL), QString("启动%1应用程序失败").arg(appName));
+		QString appName = "App\\sfr_client\\bin\\win32_demo.exe";
+		if (Misc::isExistKitsPath())
+		{
+			RUN_BREAK(!Misc::startApp(MY_KITS_PATH + appName, SW_NORMAL, true), 
+				QString("启动%1应用程序失败").arg(appName));
+		}
+		else
+		{
+			RUN_BREAK(!Misc::startApp(appName, SW_NORMAL), QString("启动%1应用程序失败").arg(appName));
+		}
 
 		result = true;
 	} while (false);
@@ -3241,7 +3322,10 @@ tryAgain:
 		RUN_BREAK(!m_dvrClient->sendFrameDataEx({ }, 0x12, 0x20), m_dvrClient->getLastError());
 		RUN_BREAK(!m_dvrClient->recvFrameDataEx(data, &len, 0x12, 0x20), m_dvrClient->getLastError());
 		//writeNetLog("formatSDCard", data, len, *(int*)&data[2] == 0);
-		RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("格式化SD卡失败,操作错误代码:0x%X", *(uint*)&data[2]));
+		if (m_sysStatusMsg != DvrTypes::SSM_CHJ)
+		{	//M01格式化SD卡一直失败,产品说不检测是否成功
+			RUN_BREAK(*(uint*)&data[2], Q_SPRINTF("格式化SD卡失败,操作错误代码:0x%X", *(uint*)&data[2]));
+		}
 		result = true;
 	} while (false);
 	m_dvrClient->disconnect();
@@ -4178,458 +4262,6 @@ const QString& Nt::SfrServer::getLastError()
 	return m_lastError;
 }
 
-/************************************************************************/
-/* Misc realize                                                         */
-/************************************************************************/
-bool Misc::writeRunError(const QString& error)
-{
-	bool result = false;
-	do 
-	{
-		QString path = QString(".\\%1\\RUN\\").arg(GET_DT_DIR());
-		if (!Misc::makePath(path))
-		{
-			break;
-		}
-
-		QFile file(path.append(Misc::getCurrentDate(true)).append(".run"));
-		if (!file.open(QFile::WriteOnly | QFile::Append | QFile::Text))
-		{
-			break;
-		}
-		QTextStream stream(&file);
-		stream << Misc::getCurrentTime() << " " << (g_code.isEmpty() ? "未知" : g_code) << " " << error << endl;
-		file.close();
-		result = true;
-	} while (false);
-	return result;
-}
-
-bool Misc::cvImageToQtImage(IplImage* cv, QImage* qt)
-{
-	bool result = false;
-	do
-	{
-		if (!cv || !qt)
-		{
-			break;
-		}
-		cvCvtColor(cv, cv, CV_BGR2RGB);
-		*qt = QImage((uchar*)cv->imageData, cv->width, cv->height, cv->widthStep, QImage::Format_RGB888);
-		result = true;
-	} while (false);
-	return result;
-}
-
-const QString Misc::getFileNameByUrl(const QString& url)
-{
-	return url.mid(url.lastIndexOf("/") + 1);
-}
-
-const QString Misc::getFileNameByPath(const QString& path)
-{
-	return path.mid(path.lastIndexOf('\\') + 1);
-}
-
-const QString Misc::getCurrentFileName()
-{
-	QString fileName = "";
-	do
-	{
-		char buffer[MAX_PATH] = { 0 };
-		if (!GetModuleFileNameA(NULL, buffer, MAX_PATH))
-		{
-			break;
-		}
-		QString fullName(G_TO_Q_STR(buffer));
-		fileName = fullName.mid(fullName.lastIndexOf('\\') + 1);
-	} while (false);
-	return fileName;
-}
-
-const QString Misc::getCurrentDir()
-{
-	char buffer[BUFF_SIZE] = { 0 };
-	GetCurrentDirectoryA(BUFF_SIZE, buffer);
-	return G_TO_Q_STR(buffer);
-}
-
-bool Misc::makePath(const QString& path)
-{
-	bool result = false;
-	do 
-	{
-		if (!QDir(path).exists())
-		{
-			QDir dir;
-			if (!dir.mkpath(path))
-			{
-				break;
-			}
-		}
-		result = true;
-	} while (false);
-	return result;
-}
-
-const QString Misc::_getAppVersion()
-{
-	QString result = "0.0.0";
-	char* nameBuffer = nullptr;
-	do
-	{
-		char fullName[MAX_PATH] = { 0 };
-		if (!GetModuleFileNameA(NULL, fullName, MAX_PATH))
-		{
-			break;
-		}
-
-		quint32 nameLen = GetFileVersionInfoSizeA(fullName, 0);
-		if (!nameLen)
-		{
-			break;
-		}
-
-		nameBuffer = new(std::nothrow) char[nameLen + 1];
-		if (!nameBuffer)
-		{
-			break;
-		}
-
-		bool success = GetFileVersionInfoA(fullName, 0, nameLen, nameBuffer);
-		if (!success)
-		{
-			break;
-		}
-
-		struct LanguageCodePage
-		{
-			WORD language;
-			WORD codePage;
-		} *translate;
-
-		quint32 queryLen = 0;
-		success = VerQueryValue(nameBuffer, (TEXT("\\VarFileInfo\\Translation")), (LPVOID*)&translate, &queryLen);
-		if (!success)
-		{
-			break;
-		}
-		QString str1, str2;
-		str1.setNum(translate->language, 16);
-		str2.setNum(translate->codePage, 16);
-		str1 = "000" + str1;
-		str2 = "000" + str2;
-		QString verPath = "\\StringFileInfo\\" + str1.right(4) + str2.right(4) + "\\FileVersion";
-		void* queryBuffer = nullptr;
-		success = VerQueryValue(nameBuffer, (verPath.toStdWString().c_str()), &queryBuffer, &queryLen);
-		if (!success)
-		{
-			break;
-		}
-		result = QString::fromUtf16((const unsigned short int*)queryBuffer);
-	} while (false);
-	SAFE_DELETE_A(nameBuffer);
-	return result;
-}
-
-const QString Misc::getAppVersion()
-{
-	static QString version = _getAppVersion();
-	return version;
-}
-
-void Misc::setAppAppendName(const QString& name)
-{
-	Misc::Var::appendName = name;
-}
-
-const QString Misc::getAppAppendName()
-{
-	return Misc::Var::appendName;
-}
-
-bool Misc::renameAppByVersion(QWidget* widget)
-{
-	bool result = false;
-	do
-	{
-		DeviceConfig device = JsonTool::getInstance()->getParsedDeviceConfig();
-		const QString&& user = JsonTool::getInstance()->getUserConfigValue("用户名");
-		if (!Misc::Var::appendName.isEmpty())
-		{
-			device.modelName.append(Misc::Var::appendName);
-		}
-
-		QString title, newName;
-		title = newName = QString("%1%2检测[%3]").arg(device.modelName, GET_DT_TYPE(), Misc::getAppVersion());
-		title = QString("%1[权限:%3]").arg(title, user);
-
-		widget->setWindowTitle(title);
-
-		QString oldName(getCurrentFileName());
-		newName.append(".exe");
-		if (oldName != newName)
-		{
-			//QFile::rename(oldName, newName);
-			MoveFileEx(Q_TO_WC_STR(oldName), Q_TO_WC_STR(newName), MOVEFILE_REPLACE_EXISTING);
-		}
-		result = true;
-	} while (false);
-	return result;
-}
-
-bool Misc::startApp(const QString& name, const int& show)
-{
-	bool result = false;
-	do
-	{
-		/*判断是否有附加参数*/
-		QString cmdLine;
-		if (name.indexOf(" ") != -1)
-		{
-			cmdLine = name.mid(name.indexOf(" ") + 1);
-		}
-
-		QString destProgram = getCurrentDir() + '\\' + name;
-
-		QString destDirectory = destProgram.mid(0, destProgram.lastIndexOf('\\'));
-
-		HINSTANCE hInstance = ShellExecuteW(NULL, L"open", Q_TO_WC_STR(destProgram),
-			cmdLine.isEmpty() ? NULL : Q_TO_WC_STR(cmdLine), Q_TO_WC_STR(destDirectory), show);
-		if ((int)hInstance <= 32)
-		{
-			break;
-		}
-		result = true;
-	} while (false);
-	return result;
-}
-
-bool Misc::finishApp(const QString& name)
-{
-	bool result = false;
-	do
-	{
-		QProcess process;
-		process.start(QString("cmd.exe /c tasklist | findstr \"%1\"").arg(name));
-		process.waitForFinished();
-
-		QString output(process.readAllStandardOutput().data());
-
-		if (output.indexOf(name) == -1)
-		{
-			break;
-		}
-		QProcess::execute("cmd.exe", { "/c","taskkill","/im",name,"/f" });
-		result = true;
-	} while (false);
-	return result;
-}
-
-const QString Misc::getCurrentTime(bool fileFormat)
-{
-	return fileFormat ? QTime::currentTime().toString("hh:mm:ss").remove(':')
-		: QTime::currentTime().toString("hh:mm:ss.zzz");
-}
-
-const QString Misc::getCurrentDate(bool fileFormat)
-{
-	return fileFormat ? QDate::currentDate().toString("yyyy-MM-dd").remove('-')
-		: QDate::currentDate().toString("yyyy-MM-dd");
-}
-
-const QString Misc::getCurrentDateTime(bool fileFormat)
-{
-	QString dateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
-	if (fileFormat)
-	{
-		return dateTime.remove('-').remove(':').remove('.');
-	}
-	return dateTime;
-}
-
-void Misc::getFileListByPath(const QString& path, QStringList& fileList)
-{
-	QString p;
-	WIN32_FIND_DATAW wfd;
-	HANDLE handle;
-	if ((handle = FindFirstFileW(Q_TO_WC_STR((p = path).append("\\*")), &wfd)) != INVALID_HANDLE_VALUE)
-	{
-		do 
-		{
-			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			{
-				if (wcscmp(wfd.cFileName, L".") != 0 && wcscmp(wfd.cFileName, L"..") != 0)
-				{
-					getFileListByPath((p = path).append("\\").append(WC_TO_Q_STR(wfd.cFileName)), fileList);
-				}
-			}
-			else
-			{
-				fileList.push_back((p = path).append("\\").append(WC_TO_Q_STR(wfd.cFileName)));
-			}
-		} while (FindNextFileW(handle, &wfd));
-		FindClose(handle);
-	}
-	return;
-}
-
-const QStringList Misc::getFileListBySuffixName(const QString& path, const QStringList& suffix)
-{
-	QStringList src,dst;
-	getFileListByPath(path, src);
-	int pos;
-	for (auto& x : src)
-	{
-		for (int i = 0; i < suffix.size(); ++i)
-		{
-			if ((pos = x.lastIndexOf(".")) != -1 && x.mid(pos).toLower() == suffix[i])
-			{
-				dst.push_back(x);
-			}
-		}
-	}
-	return dst;
-}
-
-const char* Misc::wideCharToMultiByte(const wchar_t* wide)
-{
-	char* buffer = nullptr;
-	do
-	{
-		int size = WideCharToMultiByte(CP_OEMCP, 0, wide, -1, NULL, 0, NULL, FALSE);
-		if (size <= 0)
-		{
-			break;
-		}
-
-		buffer = NO_THROW_NEW char[size];
-		if (!buffer) break;
-		memset(buffer, 0x00, size);
-		if (WideCharToMultiByte(CP_OEMCP, 0, wide, -1, buffer, size, NULL, FALSE) <= 0)
-		{
-			SAFE_DELETE_A(buffer);
-		}
-	} while (false);
-	return buffer;
-}
-
-const char* Misc::qstringToMultiByte(const QString& str)
-{
-	wchar_t* buffer = nullptr;
-	do
-	{
-		buffer = NO_THROW_NEW wchar_t[str.length() + 1];
-		if (!buffer) break;
-		memset(buffer, 0x00, str.length() + 1);
-		int size = str.toWCharArray(buffer);
-		buffer[size] = '\0';
-	} while (false);
-	const char* result = wideCharToMultiByte(buffer);
-	SAFE_DELETE_A(buffer);
-	return result;
-}
-
-bool Misc::saveBitmapToFile(HBITMAP hBitmap, const QString& fileName)
-{
-	HDC     hDC;
-	//当前分辨率下每象素所占字节数          
-	int     iBits;
-	//位图中每象素所占字节数          
-	WORD     wBitCount;
-	//定义调色板大小，     位图中像素字节大小     ，位图文件大小     ，     写入文件字节数              
-	DWORD     dwPaletteSize = 0, dwBmBitsSize = 0, dwDIBSize = 0, dwWritten = 0;
-	//位图属性结构              
-	BITMAP     Bitmap;
-	//位图文件头结构          
-	BITMAPFILEHEADER     bmfHdr;
-	//位图信息头结构              
-	BITMAPINFOHEADER     bi;
-	//指向位图信息头结构                  
-	LPBITMAPINFOHEADER     lpbi;
-	//定义文件，分配内存句柄，调色板句柄              
-	HANDLE     fh, hDib, hPal, hOldPal = NULL;
-
-	//计算位图文件每个像素所占字节数              
-	hDC = CreateDC(L"DISPLAY", NULL, NULL, NULL);
-	iBits = GetDeviceCaps(hDC, BITSPIXEL) * GetDeviceCaps(hDC, PLANES);
-	DeleteDC(hDC);
-	if (iBits <= 1)
-		wBitCount = 1;
-	else  if (iBits <= 4)
-		wBitCount = 4;
-	else if (iBits <= 8)
-		wBitCount = 8;
-	else
-		wBitCount = 24;
-
-	GetObject(hBitmap, sizeof(Bitmap), (LPSTR)&Bitmap);
-	bi.biSize = sizeof(BITMAPINFOHEADER);
-	bi.biWidth = Bitmap.bmWidth;
-	bi.biHeight = Bitmap.bmHeight;
-	bi.biPlanes = 1;
-	bi.biBitCount = wBitCount;
-	bi.biCompression = BI_RGB;
-	bi.biSizeImage = 0;
-	bi.biXPelsPerMeter = 0;
-	bi.biYPelsPerMeter = 0;
-	bi.biClrImportant = 0;
-	bi.biClrUsed = 0;
-
-	dwBmBitsSize = ((Bitmap.bmWidth * wBitCount + 31) / 32) * 4 * Bitmap.bmHeight;
-
-	//为位图内容分配内存              
-	hDib = GlobalAlloc(GHND, dwBmBitsSize + dwPaletteSize + sizeof(BITMAPINFOHEADER));
-	lpbi = (LPBITMAPINFOHEADER)GlobalLock(hDib);
-	*lpbi = bi;
-
-	//     处理调色板                  
-	hPal = GetStockObject(DEFAULT_PALETTE);
-	if (hPal)
-	{
-		hDC = ::GetDC(NULL);
-		hOldPal = ::SelectPalette(hDC, (HPALETTE)hPal, FALSE);
-		RealizePalette(hDC);
-	}
-
-	//     获取该调色板下新的像素值              
-	GetDIBits(hDC, hBitmap, 0, (UINT)Bitmap.bmHeight,
-		(LPSTR)lpbi + sizeof(BITMAPINFOHEADER) + dwPaletteSize,
-		(BITMAPINFO*)lpbi, DIB_RGB_COLORS);
-
-	//恢复调色板                  
-	if (hOldPal)
-	{
-		::SelectPalette(hDC, (HPALETTE)hOldPal, TRUE);
-		RealizePalette(hDC);
-		::ReleaseDC(NULL, hDC);
-	}
-
-	//创建位图文件                  
-	fh = CreateFileW(Q_TO_WC_STR(fileName), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-
-	if (fh == INVALID_HANDLE_VALUE)
-		return false;
-
-	//     设置位图文件头              
-	bmfHdr.bfType = 0x4D42;     //     "BM"              
-	dwDIBSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + dwPaletteSize + dwBmBitsSize;
-	bmfHdr.bfSize = dwDIBSize;
-	bmfHdr.bfReserved1 = 0;
-	bmfHdr.bfReserved2 = 0;
-	bmfHdr.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER) + dwPaletteSize;
-	//     写入位图文件头              
-	WriteFile(fh, (LPSTR)&bmfHdr, sizeof(BITMAPFILEHEADER), &dwWritten, NULL);
-	//     写入位图文件其余内容              
-	WriteFile(fh, (LPSTR)lpbi, dwDIBSize, &dwWritten, NULL);
-	//清除                  
-	GlobalUnlock(hDib);
-	GlobalFree(hDib);
-	CloseHandle(fh);
-	return true;
-}
-
 Dt::Tap::Tap(QObject* parent)
 {
 	m_detectionType = BaseTypes::DT_TAP;
@@ -4802,10 +4434,6 @@ void Dt::Tap::screenUartHandler(const QString& port, const QByteArray& bytes)
 		{
 			for (int i = 0; i < 2; i++)
 			{
-				//if (m_dataResult[i].portName == portName)
-				//{
-				//	m_dataResult[i].isValid = true;
-				//}
 			}
 		}
 	} while (false);

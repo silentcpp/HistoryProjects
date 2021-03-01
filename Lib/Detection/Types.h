@@ -1,58 +1,4 @@
 #pragma once
-/*
-													《琵琶行》
-
-															白居易
-
-											浔阳江头夜送客，枫叶荻花秋瑟瑟。
-											主人下马客在船，举酒欲饮无管弦。
-											醉不成欢惨将别，别时茫茫江浸月。
-
-											忽闻水上琵琶声，主人忘归客不发。
-											寻声暗问弹者谁，琵琶声停欲语迟。
-											移船相近邀相见，添酒回灯重开宴。
-											千呼万唤始出来，犹抱琵琶半遮面。
-											转轴拨弦三两声，未成曲调先有情。
-											弦弦掩抑声声思，似诉平生不得志。
-											低眉信手续续弹，说尽心中无限事。
-											轻拢慢捻抹复挑，初为霓裳后六幺。
-											大弦嘈嘈如急雨，小弦切切如私语。
-											嘈嘈切切错杂弹，大珠小珠落玉盘。
-											间关莺语花底滑，幽咽泉流冰下难。
-											冰泉冷涩弦凝绝，凝绝不通声暂歇。
-											别有幽愁暗恨生，此时无声胜有声。
-											银瓶乍破水浆迸，铁骑突出刀枪鸣。
-											曲终收拨当心画，四弦一声如裂帛。
-											东船西舫悄无言，唯见江心秋月白。
-
-											沉吟放拨插弦中，整顿衣裳起敛容。
-											自言本是京城女，家在虾蟆陵下住。
-											十三学得琵琶成，名属教坊第一部。
-											曲罢曾教善才服，妆成每被秋娘妒。
-											五陵年少争缠头，一曲红绡不知数。
-											钿头银篦击节碎，血色罗裙翻酒污。
-											今年欢笑复明年，秋月春风等闲度。
-											弟走从军阿姨死，暮去朝来颜色故。
-											门前冷落鞍马稀，老大嫁作商人妇。
-											商人重利轻别离，前月浮梁买茶去。
-											去来江口守空船，绕船月明江水寒。
-											夜深忽梦少年事，梦啼妆泪红阑干。
-
-											我闻琵琶已叹息，又闻此语重唧唧。
-											同是天涯沦落人，相逢何必曾相识！
-											我从去年辞帝京，谪居卧病浔阳城。
-											浔阳地僻无音乐，终岁不闻丝竹声。
-											住近湓江地低湿，黄芦苦竹绕宅生。
-											其间旦暮闻何物？杜鹃啼血猿哀鸣。
-											春江花朝秋月夜，往往取酒还独倾。
-											岂无山歌与村笛，呕哑嘲哳难为听。
-											今夜闻君琵琶语，如听仙乐耳暂明。
-											莫辞更坐弹一曲，为君翻作琵琶行。
-
-											感我此言良久立，却坐促弦弦转急。
-											凄凄不似向前声，满座重闻皆掩泣。
-											座中泣下谁最多？江州司马青衫湿。
-*/
 
 /************************************************************************/
 /* Include                                                              */
@@ -80,14 +26,6 @@
 #include <QProcess>
 
 #include <QTimer>
-
-//#include <QtNetwork/QNetworkAccessManager>
-//
-//#include <QtNetwork/QNetworkRequest>
-//
-//#include <QtNetwork/QNetworkReply>
-
-//#include <io.h>
 
 #include <VoltageTestMgr/VoltageTestMgr.h>
 #pragma comment(lib, "VoltageTestMgr.lib")
@@ -117,11 +55,11 @@
 
 #include "QLabelEx.h"
 
-#include "CanMatrix.h"
-
 #include "JsonTool.h"
 
 #include "RayAxis.h"
+
+#include "CanMatrix.hpp"
 
 #include "CanSender.h"
 
@@ -161,6 +99,8 @@ using namespace cv;
 #if CALL_PYTHON_LIB
 #include "../DetectionExt/Lib/Python34/include/Python.h"
 #endif
+
+#define MY_KITS_PATH "C:\\Windows\\MyKits\\"
 
 /************************************************************************/
 /* Define                                                               */
@@ -304,7 +244,7 @@ enum TestSequence {
 	TS_SAVE_LOG,
 	TS_CHECK_VIDEO,
 	TS_CHECK_AVM,
-	TS_SET_AVM,
+	TS_TRIGGER_AVM,
 	TS_CHECK_DVR,
 	TS_CHECK_FRVIEW,
 	TS_CHECK_LRVIEW,
@@ -326,6 +266,9 @@ enum TestSequence {
 	TS_CHANGE_PWD,
 	TS_CHECK_MINCUR,
 	TS_CHECK_MAXCUR,
+	TS_RESET_FACTORY,
+	TS_WRITE_SET,
+	TS_WAIT_STARTUP,
 	TS_CAN_PROC0,
 	TS_CAN_PROC1,
 	TS_CAN_PROC2,
@@ -564,7 +507,210 @@ namespace DvrTypes {
 
 	/*加密算法密钥*/
 	static const size_t crc32Table[256] = { 
-		
 	};
 }
 
+namespace Misc {
+	namespace Var {
+		static QString appendName;
+	}
+
+	bool isExistKitsPath();
+
+	bool writeRunError(const QString& error);
+
+	/*Cv图像转Qt图像*/
+	bool cvImageToQtImage(IplImage* cv, QImage* qt);
+
+	/*通过URL获取文件名*/
+	const QString getFileNameByUrl(const QString& url);
+
+	/*通过路径获取文件名*/
+	const QString getFileNameByPath(const QString& path);
+
+	/*获取当前文件名*/
+	const QString getCurrentFileName();
+
+	/*获取当前目录*/
+	const QString getCurrentDir();
+
+	/*创建路径*/
+	bool makePath(const QString& path);
+
+	/*获取APP版本号*/
+	const QString _getAppVersion();
+
+	const QString getAppVersion();
+
+	/*设置APP附加名*/
+	void setAppAppendName(const QString& name);
+
+	/*获取APP附加名*/
+	const QString getAppAppendName();
+
+	/*通过版本号重命名APP*/
+	bool renameAppByVersion(QWidget* widget);
+
+	/*启动应用程序*/
+	bool startApp(const QString& name, const int& show, bool absolutely = false);
+
+	/*结束应用程序*/
+	bool finishApp(const QString& name);
+
+	/*获取当前时间*/
+	const QString getCurrentTime(bool fileFormat = false);
+
+	/*获取当前日期*/
+	const QString getCurrentDate(bool fileFormat = false);
+
+	/*获取当前时间日期*/
+	const QString getCurrentDateTime(bool fileFormat = false);
+
+	/*通过路径获取文件列表*/
+	void getFileListByPath(const QString& path, QStringList& fileList);
+
+	/*通过后缀名获取文件列表*/
+	const QStringList getFileListBySuffixName(const QString& path, const QStringList& suffix);
+
+	/*UNICODE转多字符集*/
+	const char* wideCharToMultiByte(const wchar_t* wide);
+
+	/*QString转多字符集*/
+	const char* qstringToMultiByte(const QString& str);
+
+	bool saveBitmapToFile(HBITMAP hBitmap, const QString& fileName);
+
+	class ThemeFactory {
+	public:
+		/*构造*/
+		inline ThemeFactory() {}
+
+		/*析构*/
+		inline ~ThemeFactory() {}
+
+		/*获取主题列表*/
+		inline static const QStringList getThemeList()
+		{
+			return QStyleFactory::keys();
+		}
+
+		/*随机选择一个主题*/
+		inline static void randomTheme()
+		{
+			setTheme(getThemeList().value(qrand() % getThemeList().size()));
+		}
+
+		/*设置主题*/
+		inline static void setTheme(const QString& theme = QString("Fusion"))
+		{
+			qApp->setStyle(QStyleFactory::create(theme));
+			QPalette palette;
+			palette.setColor(QPalette::Window, QColor(53, 53, 53));
+			palette.setColor(QPalette::WindowText, Qt::white);
+			palette.setColor(QPalette::Base, QColor(15, 15, 15));
+			palette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+			palette.setColor(QPalette::ToolTipBase, Qt::white);
+			palette.setColor(QPalette::ToolTipText, Qt::white);
+			palette.setColor(QPalette::Text, Qt::white);
+			palette.setColor(QPalette::Button, QColor(53, 53, 53));
+			palette.setColor(QPalette::ButtonText, Qt::white);
+			palette.setColor(QPalette::BrightText, Qt::red);
+			palette.setColor(QPalette::Highlight, QColor(142, 45, 197).lighter());
+			palette.setColor(QPalette::HighlightedText, Qt::black);
+			qApp->setPalette(palette);
+		}
+
+		/*设置边框为圆角*/
+		inline static void setBorderRadius(QWidget* widget)
+		{
+			QBitmap bmp(widget->size());
+			bmp.fill();
+			QPainter p(&bmp);
+			p.setPen(Qt::NoPen);
+			p.setBrush(Qt::black);
+			p.drawRoundedRect(bmp.rect(), 20, 20);
+			widget->setMask(bmp);
+		}
+	};
+
+	class CharSet {
+	public:
+		inline CharSet() {}
+
+		inline CharSet(const QString& str) { qstringToMultiByte(str); }
+
+		inline CharSet(const wchar_t* str) { wideCharToMultiByte(str); }
+
+		inline ~CharSet() { for (auto& x : m_list) SAFE_DELETE_A(x); }
+
+		inline operator const char* () { return m_list.back(); }
+
+		inline const char* getData() { return m_list.back(); }
+
+		const char* wideCharToMultiByte(const wchar_t* wide)
+		{
+			do
+			{
+				int size = ::WideCharToMultiByte(CP_OEMCP, 0, wide, -1, NULL, 0, NULL, FALSE);
+				if (size <= 0) break;
+				char* buffer = NO_THROW_NEW char[size];
+				m_list.append(buffer);
+				if (!buffer) break;
+				memset(buffer, 0x00, size);
+				if (::WideCharToMultiByte(CP_OEMCP, 0, wide, -1, buffer, size, NULL, FALSE) <= 0) break;
+			} while (false);
+			return m_list.back();
+		}
+
+		const char* qstringToMultiByte(const QString& str)
+		{
+			do
+			{
+				wchar_t* buffer = NO_THROW_NEW wchar_t[(str.length() + 1) * 2];
+				if (!buffer) break;
+				memset(buffer, 0x00, (str.length() + 1) * 2);
+				int size = str.toWCharArray(buffer);
+				buffer[size] = '\0';
+				wideCharToMultiByte(buffer);
+				SAFE_DELETE_A(buffer);
+			} while (false);
+			return m_list.back();
+		}
+	private:
+		QList<char*> m_list;
+	};
+
+	class UpdateSfr :public QThread {
+		Q_OBJECT
+	public:
+		UpdateSfr(QObject* parent = nullptr) { }
+
+		~UpdateSfr() { m_quit = true; if (this->isRunning()) { wait(1000); } }
+
+		void startUpdate() { /*this->start();*/ m_start = true; }
+
+		void stopUpdate() { m_start = false; }
+
+		void setInterval(const int& interval) { m_interval = interval; }
+	protected:
+		void run()
+		{
+			DEBUG_INFO_EX("更新SFR线程%lu已启动", (ulong)QThread::currentThreadId());
+			while (!m_quit)
+			{
+				if (m_start)
+					emit updateSfrSignal();
+				msleep(m_interval);
+			}
+			DEBUG_INFO_EX("更新SFR线程%lu已退出", (ulong)QThread::currentThreadId());
+		}
+	private:
+		bool m_start = false;
+
+		bool m_quit = false;
+
+		int m_interval = 100;
+	signals:
+		void updateSfrSignal();
+	};
+}

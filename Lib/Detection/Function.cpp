@@ -43,6 +43,40 @@ bool Fnc::GAC::checkSn()
 	return result;
 }
 
+bool Fnc::GAC::checkOldSn()
+{
+	setCurrentStatus("检测序列号");
+	bool result = false;
+	do 
+	{
+		RUN_BREAK(g_code.isEmpty(), "条码为空");
+		int size = 0;
+		uchar data[32] = {};
+		RUN_BREAK(!readDataByDid(0x0e, 0x01, &size, data), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(size != 20, "读取序列号长度不等于20");
+		RUN_BREAK(g_code != (const char*)data, "序列号对比失败");
+		result = true;
+	} while (false);
+	WRITE_LOG("%s 检测序列号", OK_NG(result));
+	addListItemEx(Q_SPRINTF("检测序列号 %s", OK_NG(result)));
+	return result;
+}
+
+bool Fnc::GAC::writeSet(const uchar& value)
+{
+	setCurrentStatus("写入工厂设置");
+	bool result = false;
+	do 
+	{
+		uchar data[1] = { value };
+		RUN_BREAK(!writeDataByDid(0x01, 0x10, 1, data), "写入工厂设置失败," + getLastError());
+		result = true;
+	} while (false);
+	WRITE_LOG("%s 写入工厂设置", OK_NG(result));
+	addListItemEx(Q_SPRINTF("写入工厂设置 %s", OK_NG(result)));
+	return result;
+}
+
 bool Fnc::GAC::generateSn(uchar* data, int* const size)
 {
 	bool result = false, convert = false;

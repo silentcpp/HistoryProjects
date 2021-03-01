@@ -230,6 +230,11 @@ void CanSender::DeleteOneMsg(const MsgNode& msg)
 	return;
 }
 
+void CanSender::DeleteOneMsg(const CanMsg& msg)
+{
+	DeleteOneMsg(msg.msg.id);
+}
+
 void CanSender::DeleteOneMsg(const int& id)
 {
 	for (int i = 0; i < MAX_MSG_COUNT; i++)

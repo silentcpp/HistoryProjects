@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_SettingDlg_t {
-    QByteArrayData data[35];
-    char stringdata0[501];
+    QByteArrayData data[41];
+    char stringdata0[595];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -57,13 +57,19 @@ QT_MOC_LITERAL(24, 326, 18), // "voltageConnectSlot"
 QT_MOC_LITERAL(25, 345, 19), // "voltageGetValueSlot"
 QT_MOC_LITERAL(26, 365, 19), // "addCanTableItemSlot"
 QT_MOC_LITERAL(27, 385, 15), // "canBaseSendSlot"
-QT_MOC_LITERAL(28, 401, 15), // "canBaseStopSlot"
-QT_MOC_LITERAL(29, 417, 14), // "canStartupSlot"
-QT_MOC_LITERAL(30, 432, 15), // "updateImageSlot"
-QT_MOC_LITERAL(31, 448, 5), // "image"
-QT_MOC_LITERAL(32, 454, 16), // "startCaptureSlot"
-QT_MOC_LITERAL(33, 471, 15), // "stopCaptureSlot"
-QT_MOC_LITERAL(34, 487, 13) // "saveCoordSlot"
+QT_MOC_LITERAL(28, 401, 16), // "canBaseSendSlot2"
+QT_MOC_LITERAL(29, 418, 15), // "canBaseStopSlot"
+QT_MOC_LITERAL(30, 434, 14), // "canStartupSlot"
+QT_MOC_LITERAL(31, 449, 14), // "canConnectSlot"
+QT_MOC_LITERAL(32, 464, 17), // "canMatrixTypeSlot"
+QT_MOC_LITERAL(33, 482, 4), // "text"
+QT_MOC_LITERAL(34, 487, 19), // "canFilterEnableSlot"
+QT_MOC_LITERAL(35, 507, 15), // "updateImageSlot"
+QT_MOC_LITERAL(36, 523, 5), // "image"
+QT_MOC_LITERAL(37, 529, 16), // "startCaptureSlot"
+QT_MOC_LITERAL(38, 546, 15), // "stopCaptureSlot"
+QT_MOC_LITERAL(39, 562, 13), // "saveCoordSlot"
+QT_MOC_LITERAL(40, 576, 18) // "connectCaptureSlot"
 
     },
     "SettingDlg\0setAuthDlgSignal\0\0bool*\0"
@@ -76,10 +82,12 @@ QT_MOC_LITERAL(34, 487, 13) // "saveCoordSlot"
     "relayControlSlot\0checked\0currentConnectSlot\0"
     "currentGetValueSlot\0voltageConnectSlot\0"
     "voltageGetValueSlot\0addCanTableItemSlot\0"
-    "canBaseSendSlot\0canBaseStopSlot\0"
-    "canStartupSlot\0updateImageSlot\0image\0"
-    "startCaptureSlot\0stopCaptureSlot\0"
-    "saveCoordSlot"
+    "canBaseSendSlot\0canBaseSendSlot2\0"
+    "canBaseStopSlot\0canStartupSlot\0"
+    "canConnectSlot\0canMatrixTypeSlot\0text\0"
+    "canFilterEnableSlot\0updateImageSlot\0"
+    "image\0startCaptureSlot\0stopCaptureSlot\0"
+    "saveCoordSlot\0connectCaptureSlot"
 };
 #undef QT_MOC_LITERAL
 
@@ -89,7 +97,7 @@ static const uint qt_meta_data_SettingDlg[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-      21,   14, // methods
+      26,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -97,29 +105,34 @@ static const uint qt_meta_data_SettingDlg[] = {
        2,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    2,  119,    2, 0x06 /* Public */,
-       6,    2,  124,    2, 0x06 /* Public */,
+       1,    2,  144,    2, 0x06 /* Public */,
+       6,    2,  149,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-      11,    2,  129,    2, 0x0a /* Public */,
-      15,    2,  134,    2, 0x0a /* Public */,
-      16,    2,  139,    2, 0x0a /* Public */,
-      17,    0,  144,    2, 0x0a /* Public */,
-      18,    0,  145,    2, 0x0a /* Public */,
-      19,    0,  146,    2, 0x0a /* Public */,
-      20,    1,  147,    2, 0x0a /* Public */,
-      22,    0,  150,    2, 0x0a /* Public */,
-      23,    0,  151,    2, 0x0a /* Public */,
-      24,    0,  152,    2, 0x0a /* Public */,
-      25,    0,  153,    2, 0x0a /* Public */,
-      26,    2,  154,    2, 0x0a /* Public */,
-      27,    0,  159,    2, 0x0a /* Public */,
-      28,    0,  160,    2, 0x0a /* Public */,
-      29,    0,  161,    2, 0x0a /* Public */,
-      30,    1,  162,    2, 0x0a /* Public */,
-      32,    0,  165,    2, 0x0a /* Public */,
-      33,    0,  166,    2, 0x0a /* Public */,
-      34,    0,  167,    2, 0x0a /* Public */,
+      11,    2,  154,    2, 0x0a /* Public */,
+      15,    2,  159,    2, 0x0a /* Public */,
+      16,    2,  164,    2, 0x0a /* Public */,
+      17,    0,  169,    2, 0x0a /* Public */,
+      18,    0,  170,    2, 0x0a /* Public */,
+      19,    0,  171,    2, 0x0a /* Public */,
+      20,    1,  172,    2, 0x0a /* Public */,
+      22,    0,  175,    2, 0x0a /* Public */,
+      23,    0,  176,    2, 0x0a /* Public */,
+      24,    0,  177,    2, 0x0a /* Public */,
+      25,    0,  178,    2, 0x0a /* Public */,
+      26,    2,  179,    2, 0x0a /* Public */,
+      27,    0,  184,    2, 0x0a /* Public */,
+      28,    0,  185,    2, 0x0a /* Public */,
+      29,    0,  186,    2, 0x0a /* Public */,
+      30,    0,  187,    2, 0x0a /* Public */,
+      31,    0,  188,    2, 0x0a /* Public */,
+      32,    1,  189,    2, 0x0a /* Public */,
+      34,    0,  192,    2, 0x0a /* Public */,
+      35,    1,  193,    2, 0x0a /* Public */,
+      37,    0,  196,    2, 0x0a /* Public */,
+      38,    0,  197,    2, 0x0a /* Public */,
+      39,    0,  198,    2, 0x0a /* Public */,
+      40,    0,  199,    2, 0x0a /* Public */,
 
  // signals: parameters
     QMetaType::Void, 0x80000000 | 3, QMetaType::Int,    4,    5,
@@ -141,7 +154,12 @@ static const uint qt_meta_data_SettingDlg[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::QImage,   31,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString,   33,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QImage,   36,
+    QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -170,12 +188,17 @@ void SettingDlg::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 12: _t->voltageGetValueSlot(); break;
         case 13: _t->addCanTableItemSlot((*reinterpret_cast< const char*(*)>(_a[1])),(*reinterpret_cast< const MsgNode(*)>(_a[2]))); break;
         case 14: _t->canBaseSendSlot(); break;
-        case 15: _t->canBaseStopSlot(); break;
-        case 16: _t->canStartupSlot(); break;
-        case 17: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
-        case 18: _t->startCaptureSlot(); break;
-        case 19: _t->stopCaptureSlot(); break;
-        case 20: _t->saveCoordSlot(); break;
+        case 15: _t->canBaseSendSlot2(); break;
+        case 16: _t->canBaseStopSlot(); break;
+        case 17: _t->canStartupSlot(); break;
+        case 18: _t->canConnectSlot(); break;
+        case 19: _t->canMatrixTypeSlot((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 20: _t->canFilterEnableSlot(); break;
+        case 21: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;
+        case 22: _t->startCaptureSlot(); break;
+        case 23: _t->stopCaptureSlot(); break;
+        case 24: _t->saveCoordSlot(); break;
+        case 25: _t->connectCaptureSlot(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -223,13 +246,13 @@ int SettingDlg::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 21)
+        if (_id < 26)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 21;
+        _id -= 26;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 21)
+        if (_id < 26)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 21;
+        _id -= 26;
     }
     return _id;
 }

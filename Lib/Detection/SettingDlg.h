@@ -5,6 +5,7 @@
 #include <QTimer>
 #include "JsonTool.h"
 #include "GeneratedFiles/ui_SettingDlg.h"
+#include "CanMatrix.hpp"
 
 #define ITEM_TO_STR(I,N) I->data(N, Qt::EditRole).toString()
 
@@ -85,9 +86,17 @@ public slots:
 
 	void canBaseSendSlot();
 
+	void canBaseSendSlot2();
+
 	void canBaseStopSlot();
 
 	void canStartupSlot();
+
+	void canConnectSlot();
+
+	void canMatrixTypeSlot(const QString& text);
+
+	void canFilterEnableSlot();
 
 	/*»­Í¼Ò³*/
 	void updateImageSlot(const QImage& image);
@@ -97,6 +106,8 @@ public slots:
 	void stopCaptureSlot();
 
 	void saveCoordSlot();
+
+	void connectCaptureSlot();
 protected:
 	void setLastError(const QString& error);
 
@@ -118,6 +129,8 @@ signals:
 	void addCanTableItemSignal(const char* type, const MsgNode& msg);
 private:
 	Ui::SettingDlg ui;
+
+	CanMatrix m_matrix;
 
 	JsonTool* m_jsonTool = nullptr;
 
@@ -141,8 +154,10 @@ private:
 	}m_updateWarn = UW_NO;
 
 	MsgNode m_msg;
+	MsgNode m_msg2;
 
 	QTimer m_canBaseSendTimer;
+	QTimer m_canBaseSendTimer2;
 
 	bool m_startCapture = false;
 
@@ -157,4 +172,10 @@ private:
 	bool m_connected = false;
 
 	QList<QCheckBox*> m_relayBoxList;
+
+	bool m_canConnect = false;
+
+	bool m_captureStatus = false;
+
+	int m_canLogCount = 0;
 };

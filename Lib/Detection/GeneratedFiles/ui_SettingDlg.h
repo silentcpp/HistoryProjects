@@ -26,6 +26,7 @@
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
+#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -116,33 +117,58 @@ public:
     QPushButton *startCapture;
     QPushButton *stopCapture;
     QPushButton *saveCoord;
+    QPushButton *connectCapture;
+    QCheckBox *paintBigImageBox;
     QSpacerItem *horizontalSpacer_4;
     QWidget *tab_2;
-    QVBoxLayout *verticalLayout_5;
+    QVBoxLayout *verticalLayout_3;
     QTableWidget *canTable;
     QTabWidget *tabWidget_2;
     QWidget *tab_4;
-    QVBoxLayout *verticalLayout_3;
+    QVBoxLayout *verticalLayout_5;
     QGroupBox *groupBox;
+    QVBoxLayout *verticalLayout_15;
+    QGridLayout *gridLayout_10;
     QGridLayout *gridLayout;
     QLabel *label_2;
-    QLineEdit *canFrameId;
-    QLineEdit *canDataEdit;
-    QLabel *label_4;
     QComboBox *canFrameType;
-    QPushButton *canBaseStop;
-    QLabel *label_3;
-    QLineEdit *canSendDelay;
+    QLabel *label_4;
+    QLineEdit *canFrameId;
+    QLabel *label_24;
+    QComboBox *canFrameType2;
+    QLabel *label_25;
+    QLineEdit *canFrameId2;
+    QLabel *label_27;
+    QLineEdit *canStartPos;
+    QGridLayout *gridLayout_9;
     QLabel *label_6;
+    QLineEdit *canData;
+    QLabel *label_28;
+    QLineEdit *canDataLength;
+    QLabel *label_29;
+    QLineEdit *canData2;
+    QPushButton *canBaseSend2;
     QPushButton *canBaseSend;
+    QHBoxLayout *horizontalLayout_9;
+    QLabel *label_3;
     QComboBox *canFrameFormat;
-    QLineEdit *canSendCount;
-    QSpacerItem *horizontalSpacer_3;
-    QSpacerItem *verticalSpacer_3;
     QLabel *label_5;
+    QLineEdit *canSendCount;
+    QHBoxLayout *horizontalLayout_10;
     QLabel *label_7;
+    QLineEdit *canSendDelay;
+    QPushButton *canBaseStop;
+    QHBoxLayout *horizontalLayout_12;
     QSpacerItem *horizontalSpacer_2;
+    QLabel *label_30;
+    QLineEdit *canFilter;
+    QCheckBox *canFilterEnable;
+    QLabel *label_26;
+    QComboBox *canMatrixType;
+    QPushButton *canClearLog;
     QPushButton *canStartup;
+    QPushButton *canConnect;
+    QSpacerItem *verticalSpacer_3;
     QWidget *tab_5;
     QVBoxLayout *verticalLayout_6;
     QGroupBox *groupBox_2;
@@ -173,14 +199,21 @@ public:
     QCheckBox *checkBox_5;
     QSpacerItem *verticalSpacer;
     QWidget *tab_7;
+    QVBoxLayout *verticalLayout_17;
     QGroupBox *groupBox_4;
     QGridLayout *gridLayout_3;
-    QLabel *label_11;
-    QLabel *frameVersion;
     QLabel *label_12;
-    QLabel *fileVersion;
-    QLabel *label_14;
     QLabel *appVersion;
+    QLabel *frameVersion;
+    QLabel *label_11;
+    QLabel *matrixVersion;
+    QLabel *label_14;
+    QLabel *label_23;
+    QLabel *fileVersion;
+    QSpacerItem *horizontalSpacer_3;
+    QGroupBox *groupBox_9;
+    QVBoxLayout *verticalLayout_16;
+    QTextEdit *textEdit;
 
     void setupUi(QWidget *SettingDlg)
     {
@@ -628,6 +661,17 @@ public:
 
         horizontalLayout_4->addWidget(saveCoord);
 
+        connectCapture = new QPushButton(tab_3);
+        connectCapture->setObjectName(QStringLiteral("connectCapture"));
+        connectCapture->setIcon(icon5);
+
+        horizontalLayout_4->addWidget(connectCapture);
+
+        paintBigImageBox = new QCheckBox(tab_3);
+        paintBigImageBox->setObjectName(QStringLiteral("paintBigImageBox"));
+
+        horizontalLayout_4->addWidget(paintBigImageBox);
+
         horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_4->addItem(horizontalSpacer_4);
@@ -638,10 +682,10 @@ public:
         tabWidget->addTab(tab_3, QString());
         tab_2 = new QWidget();
         tab_2->setObjectName(QStringLiteral("tab_2"));
-        verticalLayout_5 = new QVBoxLayout(tab_2);
-        verticalLayout_5->setSpacing(6);
-        verticalLayout_5->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_5->setObjectName(QStringLiteral("verticalLayout_5"));
+        verticalLayout_3 = new QVBoxLayout(tab_2);
+        verticalLayout_3->setSpacing(6);
+        verticalLayout_3->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_3->setObjectName(QStringLiteral("verticalLayout_3"));
         canTable = new QTableWidget(tab_2);
         if (canTable->columnCount() < 8)
             canTable->setColumnCount(8);
@@ -663,17 +707,17 @@ public:
         canTable->setHorizontalHeaderItem(7, __qtablewidgetitem7);
         canTable->setObjectName(QStringLiteral("canTable"));
 
-        verticalLayout_5->addWidget(canTable);
+        verticalLayout_3->addWidget(canTable);
 
         tabWidget_2 = new QTabWidget(tab_2);
         tabWidget_2->setObjectName(QStringLiteral("tabWidget_2"));
         tabWidget_2->setTabPosition(QTabWidget::South);
         tab_4 = new QWidget();
         tab_4->setObjectName(QStringLiteral("tab_4"));
-        verticalLayout_3 = new QVBoxLayout(tab_4);
-        verticalLayout_3->setSpacing(6);
-        verticalLayout_3->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_3->setObjectName(QStringLiteral("verticalLayout_3"));
+        verticalLayout_5 = new QVBoxLayout(tab_4);
+        verticalLayout_5->setSpacing(6);
+        verticalLayout_5->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_5->setObjectName(QStringLiteral("verticalLayout_5"));
         groupBox = new QGroupBox(tab_4);
         groupBox->setObjectName(QStringLiteral("groupBox"));
         QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -684,9 +728,15 @@ public:
         groupBox->setAutoFillBackground(false);
         groupBox->setFlat(false);
         groupBox->setCheckable(false);
-        gridLayout = new QGridLayout(groupBox);
+        verticalLayout_15 = new QVBoxLayout(groupBox);
+        verticalLayout_15->setSpacing(6);
+        verticalLayout_15->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_15->setObjectName(QStringLiteral("verticalLayout_15"));
+        gridLayout_10 = new QGridLayout();
+        gridLayout_10->setSpacing(6);
+        gridLayout_10->setObjectName(QStringLiteral("gridLayout_10"));
+        gridLayout = new QGridLayout();
         gridLayout->setSpacing(6);
-        gridLayout->setContentsMargins(11, 11, 11, 11);
         gridLayout->setObjectName(QStringLiteral("gridLayout"));
         label_2 = new QLabel(groupBox);
         label_2->setObjectName(QStringLiteral("label_2"));
@@ -698,95 +748,238 @@ public:
 
         gridLayout->addWidget(label_2, 0, 0, 1, 1);
 
-        canFrameId = new QLineEdit(groupBox);
-        canFrameId->setObjectName(QStringLiteral("canFrameId"));
+        canFrameType = new QComboBox(groupBox);
+        canFrameType->setObjectName(QStringLiteral("canFrameType"));
 
-        gridLayout->addWidget(canFrameId, 0, 3, 1, 1);
-
-        canDataEdit = new QLineEdit(groupBox);
-        canDataEdit->setObjectName(QStringLiteral("canDataEdit"));
-
-        gridLayout->addWidget(canDataEdit, 0, 5, 1, 2);
+        gridLayout->addWidget(canFrameType, 0, 1, 1, 1);
 
         label_4 = new QLabel(groupBox);
         label_4->setObjectName(QStringLiteral("label_4"));
 
         gridLayout->addWidget(label_4, 0, 2, 1, 1);
 
-        canFrameType = new QComboBox(groupBox);
-        canFrameType->setObjectName(QStringLiteral("canFrameType"));
+        canFrameId = new QLineEdit(groupBox);
+        canFrameId->setObjectName(QStringLiteral("canFrameId"));
+        QSizePolicy sizePolicy3(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        sizePolicy3.setHorizontalStretch(0);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(canFrameId->sizePolicy().hasHeightForWidth());
+        canFrameId->setSizePolicy(sizePolicy3);
 
-        gridLayout->addWidget(canFrameType, 0, 1, 1, 1);
+        gridLayout->addWidget(canFrameId, 0, 3, 1, 3);
 
-        canBaseStop = new QPushButton(groupBox);
-        canBaseStop->setObjectName(QStringLiteral("canBaseStop"));
-        canBaseStop->setIcon(icon2);
+        label_24 = new QLabel(groupBox);
+        label_24->setObjectName(QStringLiteral("label_24"));
 
-        gridLayout->addWidget(canBaseStop, 1, 7, 1, 1);
+        gridLayout->addWidget(label_24, 1, 0, 1, 1);
 
-        label_3 = new QLabel(groupBox);
-        label_3->setObjectName(QStringLiteral("label_3"));
+        canFrameType2 = new QComboBox(groupBox);
+        canFrameType2->setObjectName(QStringLiteral("canFrameType2"));
 
-        gridLayout->addWidget(label_3, 1, 0, 1, 1);
+        gridLayout->addWidget(canFrameType2, 1, 1, 1, 1);
 
-        canSendDelay = new QLineEdit(groupBox);
-        canSendDelay->setObjectName(QStringLiteral("canSendDelay"));
+        label_25 = new QLabel(groupBox);
+        label_25->setObjectName(QStringLiteral("label_25"));
 
-        gridLayout->addWidget(canSendDelay, 1, 6, 1, 1);
+        gridLayout->addWidget(label_25, 1, 2, 1, 1);
 
+        canFrameId2 = new QLineEdit(groupBox);
+        canFrameId2->setObjectName(QStringLiteral("canFrameId2"));
+        sizePolicy3.setHeightForWidth(canFrameId2->sizePolicy().hasHeightForWidth());
+        canFrameId2->setSizePolicy(sizePolicy3);
+        canFrameId2->setMinimumSize(QSize(0, 0));
+
+        gridLayout->addWidget(canFrameId2, 1, 3, 1, 1);
+
+        label_27 = new QLabel(groupBox);
+        label_27->setObjectName(QStringLiteral("label_27"));
+
+        gridLayout->addWidget(label_27, 1, 4, 1, 1);
+
+        canStartPos = new QLineEdit(groupBox);
+        canStartPos->setObjectName(QStringLiteral("canStartPos"));
+        sizePolicy3.setHeightForWidth(canStartPos->sizePolicy().hasHeightForWidth());
+        canStartPos->setSizePolicy(sizePolicy3);
+        canStartPos->setMinimumSize(QSize(0, 0));
+
+        gridLayout->addWidget(canStartPos, 1, 5, 1, 1);
+
+
+        gridLayout_10->addLayout(gridLayout, 0, 0, 1, 1);
+
+        gridLayout_9 = new QGridLayout();
+        gridLayout_9->setSpacing(6);
+        gridLayout_9->setObjectName(QStringLiteral("gridLayout_9"));
         label_6 = new QLabel(groupBox);
         label_6->setObjectName(QStringLiteral("label_6"));
 
-        gridLayout->addWidget(label_6, 0, 4, 1, 1);
+        gridLayout_9->addWidget(label_6, 0, 0, 1, 2);
+
+        canData = new QLineEdit(groupBox);
+        canData->setObjectName(QStringLiteral("canData"));
+
+        gridLayout_9->addWidget(canData, 0, 2, 1, 3);
+
+        label_28 = new QLabel(groupBox);
+        label_28->setObjectName(QStringLiteral("label_28"));
+
+        gridLayout_9->addWidget(label_28, 1, 0, 1, 1);
+
+        canDataLength = new QLineEdit(groupBox);
+        canDataLength->setObjectName(QStringLiteral("canDataLength"));
+
+        gridLayout_9->addWidget(canDataLength, 1, 1, 1, 2);
+
+        label_29 = new QLabel(groupBox);
+        label_29->setObjectName(QStringLiteral("label_29"));
+
+        gridLayout_9->addWidget(label_29, 1, 3, 1, 1);
+
+        canData2 = new QLineEdit(groupBox);
+        canData2->setObjectName(QStringLiteral("canData2"));
+
+        gridLayout_9->addWidget(canData2, 1, 4, 1, 1);
+
+        canBaseSend2 = new QPushButton(groupBox);
+        canBaseSend2->setObjectName(QStringLiteral("canBaseSend2"));
+        canBaseSend2->setIcon(icon3);
+
+        gridLayout_9->addWidget(canBaseSend2, 1, 5, 1, 1);
 
         canBaseSend = new QPushButton(groupBox);
         canBaseSend->setObjectName(QStringLiteral("canBaseSend"));
         canBaseSend->setIcon(icon3);
 
-        gridLayout->addWidget(canBaseSend, 0, 7, 1, 1);
+        gridLayout_9->addWidget(canBaseSend, 0, 5, 1, 1);
+
+
+        gridLayout_10->addLayout(gridLayout_9, 0, 1, 1, 1);
+
+        horizontalLayout_9 = new QHBoxLayout();
+        horizontalLayout_9->setSpacing(6);
+        horizontalLayout_9->setObjectName(QStringLiteral("horizontalLayout_9"));
+        label_3 = new QLabel(groupBox);
+        label_3->setObjectName(QStringLiteral("label_3"));
+
+        horizontalLayout_9->addWidget(label_3);
 
         canFrameFormat = new QComboBox(groupBox);
         canFrameFormat->setObjectName(QStringLiteral("canFrameFormat"));
 
-        gridLayout->addWidget(canFrameFormat, 1, 1, 1, 1);
-
-        canSendCount = new QLineEdit(groupBox);
-        canSendCount->setObjectName(QStringLiteral("canSendCount"));
-
-        gridLayout->addWidget(canSendCount, 1, 3, 1, 1);
-
-        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        gridLayout->addItem(horizontalSpacer_3, 1, 8, 1, 1);
-
-        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-        gridLayout->addItem(verticalSpacer_3, 3, 3, 1, 1);
+        horizontalLayout_9->addWidget(canFrameFormat);
 
         label_5 = new QLabel(groupBox);
         label_5->setObjectName(QStringLiteral("label_5"));
 
-        gridLayout->addWidget(label_5, 1, 2, 1, 1);
+        horizontalLayout_9->addWidget(label_5);
 
+        canSendCount = new QLineEdit(groupBox);
+        canSendCount->setObjectName(QStringLiteral("canSendCount"));
+        sizePolicy3.setHeightForWidth(canSendCount->sizePolicy().hasHeightForWidth());
+        canSendCount->setSizePolicy(sizePolicy3);
+        canSendCount->setMinimumSize(QSize(20, 0));
+
+        horizontalLayout_9->addWidget(canSendCount);
+
+
+        gridLayout_10->addLayout(horizontalLayout_9, 1, 0, 1, 1);
+
+        horizontalLayout_10 = new QHBoxLayout();
+        horizontalLayout_10->setSpacing(6);
+        horizontalLayout_10->setObjectName(QStringLiteral("horizontalLayout_10"));
         label_7 = new QLabel(groupBox);
         label_7->setObjectName(QStringLiteral("label_7"));
 
-        gridLayout->addWidget(label_7, 1, 4, 1, 2);
+        horizontalLayout_10->addWidget(label_7);
 
+        canSendDelay = new QLineEdit(groupBox);
+        canSendDelay->setObjectName(QStringLiteral("canSendDelay"));
+
+        horizontalLayout_10->addWidget(canSendDelay);
+
+        canBaseStop = new QPushButton(groupBox);
+        canBaseStop->setObjectName(QStringLiteral("canBaseStop"));
+        canBaseStop->setIcon(icon2);
+
+        horizontalLayout_10->addWidget(canBaseStop);
+
+
+        gridLayout_10->addLayout(horizontalLayout_10, 1, 1, 1, 1);
+
+
+        verticalLayout_15->addLayout(gridLayout_10);
+
+        horizontalLayout_12 = new QHBoxLayout();
+        horizontalLayout_12->setSpacing(6);
+        horizontalLayout_12->setObjectName(QStringLiteral("horizontalLayout_12"));
         horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        gridLayout->addItem(horizontalSpacer_2, 0, 8, 1, 1);
+        horizontalLayout_12->addItem(horizontalSpacer_2);
+
+        label_30 = new QLabel(groupBox);
+        label_30->setObjectName(QStringLiteral("label_30"));
+
+        horizontalLayout_12->addWidget(label_30);
+
+        canFilter = new QLineEdit(groupBox);
+        canFilter->setObjectName(QStringLiteral("canFilter"));
+
+        horizontalLayout_12->addWidget(canFilter);
+
+        canFilterEnable = new QCheckBox(groupBox);
+        canFilterEnable->setObjectName(QStringLiteral("canFilterEnable"));
+
+        horizontalLayout_12->addWidget(canFilterEnable);
+
+        label_26 = new QLabel(groupBox);
+        label_26->setObjectName(QStringLiteral("label_26"));
+        sizePolicy1.setHeightForWidth(label_26->sizePolicy().hasHeightForWidth());
+        label_26->setSizePolicy(sizePolicy1);
+
+        horizontalLayout_12->addWidget(label_26);
+
+        canMatrixType = new QComboBox(groupBox);
+        canMatrixType->setObjectName(QStringLiteral("canMatrixType"));
+        QSizePolicy sizePolicy4(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy4.setHorizontalStretch(0);
+        sizePolicy4.setVerticalStretch(0);
+        sizePolicy4.setHeightForWidth(canMatrixType->sizePolicy().hasHeightForWidth());
+        canMatrixType->setSizePolicy(sizePolicy4);
+        canMatrixType->setMinimumSize(QSize(80, 0));
+
+        horizontalLayout_12->addWidget(canMatrixType);
+
+        canClearLog = new QPushButton(groupBox);
+        canClearLog->setObjectName(QStringLiteral("canClearLog"));
+        QIcon icon11;
+        icon11.addFile(QStringLiteral(":/images/Resources/images/firefox.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        canClearLog->setIcon(icon11);
+
+        horizontalLayout_12->addWidget(canClearLog);
 
         canStartup = new QPushButton(groupBox);
         canStartup->setObjectName(QStringLiteral("canStartup"));
-        QIcon icon11;
-        icon11.addFile(QStringLiteral(":/images/Resources/images/bird.ico"), QSize(), QIcon::Normal, QIcon::Off);
-        canStartup->setIcon(icon11);
+        QIcon icon12;
+        icon12.addFile(QStringLiteral(":/images/Resources/images/bird.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        canStartup->setIcon(icon12);
 
-        gridLayout->addWidget(canStartup, 2, 7, 1, 1);
+        horizontalLayout_12->addWidget(canStartup);
+
+        canConnect = new QPushButton(groupBox);
+        canConnect->setObjectName(QStringLiteral("canConnect"));
+        canConnect->setIcon(icon5);
+
+        horizontalLayout_12->addWidget(canConnect);
 
 
-        verticalLayout_3->addWidget(groupBox);
+        verticalLayout_15->addLayout(horizontalLayout_12);
+
+
+        verticalLayout_5->addWidget(groupBox);
+
+        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_5->addItem(verticalSpacer_3);
 
         tabWidget_2->addTab(tab_4, QString());
         tab_5 = new QWidget();
@@ -815,11 +1008,12 @@ public:
         QTableWidgetItem *__qtablewidgetitem12 = new QTableWidgetItem();
         tableWidget->setHorizontalHeaderItem(4, __qtablewidgetitem12);
         tableWidget->setObjectName(QStringLiteral("tableWidget"));
-        QSizePolicy sizePolicy3(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        sizePolicy3.setHorizontalStretch(100);
-        sizePolicy3.setVerticalStretch(0);
-        sizePolicy3.setHeightForWidth(tableWidget->sizePolicy().hasHeightForWidth());
-        tableWidget->setSizePolicy(sizePolicy3);
+        QSizePolicy sizePolicy5(QSizePolicy::Minimum, QSizePolicy::Expanding);
+        sizePolicy5.setHorizontalStretch(0);
+        sizePolicy5.setVerticalStretch(0);
+        sizePolicy5.setHeightForWidth(tableWidget->sizePolicy().hasHeightForWidth());
+        tableWidget->setSizePolicy(sizePolicy5);
+        tableWidget->setMinimumSize(QSize(450, 0));
 
         horizontalLayout_3->addWidget(tableWidget);
 
@@ -946,47 +1140,83 @@ public:
 
         tabWidget_2->addTab(tab_6, QString());
 
-        verticalLayout_5->addWidget(tabWidget_2);
+        verticalLayout_3->addWidget(tabWidget_2);
 
         tabWidget->addTab(tab_2, QString());
         tab_7 = new QWidget();
         tab_7->setObjectName(QStringLiteral("tab_7"));
+        verticalLayout_17 = new QVBoxLayout(tab_7);
+        verticalLayout_17->setSpacing(6);
+        verticalLayout_17->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_17->setObjectName(QStringLiteral("verticalLayout_17"));
         groupBox_4 = new QGroupBox(tab_7);
         groupBox_4->setObjectName(QStringLiteral("groupBox_4"));
-        groupBox_4->setGeometry(QRect(10, 40, 201, 131));
         gridLayout_3 = new QGridLayout(groupBox_4);
         gridLayout_3->setSpacing(6);
         gridLayout_3->setContentsMargins(11, 11, 11, 11);
         gridLayout_3->setObjectName(QStringLiteral("gridLayout_3"));
-        label_11 = new QLabel(groupBox_4);
-        label_11->setObjectName(QStringLiteral("label_11"));
+        label_12 = new QLabel(groupBox_4);
+        label_12->setObjectName(QStringLiteral("label_12"));
 
-        gridLayout_3->addWidget(label_11, 0, 0, 1, 1);
+        gridLayout_3->addWidget(label_12, 1, 0, 1, 1);
+
+        appVersion = new QLabel(groupBox_4);
+        appVersion->setObjectName(QStringLiteral("appVersion"));
+
+        gridLayout_3->addWidget(appVersion, 2, 1, 1, 1);
 
         frameVersion = new QLabel(groupBox_4);
         frameVersion->setObjectName(QStringLiteral("frameVersion"));
 
         gridLayout_3->addWidget(frameVersion, 0, 1, 1, 1);
 
-        label_12 = new QLabel(groupBox_4);
-        label_12->setObjectName(QStringLiteral("label_12"));
+        label_11 = new QLabel(groupBox_4);
+        label_11->setObjectName(QStringLiteral("label_11"));
 
-        gridLayout_3->addWidget(label_12, 1, 0, 1, 1);
+        gridLayout_3->addWidget(label_11, 0, 0, 1, 1);
 
-        fileVersion = new QLabel(groupBox_4);
-        fileVersion->setObjectName(QStringLiteral("fileVersion"));
+        matrixVersion = new QLabel(groupBox_4);
+        matrixVersion->setObjectName(QStringLiteral("matrixVersion"));
 
-        gridLayout_3->addWidget(fileVersion, 1, 1, 1, 1);
+        gridLayout_3->addWidget(matrixVersion, 3, 1, 1, 1);
 
         label_14 = new QLabel(groupBox_4);
         label_14->setObjectName(QStringLiteral("label_14"));
 
         gridLayout_3->addWidget(label_14, 2, 0, 1, 1);
 
-        appVersion = new QLabel(groupBox_4);
-        appVersion->setObjectName(QStringLiteral("appVersion"));
+        label_23 = new QLabel(groupBox_4);
+        label_23->setObjectName(QStringLiteral("label_23"));
 
-        gridLayout_3->addWidget(appVersion, 2, 1, 1, 1);
+        gridLayout_3->addWidget(label_23, 3, 0, 1, 1);
+
+        fileVersion = new QLabel(groupBox_4);
+        fileVersion->setObjectName(QStringLiteral("fileVersion"));
+
+        gridLayout_3->addWidget(fileVersion, 1, 1, 1, 1);
+
+        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        gridLayout_3->addItem(horizontalSpacer_3, 1, 2, 1, 1);
+
+
+        verticalLayout_17->addWidget(groupBox_4);
+
+        groupBox_9 = new QGroupBox(tab_7);
+        groupBox_9->setObjectName(QStringLiteral("groupBox_9"));
+        verticalLayout_16 = new QVBoxLayout(groupBox_9);
+        verticalLayout_16->setSpacing(6);
+        verticalLayout_16->setContentsMargins(11, 11, 11, 11);
+        verticalLayout_16->setObjectName(QStringLiteral("verticalLayout_16"));
+        textEdit = new QTextEdit(groupBox_9);
+        textEdit->setObjectName(QStringLiteral("textEdit"));
+        textEdit->setEnabled(true);
+        textEdit->setReadOnly(true);
+
+        verticalLayout_16->addWidget(textEdit);
+
+
+        verticalLayout_17->addWidget(groupBox_9);
 
         tabWidget->addTab(tab_7, QString());
 
@@ -1052,6 +1282,8 @@ public:
         startCapture->setText(QApplication::translate("SettingDlg", "\345\274\200\345\247\213\346\212\223\345\233\276", 0));
         stopCapture->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242\346\212\223\345\233\276", 0));
         saveCoord->setText(QApplication::translate("SettingDlg", "\344\277\235\345\255\230\345\235\220\346\240\207", 0));
+        connectCapture->setText(QApplication::translate("SettingDlg", "\350\277\236\346\216\245\350\256\276\345\244\207", 0));
+        paintBigImageBox->setText(QApplication::translate("SettingDlg", "\347\224\273\345\244\247\345\233\276", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("SettingDlg", "\347\224\273\345\233\276", 0));
         QTableWidgetItem *___qtablewidgetitem = canTable->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("SettingDlg", "\345\272\217\345\217\267", 0));
@@ -1071,28 +1303,55 @@ public:
         ___qtablewidgetitem7->setText(QApplication::translate("SettingDlg", "\346\225\260\346\215\256(HEX)", 0));
         groupBox->setTitle(QApplication::translate("SettingDlg", "\345\237\272\346\234\254\346\223\215\344\275\234", 0));
         label_2->setText(QApplication::translate("SettingDlg", "\345\270\247\347\261\273\345\236\213:", 0));
-        canFrameId->setText(QApplication::translate("SettingDlg", "000", 0));
-        canDataEdit->setText(QApplication::translate("SettingDlg", "00 00 00 00 00 00 00 00", 0));
-        label_4->setText(QApplication::translate("SettingDlg", "\345\270\247ID(HEX):", 0));
         canFrameType->clear();
         canFrameType->insertItems(0, QStringList()
          << QApplication::translate("SettingDlg", "\346\240\207\345\207\206\345\270\247", 0)
          << QApplication::translate("SettingDlg", "\346\213\223\345\261\225\345\270\247", 0)
         );
-        canBaseStop->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242", 0));
-        label_3->setText(QApplication::translate("SettingDlg", "\345\270\247\346\240\274\345\274\217:", 0));
-        canSendDelay->setText(QApplication::translate("SettingDlg", "0", 0));
+        label_4->setText(QApplication::translate("SettingDlg", "\345\270\247ID(HEX):", 0));
+        canFrameId->setText(QApplication::translate("SettingDlg", "000", 0));
+        label_24->setText(QApplication::translate("SettingDlg", "\345\270\247\347\261\273\345\236\213:", 0));
+        canFrameType2->clear();
+        canFrameType2->insertItems(0, QStringList()
+         << QApplication::translate("SettingDlg", "\346\240\207\345\207\206\345\270\247", 0)
+         << QApplication::translate("SettingDlg", "\346\213\223\345\261\225\345\270\247", 0)
+        );
+        label_25->setText(QApplication::translate("SettingDlg", "\345\270\247ID(HEX):", 0));
+        canFrameId2->setText(QApplication::translate("SettingDlg", "000", 0));
+        label_27->setText(QApplication::translate("SettingDlg", "\350\265\267\345\247\213:", 0));
+        canStartPos->setText(QApplication::translate("SettingDlg", "0", 0));
         label_6->setText(QApplication::translate("SettingDlg", "\346\225\260\346\215\256(HEX):", 0));
+        canData->setText(QApplication::translate("SettingDlg", "00 00 00 00 00 00 00 00", 0));
+        label_28->setText(QApplication::translate("SettingDlg", "\351\225\277\345\272\246:", 0));
+        canDataLength->setText(QApplication::translate("SettingDlg", "0", 0));
+        label_29->setText(QApplication::translate("SettingDlg", "\346\225\260\346\215\256:", 0));
+        canData2->setText(QApplication::translate("SettingDlg", "0", 0));
+        canBaseSend2->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201", 0));
         canBaseSend->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201", 0));
+        label_3->setText(QApplication::translate("SettingDlg", "\345\270\247\346\240\274\345\274\217:", 0));
         canFrameFormat->clear();
         canFrameFormat->insertItems(0, QStringList()
          << QApplication::translate("SettingDlg", "\346\225\260\346\215\256\345\270\247", 0)
          << QApplication::translate("SettingDlg", "\350\277\234\347\250\213\345\270\247", 0)
         );
+        label_5->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201\346\254\241\346\225\260 :", 0));
         canSendCount->setText(QApplication::translate("SettingDlg", "1", 0));
-        label_5->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201\346\254\241\346\225\260:", 0));
-        label_7->setText(QApplication::translate("SettingDlg", "\346\257\217\346\254\241\345\217\221\351\200\201\351\227\264\351\232\224(ms):", 0));
+        label_7->setText(QApplication::translate("SettingDlg", "\345\217\221\351\200\201\351\227\264\351\232\224(ms):", 0));
+        canSendDelay->setText(QApplication::translate("SettingDlg", "100", 0));
+        canBaseStop->setText(QApplication::translate("SettingDlg", "\345\201\234\346\255\242", 0));
+        label_30->setText(QApplication::translate("SettingDlg", "\350\277\207\346\273\244\346\235\241\344\273\266(HEX):", 0));
+        canFilter->setText(QApplication::translate("SettingDlg", "^100|200", 0));
+        canFilterEnable->setText(QApplication::translate("SettingDlg", "\345\220\257\347\224\250\350\277\207\346\273\244", 0));
+        label_26->setText(QApplication::translate("SettingDlg", "\347\237\251\351\230\265\347\261\273\345\236\213:", 0));
+        canMatrixType->clear();
+        canMatrixType->insertItems(0, QStringList()
+         << QApplication::translate("SettingDlg", "MOTO_LSB", 0)
+         << QApplication::translate("SettingDlg", "MOTO_MSB", 0)
+         << QApplication::translate("SettingDlg", "INTEL", 0)
+        );
+        canClearLog->setText(QApplication::translate("SettingDlg", "\346\270\205\351\231\244", 0));
         canStartup->setText(QApplication::translate("SettingDlg", "\345\220\257\345\212\250", 0));
+        canConnect->setText(QApplication::translate("SettingDlg", "\350\277\236\346\216\245", 0));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_4), QApplication::translate("SettingDlg", "\345\237\272\346\234\254\346\223\215\344\275\234", 0));
         groupBox_2->setTitle(QApplication::translate("SettingDlg", "\351\253\230\347\272\247\346\223\215\344\275\234", 0));
         QTableWidgetItem *___qtablewidgetitem8 = tableWidget->horizontalHeaderItem(0);
@@ -1121,12 +1380,212 @@ public:
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_6), QApplication::translate("SettingDlg", "\347\241\254\344\273\266\346\223\215\344\275\234", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_2), QApplication::translate("SettingDlg", "CAN", 0));
         groupBox_4->setTitle(QApplication::translate("SettingDlg", "\347\211\210\346\234\254\344\277\241\346\201\257", 0));
-        label_11->setText(QApplication::translate("SettingDlg", "\346\241\206\346\236\266\347\211\210\346\234\254:", 0));
-        frameVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
         label_12->setText(QApplication::translate("SettingDlg", "\346\226\207\344\273\266\347\211\210\346\234\254:", 0));
-        fileVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
-        label_14->setText(QApplication::translate("SettingDlg", "\347\250\213\345\272\217\347\211\210\346\234\254:", 0));
         appVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        frameVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        label_11->setText(QApplication::translate("SettingDlg", "\346\241\206\346\236\266\347\211\210\346\234\254:", 0));
+        matrixVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        label_14->setText(QApplication::translate("SettingDlg", "\347\250\213\345\272\217\347\211\210\346\234\254:", 0));
+        label_23->setText(QApplication::translate("SettingDlg", "\347\237\251\351\230\265\347\211\210\346\234\254:", 0));
+        fileVersion->setText(QApplication::translate("SettingDlg", "0.0.0.0", 0));
+        groupBox_9->setTitle(QApplication::translate("SettingDlg", "\346\233\264\346\226\260\346\227\245\345\277\227", 0));
+        textEdit->setHtml(QApplication::translate("SettingDlg", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:'SimSun'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" color:#00ff00;\">		</span><span style=\" font-size:28pt; color:#0055ff;\">\346\243\200\346\265\213\346\241\206\346\236\266\346\233\264\346\226\260\346\227\245\345\277\227</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2021.2.26</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-we"
+                        "ight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Other</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\216\273\351\231\244\346\211\200\346\234\211DLL\344\276\235\350\265\226,\345\217\257\347\233\264\346\216\245\350\277\220\350\241\214exe.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)QApplication::addLibraryPath\350\207\252\345\256\232\344\271\211\345\272\223\346\216\245\345\217\243.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bott"
+                        "om:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2021.2.23</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.SettingDlg</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236"
+                        "\345\212\240\345\217\257\347\213\254\347\253\213\346\216\247\345\210\266\351\207\207\351\233\206\345\215\241,CAN\345\215\241\345\212\237\350\203\275.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\347\224\273\345\233\276\345\242\236\345\212\240\345\217\257\347\224\273\345\244\247\347\237\251\345\275\242\346\241\206\346\243\200\346\265\213\345\235\220\346\240\207.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  2.Detection</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left"
+                        ":0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240openCaptureCard,closeCaptureCard,getCardConnect API.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\346\257\217\346\254\241\346\211\223\345\274\200\351\207\207\351\233\206\345\215\241\344\271\213\345\211\215,\345\210\244\346\226\255\351\207\207\351\233\206\345\215\241\346\230\257\345\220\246\345\244\204\344\272\216\346\211\223\345\274\200\347\212\266\346\200\201\344\270\255.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)Avm\347\261\273\344\270\255\344\277\256\346\224\271\351\203\250\345\210\206API\345\217\202\346\225\260,\345\242\236\345"
+                        "\212\240checkFRViewUseKey\346\216\245\345\217\243.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  3.Other</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240CAN\347\237\251\351\230\265\347\256\227\346\263\225\347\261\273\345\272\223,CanMatrix.hpp,\346\224\257\346\214\201MOTO_LSB,MOTO_MSB,INTEL3\344\270\255\347\237\251\351\230\265.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span styl"
+                        "e=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)LIB_VERSION\345\215\207\350\207\2631.0.0.5</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2021.1.4</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Detection</span></p>\n"
+"<p style=\" margin-t"
+                        "op:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\344\274\230\345\214\226\344\272\206dvr\346\213\215\347\205\247\346\210\220\345\212\237\344\275\206SD\345\215\241\344\270\255\345\271\266\346\262\241\346\234\211\347\205\247\347\211\207,\345\257\274\350\207\264\350\216\267\345\217\226\344\270\215\345\210\260\347\205\247\347\211\207URL\350\200\214\345\244\261\350\264\245\347\232\204BUG,</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    \344\277\256\346\224\271\344\270\272\345\246\202\346\236\234\345\244\261\350\264\245,\345\210\231\350\277\233\350\241\214\345\206\215\346\254\241\346\213\215\347\205\247,\350\276\276\345\210\260\351\207\215\345\244\215\346\254\241\346\225\260\345\210\2603\346\254\241,\345\210\244\345\256\232\344\270\272\345\244"
+                        "\261\350\264\245.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2020.12.28</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.SettingDlg</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; te"
+                        "xt-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\350\256\276\347\275\256\347\225\214\351\235\242\345\242\236\345\212\240\347\241\254\344\273\266\346\265\213\350\257\225\345\212\237\350\203\275,\346\224\257\346\214\201\347\224\265\345\216\213,\347\273\247\347\224\265\345\231\250,\347\224\265\345\216\213\350\241\250,\347\224\265\346\265\201\350\241\250\345\215\225\347\213\254\346\216\247\345\210\266</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  2.JsonTool</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size"
+                        ":10pt; font-weight:600; color:#00ff00;\">    (1)\350\214\203\345\233\264\351\205\215\347\275\256\350\212\202\347\202\271\345\242\236\345\212\240\346\234\200\345\244\247\347\224\265\346\265\201,\346\234\200\345\260\217\347\224\265\346\265\201</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\345\242\236\345\212\240\344\277\241\345\217\267\347\201\257\346\216\247\345\210\266,\347\273\247\347\224\265\345\231\250\351\205\215\347\275\256\350\212\202\347\202\271\345\242\236\345\212\240\347\272\242\347\201\257,\347\273\277\347\201\257,\347\231\275\347\201\257,\347\233\256\345\211\215\344\273\205\346\224\257\346\214\201AVM\346\243\200\346\265\213,\345\220\257\347\224\250\351\205\215\347\275\256\350\212\202\347\202\271\345\242\236\345\212\240\344\277\241\345\217\267\347\201\257\345\220\257\347\224\250</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; "
+                        "margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)JSON_VERSION\345\215\207\350\207\2631.0.0.5</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (4)\345\242\236\345\212\240\346\216\245\345\217\243getUserPrivileges,\346\237\245\350\257\242\347\224\250\346\210\267\346\235\203\351\231\220,\347\224\250\344\272\216\345\244\204\347\220\206\350\256\244\350\257\201\346\223\215\344\275\234</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600"
+                        "; color:#00ff00;\">  3.DvrClient</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)Dt::DvrClient\344\274\230\345\214\226\344\272\206\347\275\221\347\273\234\345\215\217\350\256\256\344\274\240\350\276\223\347\232\204\346\255\243\347\241\256\346\200\247\345\222\214\347\250\263\345\256\232\346\200\247.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  </span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  4.Detection</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span styl"
+                        "e=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)Dt::Base\344\270\255\345\242\236\345\212\240\344\272\206setCanProcessFnc,setCanProcessFncEx,\345\217\257\344\273\245\345\244\204\347\220\206\345\244\247\351\203\250\345\210\206CAN\345\217\221\351\200\201\345\222\214\346\216\245\346\224\266\345\212\237\350\203\275,</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    setUdsProcessFnc,\345\217\257\344\273\245\345\244\204\347\220\206\345\244\247\351\203\250\345\210\206UDS\345\217\221\351\200\201\345\222\214\346\216\245\346\224\266\345\212\237\350\203\275</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)Dt::Dvr\344\270\255\345\260\206\350\275\246\345\222\214\345\256\266\350\275\246\345\216\202\347\261"
+                        "\273\345\242\236\345\212\240\345\210\260\344\272\206autoProccessStatus\345\207\275\346\225\260\346\250\241\346\235\277</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\345\242\236\345\212\240\344\272\206WIFI\346\250\241\345\235\227</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (4)Misc\344\270\255\345\242\236\345\212\240\344\272\206CharSet\347\224\250\344\272\216\345\244\204\347\220\206GBK\345\256\275\345\255\227\347\254\246\351\233\206\345\244\232\345\255\227\347\254\246\351\233\206\345\210\260UTF-8,\345\271\266\350\207\252\345\212\250\345\233\236\346\224\266\345\206\205\345\255\230</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0;"
+                        " text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (5)\344\277\256\345\244\215\344\272\206Dt::Dvr\344\270\255checkSfr\345\222\214checkRayAxis,\350\260\203\347\224\250opencv api\345\222\214\350\260\203\347\224\250\345\244\226\351\203\250\347\250\213\345\272\217\346\211\200\345\257\274\350\207\264\347\232\204\344\270\255\346\226\207\344\271\261\347\240\201\347\232\204BUG</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (6)Misc\344\270\255\345\242\236\345\212\240\344\272\206\346\243\200\346\265\213\345\244\261\350\264\245,\344\277\235\345\255\230\351\224\231\350\257\257\346\227\245\345\277\227\345\212\237\350\203\275</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (7)\345"
+                        "\242\236\345\212\240\346\227\245\345\277\227\346\226\207\344\273\266.run,.net</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (8)\344\277\256\345\244\215\344\272\206\346\243\200\346\265\213\347\211\210\346\234\254,\346\243\200\346\265\213DTC\344\270\255,\345\246\202\346\236\234\346\243\200\346\265\213\345\244\261\350\264\245,\346\237\245\350\257\242\347\224\250\346\210\267\346\235\203\351\231\220\346\211\200\345\257\274\350\207\264\347\232\204\346\243\200\346\265\213\347\272\277\347\250\213\345\215\241\346\255\273\347\232\204BUG</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (9)checkStaticCurrent,\344\277\256\345\244\215\344\272\206\346\265\213\350\257\225\347\224\265\346\265\201\344\270\215\347\250\263"
+                        "\345\256\232\347\232\204BUG,\345\242\236\345\212\240\344\272\206\346\230\257\345\220\246\345\274\200\345\220\257ACC\344\270\216\350\256\276\347\275\256\346\243\200\346\265\213\345\256\214\346\210\220\344\271\213\345\220\216\345\273\266\346\227\266\345\212\237\350\203\275</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  5.Types.h</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240\350\260\203\350\257\225\345\256\217\345\256\232\344\271\211DEBUG_INFO\345\222\214DEBUG_INFO_EX</sp"
+                        "an></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\345\242\236\345\212\240\345\256\217CAN_PROC_FNC,UDS_PROC_FNC,TEST_PASS,TEST_THREAD,TEST_THREAD_EX,ASSERT_TEST,</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    ASSERT_TEST_EX</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)ASSERT_TEST\345\222\214ASSERT_TEST_EX\345\256\217,\346\224\257\346\214\201\351\273\230\350\256\244\344\270\216\345\217\257\345\217\230\345\217\202\346\225\260,\345\217\257\345\217\230\345\217\202\346\225\260\345\247\213\347\273\210\346\230\257\345\244\204\347\220\206\346\234\200\345"
+                        "\220\216\344\270\200\344\270\252\345\207\275\346\225\260,\345\207\275\346\225\260\350\277\224\345\233\236\345\200\274\344\270\272void</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  6.Other</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240Function\346\226\207\344\273\266,\346\255\244\346\226\207\344\273\266\347\224\250\344\272\216\345\244\204\347\220\206\345\212\237\350\203\275\346\243\200\346\265\213,\344\273\245\345\220\216\346\211\200\346\234\211\345\212\237\350\203\275\346"
+                        "\243\200\346\265\213,\351\203\275\351\234\200\350\246\201\346\224\276\345\205\245\346\255\244\347\261\273\344\270\255\350\277\233\350\241\214\345\242\236\345\212\240,\346\217\220\351\253\230\345\274\200\345\217\221\346\225\210\347\216\207.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\345\242\236\345\212\240Hardware\346\226\207\344\273\266,\346\255\244\346\226\207\344\273\266\347\224\250\344\272\216\345\244\204\347\220\206\347\241\254\344\273\266\346\243\200\346\265\213,\344\273\245\345\220\216\346\211\200\346\234\211\347\241\254\344\273\266\346\243\200\346\265\213,\351\203\275\351\234\200\350\246\201\346\224\276\345\205\245\346\255\244\347\261\273\344\270\255\350\277\233\350\241\214\345\242\236\345\212\240,\346\217\220\351\253\230\345\274\200\345\217\221\346\225\210\347\216\207.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-le"
+                        "ft:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)LIB_VERSION\345\215\207\350\207\2631.0.0.4</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">		</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2020.11.12</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224"
+                        "\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Other</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\260\206MilCC\351\235\231\346\200\201\345\272\223\346\233\264\346\215\242\344\270\272\350\200\201\347\232\204Cc::Mil\347\261\273</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  </span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  2.Detection.cpp</span></p>\n"
+"<p st"
+                        "yle=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\274\272\345\233\276\345\203\217\346\243\200\346\265\213\345\212\237\350\203\275\344\270\255,\347\224\250\350\211\262\345\275\251\346\250\241\345\236\213\346\243\200\346\265\213,\345\217\257\344\273\245\345\210\244\346\226\255\345\244\232\344\270\252\351\242\234\350\211\262,\350\257\255\346\263\225!=\351\273\221\350\211\262,\347\231\275\350\211\262,\347\273\277\350\211\262 ==\351\273\221\350\211\262,\347\231\275\350\211\262,\347\273\277\350\211\262</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)LIB_VERSION\345\215\207\347\272\247\344\270\2721.0.0.3</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; m"
+                        "argin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2020.11.04</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.JsonTool</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)JsonTool\350\256\276\345\244\207\351"
+                        "\205\215\347\275\256\344\270\255,\345\260\206\344\270\273\351\224\256\346\243\200\346\265\213\345\220\215\347\247\260\345\210\240\351\231\244.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)JSON_VERSION \345\256\217\346\233\264\346\224\271\344\270\2721.0.0.3</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">2020.10.30</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; "
+                        "color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.JsonTool</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)JsonTool\345\233\276\345\203\217\351\205\215\347\275\256\344\270\255,\346\267\273\345\212\240\345\267\246\345\217\263\345\244\247\345\233\276\350\212\202\347\202\271.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)JSON_VERSION \345\256\217\346\233\264\346\224\271\344\270\2721.0.0.2</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margi"
+                        "n-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.08.07</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Detection</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    "
+                        "(1)\345\242\236\345\212\240MilCC\351\207\207\351\233\206\345\215\241\347\261\273\345\272\223,\346\233\277\346\215\242\346\216\211\346\227\247\347\232\204CC::Mil\347\261\273.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\345\242\236\345\212\240\346\224\257\346\214\201\351\207\207\351\233\206\345\215\241\345\217\214\351\200\232\351\201\223\345\220\214\346\227\266\351\207\207\351\233\206\345\233\276\345\203\217.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\345\242\236\345\212\240\351\205\215\347\275\256\346\226\207\344\273\266\344\270\255\345\217\257\344\273\245\351\205\215\347\275\256\351\207\207\351\233\206\345\215\241\345\217\214\351\200\232\351\201\223\345\267\245\344\275\234\351\200\211\351"
+                        "\241\271.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">	</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.08.06</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Misc</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:"
+                        "0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\344\277\256\345\244\215\344\272\206getFileListByPath,\351\201\215\345\216\206\346\226\207\344\273\266\345\244\271\345\246\202\346\236\234\345\255\230\345\234\250\346\227\240\345\220\216\347\274\200\345\220\215\347\232\204\346\226\207\344\273\266,\345\217\257\350\203\275\344\274\232\345\257\274\350\207\264\345\264\251\346\272\203\347\232\204\351\227\256\351\242\230.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.08.05</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0;"
+                        " text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Misc</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)getFileListByPath\347\224\261\344\270\215\350\203\275\346\237\245\350\257\242\344\270\255\346\226\207\345\255\227\347\254\246\344\270\262\345\221\275\345\220\215\347\232\204\346\226\207\344\273\266\345\244\271\344\277\256\346\224\271\344\270\272\345\217\257\344\273\245\346\237\245\350\257\242\344\270\255\346\226\207\346\226\207\344\273\266\345\244\271.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; "
+                        "text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\345\242\236\345\212\240enableRecycle,setRecycleSuffixName,setRecycleIntervalMonth\346\216\245\345\217\243,\346\233\264\345\245\275\347\232\204\347\256\241\347\220\206\345\233\236\346\224\266\345\206\205\345\256\271.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.08.04</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p st"
+                        "yle=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Detection</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240\350\207\252\345\212\250\345\233\236\346\224\266\345\255\230\345\202\250\347\251\272\351\227\264,\345\275\261\345\223\215\346\250\241\345\235\227Function,DVR\347\261\273</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\345\242\236\345\212\240\344\270\200\344\272\233\345\217\202\346\225\260\350\276\203\345\244\232\347\232\204\345\207\275\346\225\260,\346\263\250\351\207\212\345\217\202\346\225\260\345\206\205\345\256\271</span></p>\n"
+""
+                        "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\344\274\230\345\214\226\345\212\240\350\275\275\351\205\215\347\275\256\345\217\202\346\225\260\347\232\204\351\200\237\345\272\246</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">	</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.07.21</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></"
+                        "p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.SettingDlg</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240\345\217\257\344\273\245\347\224\273AVM\350\247\206\345\233\276\346\243\200\346\265\213\346\241\206.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\344\274\230\345\214\226\344\272\206\344\270\200\350\277\233\345\205\245\350\256\276\347\275\256\347\225\214\351\235\242\345\260\261\346\216\245\346\224\266CAN\346\212\245\346\226\207,\345\257\274\350\207\264CPU\345\215\240\347\224\250\350\276\203\351\253\230\347\232\204BUG.<"
+                        "/span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\345\242\236\345\212\240Detection.lib\345\256\217\345\256\232\344\271\211\347\211\210\346\234\254\345\217\267.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (4)\345\242\236\345\212\240Misc::getAppAppendName()\346\216\245\345\217\243.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">	</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234"
+                        "\237:2020.07.15</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.Cc::Mil</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\344\277\256\345\244\215\344\272\206MOR\351\207\207\351\233\206\345\215\241\347\250\213\345\272\217\351\200\200\345\207\272,\345\255\220\347\261\273\345\205\210\346\236\220\346\236\204,\345\271\266\346\234\252\345\257\274\350\207\264\347\272\277\347\250\213\345\256\214\345\205\250\351\200\200\345\207\272\347\232\204BUG,\344\274\232\345"
+                        "\257\274\350\207\264\345\264\251\346\272\203\347\232\204\351\227\256\351\242\230.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\351\205\215\347\275\256\344\270\255\345\242\236\345\212\240\344\272\206\351\207\207\351\233\206\345\215\241\351\200\232\351\201\223\345\217\257\351\200\211\351\241\271</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\344\274\230\345\214\226\344\272\206\351\207\207\351\233\206\345\215\241\346\212\223\345\233\276\347\232\204\346\265\201\347\225\205\345\272\246.</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">	</span></p"
+                        ">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.05.18</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.MainDlg</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240\350\256\244\350\257\201\345\257\271\350\257\235\346\241\206AuthDlg</span></p>\n"
+"<p style=\"-qt-par"
+                        "agraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\346\227\245\346\234\237:2020.05.15</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">\344\277\256\346\224\271\345\206\205\345\256\271:</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  1.JsonTool</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style"
+                        "=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240\345\212\250\346\200\201\344\277\256\346\224\271\345\212\237\350\203\275</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\344\277\256\346\224\271\344\272\206\346\233\264\346\226\260\351\205\215\347\275\256\346\226\207\344\273\266,\345\206\205\345\255\230\346\263\204\346\274\217\347\232\204\351\243\216\351\231\251</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\344\277\256\346\224\271\344\272\206\350\256\276\345\244\207,\347\241\254\344\273\266,\347\273\247\347\224\265\345\231\250,\345\233\276\345\203\217,\350\214\203\345\233\264,\351\230\210\345\200\274\351\205\215\347\275\256\345\215\225\344\270\252\350\247\243"
+                        "\346\236\220\344\270\272\347\273\223\346\236\204\344\275\223\350\247\243\346\236\220</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (4)\344\277\256\346\224\271\344\272\206\345\260\206def,hwd,uds\350\277\224\345\233\236\345\200\274\344\273\216\345\274\225\347\224\250\345\217\230\344\270\272\346\214\207\351\222\210</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  2.SettingDlg</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-inden"
+                        "t:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\346\267\273\345\212\240\350\207\252\345\212\250\345\244\204\347\220\206\347\211\210\346\234\254\345\217\267DID\345\211\215\347\274\200:0x,\345\217\212DID\351\224\231\350\257\257\345\210\244\346\226\255</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (2)\344\277\256\346\224\271\346\225\260\346\215\256\351\203\250\345\210\206\346\217\220\347\244\272,\346\230\257\345\220\246\351\234\200\350\246\201\351\207\215\346\226\260\345\220\257\345\212\250\347\250\213\345\272\217,\351\207\215\346\226\260\350\277\236\346\216\245</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (3)\345\242\236\345\212\240\351\207\215\346\226\260\345\220\257"
+                        "\345\212\250\347\250\213\345\272\217\345\212\237\350\203\275,(\346\234\211\345\206\205\345\255\230\346\263\204\346\274\217\351\243\216\351\231\251,\344\273\243\347\240\201\344\270\215\346\230\257\345\276\210\345\256\214\347\276\216)</span></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (4)\345\242\236\345\212\240setAppName,API,\347\224\250\344\272\216\345\210\244\346\226\255\346\226\207\344\273\266\345\220\215</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600; color:#00ff00;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">  3.Detection</span></p>\n"
+"<p style=\" margin-to"
+                        "p:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-weight:600; color:#00ff00;\">    (1)\345\242\236\345\212\240\345\212\250\346\200\201\344\277\256\346\224\271\345\212\237\350\203\275</span></p></body></html>", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_7), QApplication::translate("SettingDlg", "\345\205\263\344\272\216", 0));
     } // retranslateUi
 

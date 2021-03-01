@@ -4,8 +4,8 @@
 SettingDlg::SettingDlg(QWidget* parent)
 	: QWidget(parent)
 {
-	this->ui.setupUi(this);
-	this->setAttribute(Qt::WA_DeleteOnClose);
+	ui.setupUi(this);
+	setAttribute(Qt::WA_DeleteOnClose);
 }
 
 SettingDlg::~SettingDlg()
@@ -209,12 +209,6 @@ void SettingDlg::configSaveData()
 {
 	do
 	{
-		//if (!setAuthDlg())
-		//{
-		//	QMessageBoxEx::warning(this, "提示", "认证失败,无法进行保存");
-		//	break;
-		//}
-
 		QStringList warn = { "配置已生效,无需重启应用程序","配置已生效,需重启应用重新,是否重启?","配置已生效,需重新连接应用程序","保存成功" };
 		const QString& title = m_jsonTool->initInstance(true) ? warn.value(m_updateWarn) : QString("保存失败,%1").arg(m_jsonTool->getLastError());
 
@@ -633,10 +627,44 @@ void SettingDlg::voltageGetValueSlot()
 
 void SettingDlg::addCanTableItemSlot(const char* type, const MsgNode& msg)
 {
-	static ulong number = 0;
+	if (ui.canFilterEnable->isChecked())
+	{
+		bool findHave = false, findNot = true, not = false;
+		QStringList filterList = ui.canFilter->text().split("|", QString::SkipEmptyParts);
+		for (int i = 0; i < filterList.size(); i++)
+		{
+			if (!i && filterList[i].contains("^"))
+			{
+				not = true;
+				filterList[i] = filterList[i].mid(1);
+			}
+
+			int value = filterList[i].toInt(nullptr, 16);
+			if (value == msg.id)
+			{
+				if (not)
+					findNot = false;
+				else
+					findHave = true;
+				break;
+			}
+
+		}
+
+		if (not && !findNot)
+		{
+			return;
+		}
+
+		if (!not && !findHave)
+		{
+			return;
+		}
+	}
+
 	int rowCount = ui.canTable->rowCount();
 	ui.canTable->insertRow(rowCount);
-	ui.canTable->setItem(rowCount, 0, new QTableWidgetItem(QString::number(++number)));
+	ui.canTable->setItem(rowCount, 0, new QTableWidgetItem(QString::number(++m_canLogCount)));
 	ui.canTable->setItem(rowCount, 1, new QTableWidgetItem(type));
 	ui.canTable->setItem(rowCount, 2, new QTableWidgetItem(Misc::getCurrentTime()));
 	ui.canTable->setItem(rowCount, 3, new QTableWidgetItem(QString::number(msg.id, 16)));
@@ -664,19 +692,27 @@ void SettingDlg::canBaseSendSlot()
 			break;
 		}
 
-		QStringList datas = ui.canDataEdit->text().split(" ", QString::SkipEmptyParts);
+		QStringList datas = ui.canData->text().split(" ", QString::SkipEmptyParts);
 		if (datas.size() != 8)
 		{
-			QMessageBoxEx::warning(this, "错误", "数据格式错误");
+			QMessageBoxEx::warning(this, "错误", "数据格式必须为8位,中间以空格区分");
 			break;
 		}
 
 		int i = 0;
+		bool overflow = false;
 		for (; i < datas.size(); i++)
 		{
-			m_msg.data[i] = datas[i].toInt(&convert, 16);
+			int value = datas[i].toInt(&convert, 16);
+			m_msg.data[i] = value;
 			if (!convert)
 			{
+				break;
+			}
+
+			if (value < 0 || value > 0xff)
+			{
+				overflow = true;
 				break;
 			}
 		}
@@ -684,6 +720,12 @@ void SettingDlg::canBaseSendSlot()
 		if (!convert)
 		{
 			QMessageBoxEx::warning(this, "错误", QString("数据%1不为16进制").arg(i + 1));
+			break;
+		}
+
+		if (overflow)
+		{
+			QMessageBoxEx::warning(this, "错误", "单个数据不可超过0~255范围");
 			break;
 		}
 
@@ -700,12 +742,78 @@ void SettingDlg::canBaseSendSlot()
 			QMessageBoxEx::warning(this, "错误", "时间间隔不为整数");
 			break;
 		}
+
 		ui.canBaseSend->setEnabled(false);
 		Dt::Base::getCanSender()->AddMsg(m_msg, delay, ST_Event, sendCount);
 		Dt::Base::getCanSender()->Start();
 
 		m_canBaseSendTimer.start(delay * sendCount);
 	} while (false);
+}
+
+void SettingDlg::canBaseSendSlot2()
+{
+	do
+	{
+		memset(&m_msg2, 0x00, sizeof(MsgNode));
+		bool convert = false;
+		m_msg2.dlc = 8;
+		m_msg2.extFrame = ui.canFrameType2->currentText() == "拓展帧";
+		m_msg2.remFrame = ui.canFrameFormat->currentText() == "远程帧";
+		m_msg2.id = ui.canFrameId2->text().toInt(&convert, 16);
+		if (!convert)
+		{
+			QMessageBoxEx::warning(this, "错误", "帧ID不为16进制");
+			break;
+		}
+
+		int startPos = ui.canStartPos->text().toInt(&convert);
+		if (!convert)
+		{
+			QMessageBoxEx::warning(this, "错误", "起始不为整数");
+			break;
+		}
+
+		int dataLength = ui.canDataLength->text().toInt(&convert);
+		if (!convert)
+		{
+			QMessageBoxEx::warning(this, "错误", "数据长度不为整数");
+			break;
+		}
+
+		quint64 data = ui.canData2->text().toULongLong(&convert);
+		if (!convert)
+		{
+			QMessageBoxEx::warning(this, "错误", "数据不为整数");
+			break;
+		}
+
+		int sendCount = ui.canSendCount->text().toInt(&convert);
+		if (!convert)
+		{
+			QMessageBoxEx::warning(this, "错误", "发送次数不为整数");
+			break;
+		}
+
+		int delay = ui.canSendDelay->text().toInt(&convert);
+		if (!convert)
+		{
+			QMessageBoxEx::warning(this, "错误", "时间间隔不为整数");
+			break;
+		}
+
+		if (!m_matrix.pack(m_msg2.data, startPos, dataLength, data))
+		{
+			QMessageBox::warning(this, "错误", m_matrix.getLastError());
+			break;
+		}
+		ui.canBaseSend2->setEnabled(false);
+		Dt::Base::getCanSender()->AddMsg(m_msg2, delay, ST_Event, sendCount);
+		Dt::Base::getCanSender()->Start();
+
+		m_canBaseSendTimer2.start(delay * sendCount);
+	} while (false);
+	return;
 }
 
 void SettingDlg::canBaseStopSlot()
@@ -715,6 +823,13 @@ void SettingDlg::canBaseStopSlot()
 		Dt::Base::getCanSender()->DeleteOneMsg(m_msg.id);
 		m_canBaseSendTimer.stop();
 		ui.canBaseSend->setEnabled(true);
+	}
+
+	if (m_canBaseSendTimer2.isActive())
+	{
+		Dt::Base::getCanSender()->DeleteOneMsg(m_msg2.id);
+		m_canBaseSendTimer2.stop();
+		ui.canBaseSend2->setEnabled(true);
 	}
 }
 
@@ -731,6 +846,66 @@ void SettingDlg::canStartupSlot()
 		Dt::Base::getCanConnect()->EndReceiveThread();
 	}
 	m_canThreadStart = !m_canThreadStart;
+}
+
+void SettingDlg::canConnectSlot()
+{
+	auto canConnect = Dt::Base::getCanConnect();
+	m_canConnect ? canConnect->DisConnect() : canConnect->Connect(500, 0);
+	ui.canConnect->setText(m_canConnect ? "连接" : "断开");
+	m_canConnect = !m_canConnect;
+}
+
+void SettingDlg::canMatrixTypeSlot(const QString& text)
+{
+	if (text == "MOTO_LSB")
+	{
+		m_matrix.setType(MatrixType::MT_MOTOROLA_LSB);
+	}
+	else if (text == "MOTO_MSB")
+	{
+		m_matrix.setType(MatrixType::MT_MOTOROLA_MSB);
+	}
+	else
+	{
+		m_matrix.setType(MatrixType::MT_INTEL);
+	}
+}
+
+void SettingDlg::canFilterEnableSlot()
+{
+	if (ui.canFilter->text().isEmpty())
+	{
+		QMessageBoxEx::warning(this, "错误", "过滤条件为空");
+		ui.canFilterEnable->setChecked(false);
+		return;
+	}
+
+	bool success = true, convert = false;
+	QStringList filterList = ui.canFilter->text().split("|", QString::SkipEmptyParts);
+	for (int i = 0; i < filterList.size(); i++)
+	{
+		if (!i && filterList[i].contains("^"))
+		{
+			filterList[i] = filterList[i].mid(1);
+		}
+
+		filterList[i].toInt(&convert, 16);
+
+		if (!convert)
+		{
+			success = false;
+			break;
+		}
+	}
+
+	if (!success)
+	{
+		QMessageBoxEx::warning(this, "错误", "过滤条件只能包含^|和数字");
+		ui.canFilterEnable->setChecked(false);
+		return;
+	}
+	ui.canFilter->setEnabled(!ui.canFilterEnable->isChecked());
 }
 
 void SettingDlg::updateImageSlot(const QImage& image)
@@ -762,15 +937,34 @@ void SettingDlg::saveCoordSlot()
 		return;
 	}
 
-	QStringList smallRectList = { "前小图矩形框","后小图矩形框","左小图矩形框","右小图矩形框" };
+	QStringList rectList = { "前小图矩形框","后小图矩形框","左小图矩形框","右小图矩形框" };
+	if (ui.paintBigImageBox->isChecked())
+	{
+		rectList = QStringList{ "前大图矩形框","后大图矩形框","左大图矩形框","右大图矩形框" };
+	}
+
 	for (int i = 0; i < SMALL_RECT_; i++)
 	{
-		m_jsonTool->setImageConfigValue(smallRectList[i], "X坐标", QString::number(start[i].x()));
-		m_jsonTool->setImageConfigValue(smallRectList[i], "Y坐标", QString::number(start[i].y()));
-		m_jsonTool->setImageConfigValue(smallRectList[i], "宽", QString::number(end[i].x() - start[i].x()));
-		m_jsonTool->setImageConfigValue(smallRectList[i], "高", QString::number(end[i].y() - start[i].y()));
+		m_jsonTool->setImageConfigValue(rectList[i], "X坐标", QString::number(start[i].x()));
+		m_jsonTool->setImageConfigValue(rectList[i], "Y坐标", QString::number(start[i].y()));
+		m_jsonTool->setImageConfigValue(rectList[i], "宽", QString::number(end[i].x() - start[i].x()));
+		m_jsonTool->setImageConfigValue(rectList[i], "高", QString::number(end[i].y() - start[i].y()));
 	}
-	QMessageBoxEx::information(this, "提示", QString("保存%1").arg(m_jsonTool->initInstance(true) ? "成功" : "失败"));
+	QMessageBoxEx::information(this, "提示", QString("保存%1").arg(m_jsonTool->initInstance(true) ?
+		"成功" : "失败," + m_jsonTool->getLastError()));
+}
+
+void SettingDlg::connectCaptureSlot()
+{
+	Dt::Function* function = dynamic_cast<Dt::Function*>((Dt::Base*)m_basePointer);
+	if (!function)
+	{
+		QMessageBoxEx::information(this, "提示", "非功能检测不支持视频出画");
+		return;
+	}
+	m_captureStatus ? function->closeCaptureCard() : function->openCaptureCard();
+	ui.connectCapture->setText(m_captureStatus ? "连接设备" : "断开设备");
+	m_captureStatus = !m_captureStatus;
 }
 
 void SettingDlg::setLastError(const QString& error)
@@ -804,16 +998,16 @@ bool SettingDlg::initConfigTreeWidget()
 		QList<QTreeWidgetItem**>treeRootList;
 
 		QTreeWidgetItem* parentDeviceConfig,
-			* parentHardwareConfig, 
-			* parentRelayConfig, 
+			* parentHardwareConfig,
+			* parentRelayConfig,
 			* parentRangeConfig,
-			* parentThresholdConfig, 
-			* parentImageConfig, 
-			* parentKeyVolConfig, 
+			* parentThresholdConfig,
+			* parentImageConfig,
+			* parentKeyVolConfig,
 			* parentVoltageConfig,
 			* parentCurrentConfig,
 			* parentResConfig,
-			* parentStaticConfig, 
+			* parentStaticConfig,
 			* parentVersionConfig,
 			* parentDtcConfig,
 			* parentEnableConfig,
@@ -871,7 +1065,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getUserConfigCount
 		};
 
-		const QStringList&(JsonTool:: * getKey1Fnc[])() = {
+		const QStringList& (JsonTool:: * getKey1Fnc[])() = {
 			&JsonTool::getDeviceConfigKeyList,
 			&JsonTool::getHardwareConfigKeyList,
 			&JsonTool::getRelayConfigKeyList,
@@ -896,7 +1090,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getUserConfigValue
 		};
 
-		const QStringList&(JsonTool:: * getExplain1Fnc[])() = {
+		const QStringList& (JsonTool:: * getExplain1Fnc[])() = {
 			&JsonTool::getDeviceConfigExplain,
 			&JsonTool::getHardwareConfigExplain,
 			&JsonTool::getRelayConfigExplain,
@@ -973,7 +1167,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getParentDtcConfigKeyList
 		};
 
-		const QStringList&(JsonTool:: * getChildKey2Fnc[])() = {
+		const QStringList& (JsonTool:: * getChildKey2Fnc[])() = {
 			&JsonTool::getChildImageKeyList,
 			&JsonTool::getChildVoltageConfigKeyList,
 			&JsonTool::getChildCurrentConfigKeyList,
@@ -992,7 +1186,7 @@ bool SettingDlg::initConfigTreeWidget()
 			&JsonTool::getDtcConfigValue
 		};
 
-		const QStringList&(JsonTool:: * getExplain2Fnc[])() = {
+		const QStringList& (JsonTool:: * getExplain2Fnc[])() = {
 			&JsonTool::getImageConfigExplain,
 			&JsonTool::getVoltageConfigExplain,
 			&JsonTool::getCurrentConfigExplain,
@@ -1032,7 +1226,7 @@ bool SettingDlg::initConfigTreeWidget()
 bool SettingDlg::initHardwareWidget()
 {
 	bool result = false;
-	do 
+	do
 	{
 		for (int i = 0; i < BUTTON_COUNT; i++)
 		{
@@ -1156,7 +1350,9 @@ bool SettingDlg::initHardwareWidget()
 
 bool SettingDlg::initCanTableWidget()
 {
+	ui.canConnect->setEnabled(!Dt::Base::getCanConnect()->IsConnected());
 	connect(ui.canStartup, &QPushButton::clicked, this, &SettingDlg::canStartupSlot);
+	connect(ui.canConnect, &QPushButton::clicked, this, &SettingDlg::canConnectSlot);
 
 	/*CAN表格初始化*/
 	ui.canTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
@@ -1181,18 +1377,38 @@ bool SettingDlg::initCanTableWidget()
 
 	connect(ui.canBaseSend, &QPushButton::clicked, this, &SettingDlg::canBaseSendSlot);
 
+	connect(ui.canBaseSend2, &QPushButton::clicked, this, &SettingDlg::canBaseSendSlot2);
+
 	connect(ui.canBaseStop, &QPushButton::clicked, this, &SettingDlg::canBaseStopSlot);
+
+	connect(ui.canMatrixType, &QComboBox::currentTextChanged, this, &SettingDlg::canMatrixTypeSlot);
 
 	connect(&m_canBaseSendTimer, &QTimer::timeout, this, [&]()->void {ui.canBaseSend->setEnabled(true); m_canBaseSendTimer.stop(); });
 
+	connect(&m_canBaseSendTimer2, &QTimer::timeout, this, [&]()->void {ui.canBaseSend2->setEnabled(true); m_canBaseSendTimer2.stop(); });
+
+	connect(ui.canClearLog, &QPushButton::clicked, this, [&]()->void {
+		int rowCount = ui.canTable->rowCount();
+		for (int i = 0; i < rowCount; ++i)
+			ui.canTable->removeRow(0);
+		m_canLogCount = 0;
+		});
+
+	connect(ui.canFilterEnable, &QCheckBox::clicked, this, &SettingDlg::canFilterEnableSlot);
 	return true;
 }
 
 bool SettingDlg::initPaintWidget()
 {
+	Dt::Function* function = dynamic_cast<Dt::Function*>((Dt::Base*)m_basePointer);
+	if (function)
+		ui.connectCapture->setEnabled(!function->getCardConnect());
+	else
+		ui.connectCapture->setEnabled(false);
 	connect(ui.startCapture, &QPushButton::clicked, this, &SettingDlg::startCaptureSlot);
 	connect(ui.stopCapture, &QPushButton::clicked, this, &SettingDlg::stopCaptureSlot);
 	connect(ui.saveCoord, &QPushButton::clicked, this, &SettingDlg::saveCoordSlot);
+	connect(ui.connectCapture, &QPushButton::clicked, this, &SettingDlg::connectCaptureSlot);
 	return true;
 }
 
@@ -1201,6 +1417,7 @@ bool SettingDlg::initAboutWidget()
 	ui.frameVersion->setText(LIB_VERSION);
 	ui.fileVersion->setText(JSON_VERSION);
 	ui.appVersion->setText(Misc::getAppVersion());
+	ui.matrixVersion->setText(MATRIX_VERSION);
 	return true;
 }
 

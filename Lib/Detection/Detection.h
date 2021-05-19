@@ -1,23 +1,47 @@
 #pragma once
 
 #include "Types.h"
+#include <ClientCore/DLLExport.h>
+
 #pragma warning(disable:4838)
 #pragma execution_character_set("utf-8")
 
+//条码声明
 extern QString g_code;
 
-/************************************************************************/
-/* namespace declare                                                    */
-/************************************************************************/
+/*
+* @Cc,采集卡命名空间声明
+*/
 namespace Cc {
+
+	/*
+	* @Mv800Proc,MV800采集卡回调函数
+	*/
 	void WINAPI Mv800Proc(const uchar* head, const uchar* bits, LPVOID param);
 
+	/*
+	* @Mil,MOR采集卡类声明
+	*/
 	class Mil;
+
+	/*
+	* @CaptureCard,通用采集卡类声明
+	*/
+	class CaptureCard;
 }
 
+/*
+* @Nt,网络传输命名空间声明
+*/
 namespace Nt {
+	/*
+	* @DvrClient,DVR客户端类声明
+	*/
 	class DvrClient;
 
+	/*
+	* @SfrServer,SFR服务端类声明
+	*/
 	class SfrServer;
 }
 
@@ -72,7 +96,7 @@ namespace Dt {
 		virtual bool closeDevice();
 
 		/*准备测试,重载1*/
-		virtual bool prepareTest(const ulong& delay = 20000U);
+		virtual bool prepareTest(const ulong& delay = START_DELAY);
 
 		/*
 		 准备测试,重载2
@@ -90,7 +114,7 @@ namespace Dt {
 
 		/*保存日志*/
 		virtual bool saveLog(bool success);
-		
+
 		/*检测电流*/
 		virtual bool checkCurrent();
 
@@ -98,7 +122,6 @@ namespace Dt {
 		* 检测静态电流
 		* @param1,是否打开ACC
 		* @notice,如果接下来不检测休眠和唤醒setAcc则为true,
-		* 记得调用waitStartup函数,否则将会导致测试不稳定和失败
 		* @param2,是否设置为16V电压
 		* @return,bool
 		*/
@@ -110,12 +133,17 @@ namespace Dt {
 		/*清除DTC*/
 		virtual bool clearDtc();
 
-		/*检测版本号*/
-		virtual bool checkVersion();
+		/*
+		* 检测版本号
+		* @param1,读取DID之间的时间间隔
+		* @param2,如果失败,重复读取多少次
+		* @return,bool
+		*/
+		virtual bool checkVersion(const ulong& delay = 200, const int& tryTimes = 3);
 
 		/*检测DTC*/
 		virtual bool checkDtc();
-		
+
 		/*输出CAN日志*/
 		void outputCanLog(bool enable = true);
 
@@ -154,6 +182,9 @@ namespace Dt {
 
 		/*设置UDS处理函数*/
 		bool setUdsProcessFnc(const char* name, DidList list, const int& req, const int& size, UdsProc proc, const ulong& timeout = 10000U);
+
+		/*设置UDS处理函数,拓展版*/
+		bool setUdsProcessFncEx(const char* name, DidList list, ReqList req, const int& size, UdsProcEx procEx, const ulong& timeout = 10000U);
 
 		/*
 		 *自动回收,用于处理缓存,导致占用空间的问题
@@ -299,7 +330,7 @@ namespace Dt {
 		bool setDownloadDlg(BaseTypes::DownloadInfo* info);
 
 		bool callPythonFnc();
-		
+
 		/*
 		* 等待启动
 		* @param1,启动延时
@@ -307,6 +338,12 @@ namespace Dt {
 		*/
 		bool waitStartup(const ulong& delay);
 
+		/*
+		* 检测是否Ping通
+		* @param1,IP地址
+		* @param2,次数
+		*/
+		bool checkPing(const char* address, const int& times);
 	protected:
 		/*线程是否退出*/
 		bool m_quit = false;
@@ -357,13 +394,12 @@ namespace Dt {
 		CConnFactory m_canConnFactory;
 
 		/*CAN连接管理*/
-		static IConnMgr* m_canConnMgr;
+		static CanTransfer* m_canTransfer;
 
 		/*UDS工厂*/
 		CUdsFactory m_udsFactory;
 
-		/*UDS申请管理*/
-		IUdsApplyMgr* m_udsApplyMgr = nullptr;
+		UdsTransfer* m_udsTransfer = nullptr;
 
 		/*CAN发送者*/
 		static CanSender m_canSender;
@@ -376,9 +412,11 @@ namespace Dt {
 
 		/*唤醒电流*/
 		float m_rouseCurrent = 0.0f;
-		
+
 		/*矩阵算法*/
 		CanMatrix m_matrix;
+
+		void* m_core = nullptr;
 	protected:
 		/*设置错误信息,重载1*/
 		void setLastError(const QString& error);
@@ -404,6 +442,7 @@ namespace Dt {
 
 		/*回收间隔月*/
 		int m_recycleIntervalMonth = -1;
+
 	signals:
 		/*更新图像信号*/
 		void updateImageSignal(const QImage& image);
@@ -477,6 +516,9 @@ namespace Dt {
 		/*友元*/
 		friend class Cc::Mil;
 
+		/*友元*/
+		friend class Cc::CaptureCard;
+
 		/*初始化实例*/
 		virtual bool initInstance();
 
@@ -530,10 +572,13 @@ namespace Dt {
 		bool cycleCapture();
 
 		/*保存分析图像*/
-		bool saveAnalyzeImage(const QString& name, const IplImage* image, const CvSize& size);
+		bool saveAnalyzeImage(const QString& name, const IplImage* image, const CvSize& size = CvSize());
 
 		/*在图像上画矩形*/
 		inline void drawRectOnImage(IplImage* image);
+
+		/*在图像上画矩形*/
+		inline void drawRectOnImage(cv::Mat& mat);
 
 		/*在图像上检测矩形*/
 		bool checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectConfig, QString& colorData);
@@ -560,7 +605,9 @@ namespace Dt {
 
 		inline CMV800Mgr* getMv800() { return &m_mv800; }
 
-		bool getCardConnect();
+		inline Cc::CaptureCard* getCaptureCard() { return m_captureCard; }
+
+		bool getCaptureCardConnect();
 
 		inline bool isCapture() { return m_capture; };
 
@@ -568,9 +615,15 @@ namespace Dt {
 
 		inline const int& getMv800ChannelId() { return m_cardConfig.channelId; }
 
-		inline const FcTypes::CardConfig& getCardConfig() { return m_cardConfig; };
+		inline const int& getCaptureCardId() { return m_cardConfig.channelId; }
+
+		inline const FcTypes::CardConfig& getCaptureCardConfig() { return m_cardConfig; };
 
 		void setCallOpen(bool enable) { m_callOpen = enable; }
+
+		void setCaptureImage(bool capture);
+
+		bool getCaptureImage();
 	protected:
 		/*必须重写线程*/
 		virtual void run() override = 0;
@@ -590,6 +643,9 @@ namespace Dt {
 
 		/*MV800采集卡*/
 		CMV800Mgr m_mv800;
+
+		/*采集卡通用类*/
+		Cc::CaptureCard* m_captureCard = nullptr;
 
 		/*采集卡结构体*/
 		FcTypes::CardConfig m_cardConfig;
@@ -648,7 +704,8 @@ namespace Dt {
 		/*检测视频出画不使用任何*/
 		virtual bool checkVideoUseNot();
 
-		/*检测视频出画使用报文[拓展版]
+		/*
+		* 检测视频出画使用报文[拓展版]
 		* @param1,触发全景报文
 		* @param2,触发全景成功报文
 		* @param3,触发全景成功的值
@@ -657,37 +714,57 @@ namespace Dt {
 		*/
 		virtual bool checkVideoUseMsg(const CanMsg& msg, const int& id, const int& req0, MsgProc msgProc0);
 
-		/*检测视频出画使用按键
-		 *@param1,总线状态报文ID
-		 *@param2,进入全景成功的值
-		 *@param3,处理全景报文函数
-		 *@param4,高电平延时
-		 *@param5,触发成功延时
-		 *@return,bool
+		/*
+		* 检测视频出画使用按键
+		* @param1,总线状态报文ID
+		* @param2,进入全景成功的值
+		* @param3,处理全景报文函数
+		* @param4,高电平延时
+		* @param5,触发成功延时
+		* @return,bool
 		*/
 		virtual bool checkVideoUseKey(const int& id, const int& req, MsgProc msgProc, const ulong& hDelay = 300,
 			const ulong& sDelay = 3000);
 
-		/*检测AVM前后视图使用报文
-		 *@notice,[F]代表前,[R]代表后
-		 *@param1,前后景报文列表
-		 *@param2,报文延时
-		 *@param3,接收ID
-		 *@param4,请求列表
-		 *@param5,lambda
-		 *@return,bool
-		 */
-		virtual bool checkFRViewUseMsg(CanList msgList, const int& id, ReqList reqList, MsgProc proc);
+		/*检测视频出画使用人工
+		* @return,bool
+		*/
+		virtual bool checkVideoUsePerson();
 
+		/*
+		* 检查单个图像使用报文
+		* @param1,矩形类型
+		* @param2,触发报文
+		* @param3,成功报文
+		* @param4,成功的值
+		* @param5,处理函数
+		* @param6,超时
+		* @return,bool
+		*/
+		bool checkSingleImageUseMsg(const FcTypes::RectType& type, const CanMsg& msg,
+			const int& id = 0, const int& req = 0, MsgProc proc = 0, const ulong& timeout = 10000U);
+
+		/*
+		* 检测AVM前后视图使用报文
+		* @notice,[F]代表前,[R]代表后,
+		* 默认全景加前,把切后报文写第一个,反之一样.
+		* @param1,前后景报文列表
+		* @param2,报文延时
+		* @param3,接收ID
+		* @param4,请求列表
+		* @param5,lambda
+		* @return,bool
+		*/
+		virtual bool checkFRViewUseMsg(CanList msgList, const int& id, ReqList reqList, MsgProc proc);
 
 		/*
 		* 检测按键电压
-		* @param1,高电平延时
-		* @param1,成功之后延时
+		* @param1,进入全景成功报文ID
+		* @param2,进入全景成功的值
+		* @param3,处理进入全景的报文
+		* @param4,高电平延时
+		* @param5,成功之后延时
 		* @notice,延时取决于高电平电压是否准确
-		* @param2,进入全景成功报文ID
-		* @param3,进入全景成功的值
-		* @param4,处理进入全景的报文
 		* @return,bool
 		*/
 		virtual bool checkFRViewUseKey(const int& id, const int& req, MsgProc proc, const ulong& hDelay = 300U,
@@ -790,6 +867,12 @@ namespace Dt {
 		/*声音和灯光是否开启*/
 		bool getSoundLigth();
 
+		/*设置声音*/
+		bool setSound(bool enable);
+
+		/*设置灯光*/
+		bool setLight(bool enable);
+
 		/*设置vlc媒体播放句柄*/
 		void setVlcMediaHwnd(HWND vlcHwnd);
 
@@ -818,24 +901,26 @@ namespace Dt {
 		bool checkSfr(const QString& url, const QString& dirName);
 
 		/*
-		 *检测光轴及图像解析度拓展
-		 *@param1,CAN报文列表
-		 *@param2,接收报文ID
-		 *@param3,请求结果
-		 *@param4,lambda
-		 *@return,bool
+		* 检测光轴解像度使用报文
+		* @param1,CAN报文列表
+		* @param2,接收报文ID
+		* @param3,请求结果
+		* @param4,lambda
+		* @return,bool
 		*/
-		bool checkRayAxisSfrEx(CanList list, const int& id, const int& req, MsgProc proc);
+		bool checkRayAxisSfrUseMsg(CanList list, const int& id, const int& req, MsgProc proc);
 
 		/*
-		 *检测光轴及图像解析度
-		 *@param1,拍照报文
-		 *@param2,接收报文ID
-		 *@param3,请求结果
-		 *@param4,lambda
-		 *@return,bool
+		* 检测光轴解像度使用网络
+		* @return,bool
 		*/
-		bool checkRayAxisSfr(const CanMsg& msg, const int& id, const int& req, MsgProc proc);
+		bool checkRayAxisSfrUseNet();
+
+		/*
+		* 检测光轴解像度
+		* @return,bool
+		*/
+		bool checkRayAxisSfr();
 
 		/*格式化SD卡*/
 		virtual bool formatSdCard(bool pauseRecord = true);
@@ -848,6 +933,9 @@ namespace Dt {
 
 		/*设置地址端口*/
 		void setAddressPort(const QString& address, const ushort& port);
+
+		/*网络拍照*/
+		bool networkPhotoGraph();
 
 		Misc::UpdateSfr* getUpdateSfr();
 
@@ -902,7 +990,7 @@ namespace Dt {
 		ushort m_port = 2000;
 
 		/*系统状态报文*/
-		int m_sysStatusMsg = DvrTypes::SSM_BAIC;
+		int m_sysStatusMsg = DvrTypes::SSM_BAIC_C62X;
 
 		/*SD卡状态*/
 		DvrTypes::SdCardStatus m_sdCardStatus = DvrTypes::SCS_NORMAL;
@@ -983,10 +1071,10 @@ namespace Dt {
 			const size_t& statusCode = typeid(status).hash_code();
 			MsgNode msg[512] = { 0 };
 			size_t&& startTime = GetTickCount();
-			m_canConnMgr->ClearRecBuffer();
+			clearCanRecvBuffer();
 			for (;;)
 			{
-				int size = m_canConnMgr->QuickReceive(msg, 512, 100);
+				int size = quickRecvCanMsg(msg, 512, 100);
 				for (int i = 0; i < size; i++)
 				{
 					if (msg[i].id == m_sysStatusMsg)
@@ -1008,11 +1096,11 @@ namespace Dt {
 						}
 						else if (statusCode == m_hashCode.wifiStatus)
 						{
-							if (m_sysStatusMsg == DvrTypes::SSM_BAIC)
+							if (m_sysStatusMsg == DvrTypes::SSM_BAIC_C62X)
 							{
 								status = static_cast<T>((msg[i].data[0] >> 4) & 0x07);
 							}
-							else if (m_sysStatusMsg == DvrTypes::SSM_CHJ)
+							else if (m_sysStatusMsg == DvrTypes::SSM_CHJ_M01)
 							{
 								status = static_cast<T>((msg[i].data[1] >> 0) & 0x07);
 							}
@@ -1044,8 +1132,13 @@ namespace Dt {
 								addListItem("正在连接服务端,该过程大约需要1~20秒,请耐心等待...");
 								success = m_dvrClient->connect(20);
 								status = static_cast<T>(success ? DvrTypes::WS_CONNECTED : DvrTypes::WS_ERROR);
-								addListItem(Q_SPRINTF("连接服务端 %s", OK_NG(success)));
 								m_dvrClient->disconnect();
+								addListItem(Q_SPRINTF("连接服务端 %s", OK_NG(success)));
+								if (success && m_sysStatusMsg == DvrTypes::SSM_CHJ_M01)
+								{
+									addListItem("等待系统稳定中,大约需要5秒,请耐心等待...");
+									msleep(5000);
+								}
 							}
 						}
 						else if (statusCode == m_hashCode.ethernetStatus)
@@ -1053,17 +1146,17 @@ namespace Dt {
 							addListItem("正在连接服务端,该过程大约需要1~20秒,请耐心等待...");
 							success = m_dvrClient->connect(20);
 							status = static_cast<T>(success ? DvrTypes::ES_CONNECT : DvrTypes::ES_ERROR);
+							m_dvrClient->disconnect();
 							setCurrentStatus(Q_SPRINTF("以太网%s连接", success ? "已" : "未"), true);
 							addListItem(Q_SPRINTF("连接服务端 %s", OK_NG(success)));
-							m_dvrClient->disconnect();
 						}
 						else if (statusCode == m_hashCode.sdCardStatus)
 						{
-							if (m_sysStatusMsg == DvrTypes::SSM_BAIC)
+							if (m_sysStatusMsg == DvrTypes::SSM_BAIC_C62X)
 							{
 								status = static_cast<T>(msg[i].data[1] & 0x07);
 							}
-							else if (m_sysStatusMsg == DvrTypes::SSM_CHJ)
+							else if (m_sysStatusMsg == DvrTypes::SSM_CHJ_M01)
 							{
 								status = static_cast<T>((msg[i].data[0] >> 3) & 0x07);
 							}
@@ -1292,6 +1385,50 @@ namespace Cc {
 		bool m_open = false;
 
 		int m_channel[2] = { M_CH0,M_CH1 };
+	};
+
+	class CaptureCard : public QObject {
+		Q_OBJECT
+	public:
+		CaptureCard(QObject* parent);
+
+		~CaptureCard();
+
+		const QString& getLastError();
+
+		bool openDevice(const int& id, const int& count);
+
+		bool closeDevice();
+
+		bool isOpen();
+
+		bool startCapture();
+
+		bool stopCapture();
+
+		void setFPS(const int fps);
+	public slots:
+		void getImageSlot();
+	protected:
+		void setLastError(const QString& error);
+	private:
+		VideoCapture m_video;
+
+		Mat m_mat;
+
+		QTimer m_timer;
+
+		int m_fps = 40;
+
+		QString m_lastError = "No Error";
+
+		Dt::Function* m_function = nullptr;
+
+		bool m_open = false;
+
+		double m_scalew = 1.0f;
+
+		double m_scaleh = 1.0f;
 	};
 }
 

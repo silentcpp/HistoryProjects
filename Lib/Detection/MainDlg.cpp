@@ -3,7 +3,7 @@ using namespace Dt;
 
 void MainDlg::closeEvent(QCloseEvent* event)
 {
-	QMessageBox::question(this, "友情提示", "你确定要退出吗?") == QMessageBox::Yes
+	QMessageBoxEx::question(this, "友情提示", "你确定要退出吗?") == QMessageBox::Yes
 		? event->accept() : event->ignore();
 }
 
@@ -18,7 +18,7 @@ MainDlg::MainDlg(Dt::Base* thread, QWidget* parent)
 	m_base = thread;
 	if (!initInstance())
 	{
-		QMessageBox::warning(this, "初始化失败", getLastError());
+		QMessageBoxEx::warning(this, "初始化失败", getLastError());
 	}
 }
 
@@ -37,6 +37,8 @@ MainDlg::~MainDlg()
 	SAFE_DELETE(m_authDlg);
 
 	SAFE_DELETE(m_downloadDlg);
+
+	SAFE_DELETE(m_updateDlg);
 
 	SAFE_DELETE(m_base);
 }
@@ -77,6 +79,10 @@ bool MainDlg::initInstance()
 
 		m_downloadDlg = NO_THROW_NEW DownloadDlg;
 		RUN_BREAK(!m_downloadDlg, "下载对话框分配内存失败");
+
+		m_updateDlg = NO_THROW_NEW UpdateDlg(this);
+		RUN_BREAK(!m_updateDlg, "更新对话框分配内存失败");
+		connect(m_updateDlg, &UpdateDlg::restartSignal, this, &MainDlg::restartSlot);
 
 		RUN_BREAK(!m_base, "检测框架基类分配内存失败");
 
@@ -192,11 +198,10 @@ void MainDlg::settingButtonSlot()
 			break;
 		}
 
-		//connect(m_settingDlg, &SettingDlg::setAuthDlgSignal, this, &MainDlg::setAuthDlgSlot);
+		connect(m_settingDlg, &SettingDlg::restartSignal, this, &MainDlg::restartSlot);
 		m_settingDlg->setConnected(m_connected);
 		m_settingDlg->setIsExistDlg(&m_isExistSettingDlg);
 		m_settingDlg->setBasePointer(m_base);
-		m_settingDlg->setAppName(this->windowTitle().mid(0, this->windowTitle().indexOf(']') + 1));
 		if (!m_settingDlg->initInstance())
 		{
 			QMessageBoxEx::warning(this, "错误", m_settingDlg->getLastError());
@@ -226,7 +231,7 @@ void MainDlg::exitButtonSlot()
 
 void MainDlg::setMessageBoxSlot(const QString& title, const QString& text)
 {
-	QMessageBox::warning(this, title, text);
+	QMessageBoxEx::warning(this, title, text);
 	m_base->threadContinue();
 }
 
@@ -240,7 +245,7 @@ void MainDlg::setMessageBoxExSlot(const QString& title, const QString& text, con
 
 void MainDlg::setQuestionBoxSlot(const QString& title, const QString& text, bool* result)
 {
-	*result = QMessageBox::question(this, title, text) == QMessageBox::Yes;
+	*result = QMessageBoxEx::question(this, title, text) == QMessageBox::Yes;
 	m_base->threadContinue();
 }
 
@@ -382,11 +387,25 @@ void MainDlg::updateSfrSlot()
 	HGDIOBJ hOld = SelectObject(hDCMem, hBmp);
 	SelectObject(hDCMem, hOld);
 	DeleteObject(hDCMem);
-	qDebug() << (Misc::saveBitmapToFile(hBmp, "d:\\temp.bmp") ? "成功" : "失败");
+	//qDebug() << (Misc::saveBitmapToFile(hBmp, "d:\\temp.bmp") ? "成功" : "失败");
 	//QFile file("d:\\temp.bmp");
 	//file.open(QFile::WriteOnly);
 	//QPixmap pix = ui.imageLabel->grab(ui.imageLabel->rect());
 	//pix.save(&file, "BMP");
 	//file.close();
+}
+
+void MainDlg::restartSlot(const QString& name)
+{
+	if (m_connected)
+		connectButtonSlot();
+
+	QProcess* process(new QProcess);
+	process->setWorkingDirectory(Misc::getCurrentDir());
+	const QString& cmd = QString("cmd.exe /c start %1").arg(name.isEmpty() ?
+		windowTitle().mid(0, windowTitle().indexOf(']') + 1) + ".exe" : name);
+	process->start(cmd);
+	process->waitForStarted();
+	QApplication::exit(0);
 }
 

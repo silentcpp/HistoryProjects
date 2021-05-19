@@ -51,11 +51,6 @@ bool SettingDlg::initInstance()
 	return result;
 }
 
-void SettingDlg::setAppName(const QString& name)
-{
-	m_name = name;
-}
-
 void SettingDlg::setIsExistDlg(bool* existDlg)
 {
 	m_isExistDlg = existDlg;
@@ -209,7 +204,13 @@ void SettingDlg::configSaveData()
 {
 	do
 	{
-		QStringList warn = { "配置已生效,无需重启应用程序","配置已生效,需重启应用重新,是否重启?","配置已生效,需重新连接应用程序","保存成功" };
+		QStringList warn = 
+		{ 
+			"配置已生效,无需重启应用程序",
+			"配置已生效,需重启应用程序,如果已连接,将会断开连接,\n请耐心等待,是否重启?",
+			"配置已生效,需重新连接应用程序",
+			"保存成功" 
+		};
 		const QString& title = m_jsonTool->initInstance(true) ? warn.value(m_updateWarn) : QString("保存失败,%1").arg(m_jsonTool->getLastError());
 
 		if (m_updateWarn == UW_NO || m_updateWarn == UW_EMPTY)
@@ -218,16 +219,9 @@ void SettingDlg::configSaveData()
 		}
 		else if (m_updateWarn == UW_RESTART)
 		{
-			if (QMessageBoxEx::question(this, "警告", title) == QMessageBoxEx::Yes)
+			if (QMessageBoxEx::question(this, "提示", title) == QMessageBoxEx::Yes)
 			{
-				QProcess* process(new QProcess);
-				process->setWorkingDirectory(Misc::getCurrentDir());
-
-				/*因启动程序会导致运行中更改名称,此处使用getModuleFileName来获取会导致获取到的为旧的名称*/
-				const QString& cmd = QString("cmd.exe /c start %1.exe").arg(m_name);
-				process->start(cmd);
-				process->waitForStarted();
-				QApplication::exit(0);
+				emit restartSignal(QString());
 			}
 		}
 		else
@@ -316,9 +310,11 @@ void SettingDlg::configTreeItemChangedSlot(QTreeWidgetItem* item, int column)
 	QString&& currentKey = ITEM_TO_STR(item, 0);
 	QString&& currentVal = ITEM_TO_STR(item, 1);
 
-	QStringList oneKeyList = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","按键电压配置","静态电流配置","启用配置","用户配置" };
+	QStringList oneKeyList = { "设备配置","硬件配置","继电器配置","范围配置",
+		"阈值配置","按键电压配置","静态电流配置","启用配置","用户配置" };
 
-	QStringList twoKeyList = { "图像配置","电压配置","电流配置","电阻配置","版本配置","诊断故障码配置" };
+	QStringList twoKeyList = { "图像配置","电压配置","电流配置",
+		"电阻配置","版本配置","诊断故障码配置" };
 
 	bool (JsonTool:: * setValue1Fnc[])(const QString&, const QString&) = {
 		&JsonTool::setDeviceConfigValue,&JsonTool::setHardwareConfigValue,
@@ -361,11 +357,12 @@ void SettingDlg::configTreeItemChangedSlot(QTreeWidgetItem* item, int column)
 				if (parentKey == oneKeyList[i])
 				{
 					/*更新提醒,RESTART优先级2,RECONNECT优先级1,NO优先级0*/
-					if (parentKey == oneKeyList[0])
+					if (parentKey == "设备配置" || parentKey == "启用配置"
+						|| parentKey == "用户配置")
 					{
 						m_updateWarn = UpdateWarn::UW_RESTART;
 					}
-					else if (parentKey == oneKeyList[1])
+					else if (parentKey == "硬件配置")
 					{
 						if (m_updateWarn != UW_RESTART)
 							m_updateWarn = UpdateWarn::UW_RECONNECT;
@@ -838,11 +835,13 @@ void SettingDlg::canStartupSlot()
 	if (!m_canThreadStart)
 	{
 		ui.canStartup->setText("停止");
+		connect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
 		Dt::Base::getCanConnect()->StartReceiveThread();
 	}
 	else
 	{
 		ui.canStartup->setText("开始");
+		disconnect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
 		Dt::Base::getCanConnect()->EndReceiveThread();
 	}
 	m_canThreadStart = !m_canThreadStart;
@@ -1128,9 +1127,14 @@ bool SettingDlg::initConfigTreeWidget()
 				if ((m_jsonTool->*getKey1Fnc[i])().value(j) == "UDS名称")
 				{
 					QStringList udsNameList;
-					const char** udsName = CUdsFactory::GetSupportUdsName();
+					const char** udsName = UdsProtocolMgr::getSupportUdsName();
+					udsNameList.append("支持以下UDS名称");
 					while (*udsName) { udsNameList.append(*udsName++); }
 					childList[j]->setToolTip(2, udsNameList.join('\n'));
+				}
+				else if ((m_jsonTool->*getKey1Fnc[i])().value(j) == "采集卡通道数")
+				{
+					childList[j]->setToolTip(2, "如果采集卡名称为ANY,此处为2,将不使用采集卡");
 				}
 			}
 			getParent1List[i]->addChildren(childList);
@@ -1370,7 +1374,7 @@ bool SettingDlg::initCanTableWidget()
 	ui.canTable->setColumnWidth(7, 150);
 
 	qRegisterMetaType<MsgNode>("MsgNode");
-	connect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
+	//connect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
 	ui.canTable->verticalHeader()->setHidden(true);
 
 	Dt::Base::getCanConnect()->SetDynamicDisplay([&](const char* type, const MsgNode& msg)->void {emit addCanTableItemSignal(type, msg); Sleep(10); });
@@ -1402,7 +1406,7 @@ bool SettingDlg::initPaintWidget()
 {
 	Dt::Function* function = dynamic_cast<Dt::Function*>((Dt::Base*)m_basePointer);
 	if (function)
-		ui.connectCapture->setEnabled(!function->getCardConnect());
+		ui.connectCapture->setEnabled(!function->getCaptureCardConnect());
 	else
 		ui.connectCapture->setEnabled(false);
 	connect(ui.startCapture, &QPushButton::clicked, this, &SettingDlg::startCaptureSlot);

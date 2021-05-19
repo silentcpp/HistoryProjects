@@ -1,4 +1,57 @@
 #include "JsonTool.h"
+#include "TextData.h"
+
+static bool compareList(const QStringList& cmp1, const QStringList& cmp2)
+{
+	bool result = false;
+	do 
+	{
+		if (cmp1.size() != cmp2.size())
+		{
+			break;
+		}
+
+		bool contains1 = true, contains2 = true;
+		for (int i = 0; i < cmp1.size(); i++)
+		{
+			if (!cmp2.contains(cmp1[i]))
+			{
+				contains1 = false;
+				break;
+			}
+		}
+
+		for (int i = 0; i < cmp2.size(); i++)
+		{
+			if (!cmp1.contains(cmp2[i]))
+			{
+				contains2 = false;
+				break;
+			}
+		}
+
+		if (!contains1 || !contains2)
+			break;
+
+		result = true;
+	} while (false);
+	return result;
+}
+
+static bool removeList(const QStringList& list1, QStringList& list2)
+{
+	bool result = false;
+	auto tempList = list2;
+	for (auto& x : tempList)
+	{
+		if (!list1.contains(x))
+		{
+			result = true;
+			list2.removeOne(x);
+		}
+	}
+	return result;
+}
 
 JsonTool* JsonTool::m_self = nullptr;
 
@@ -199,12 +252,12 @@ bool JsonTool::parseThresholdConfigData()
 	do
 	{
 		float* valuePtr = reinterpret_cast<float*>(&m_defConfig.threshold);
-		for (int i = 0; i < m_thresholdKeyList.length(); i++, valuePtr++)
+		for (int i = 0; i < m_thresholdConfigKeyList.length(); i++, valuePtr++)
 		{
-			*valuePtr = getThresholdConfigValue(m_thresholdKeyList.value(i)).toFloat(&convert);
+			*valuePtr = getThresholdConfigValue(m_thresholdConfigKeyList.value(i)).toFloat(&convert);
 			if (!convert)
 			{
-				setLastError(QString("阈值配置[%1]格式错误").arg(m_thresholdKeyList.value(i)));
+				setLastError(QString("阈值配置[%1]格式错误").arg(m_thresholdConfigKeyList.value(i)));
 				success = false;
 				break;
 			}
@@ -252,7 +305,7 @@ bool JsonTool::parseVoltageConfigData()
 	{
 		SAFE_DELETE_A(m_hwdConfig.voltage);
 
-		m_hwdConfig.voltage = NO_THROW_NEW VoltageConfig[getVoltageConfigCount()];
+		m_hwdConfig.voltage = NO_THROW_NEW VoltageConfig[getVoltageConfigCount() + 1];
 		VoltageConfig* voltage = m_hwdConfig.voltage;
 		if (!voltage)
 		{
@@ -342,7 +395,7 @@ bool JsonTool::parseCurrentConfigData()
 	{
 		SAFE_DELETE_A(m_hwdConfig.current);
 
-		m_hwdConfig.current = NO_THROW_NEW CurrentConfig[getCurrentConfigCount()];
+		m_hwdConfig.current = NO_THROW_NEW CurrentConfig[getCurrentConfigCount() + 1];
 		CurrentConfig* current = m_hwdConfig.current;
 		if (!current)
 		{
@@ -409,7 +462,7 @@ bool JsonTool::parseResConfigData()
 	{
 		SAFE_DELETE_A(m_hwdConfig.res);
 
-		m_hwdConfig.res = NO_THROW_NEW ResConfig[getResConfigCount()];
+		m_hwdConfig.res = NO_THROW_NEW ResConfig[getResConfigCount() + 1];
 		ResConfig* res = m_hwdConfig.res;
 		if (!res)
 		{
@@ -460,7 +513,7 @@ bool JsonTool::parseVerConfigData()
 
 		SAFE_DELETE_A(m_udsConfig.ver);
 
-		m_udsConfig.ver = NO_THROW_NEW VersonConfig[getVerConfigCount()];
+		m_udsConfig.ver = NO_THROW_NEW VersonConfig[getVerConfigCount() + 1];
 		VersonConfig* ver = m_udsConfig.ver;
 		if (!ver)
 		{
@@ -521,7 +574,7 @@ bool JsonTool::parseDtcConfigData()
 	{
 		SAFE_DELETE_A(m_udsConfig.dtc);
 
-		m_udsConfig.dtc = NO_THROW_NEW DtcConfig[getDtcConfigCount()];
+		m_udsConfig.dtc = NO_THROW_NEW DtcConfig[getDtcConfigCount() + 1];
 		DtcConfig* dtc = m_udsConfig.dtc;
 		if (!dtc)
 		{
@@ -759,7 +812,8 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 				if (!dir.mkpath(pathList[i]))
 				{
 					success = false;
-					setLastError(QString("%1 创建文件夹%2失败").arg(__FUNCTION__, pathList[i]));
+					setLastError(QString("%1 创建文件夹%2失败").
+						arg(__FUNCTION__, pathList[i]));
 					break;
 				}
 			}
@@ -770,22 +824,37 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 			break;
 		}
 
-		bool (JsonTool:: * readFnc[])(const QString&) = { &JsonTool::readDefJsonFile,&JsonTool::readHwdJsonFile,
-			&JsonTool::readUdsJsonFile,&JsonTool::readCanJsonFile };
-
-		bool (JsonTool:: * writeFnc[])(const QString&) = { &JsonTool::writeDefJsonFile,&JsonTool::writeHwdJsonFile,
-			&JsonTool::writeUdsJsonFile,&JsonTool::writeCanJsonFile };
-
-		bool (JsonTool:: * updateFnc[])(const QString&) = { &JsonTool::updateDefJsonFile,&JsonTool::updateHwdJsonFile,
-			&JsonTool::updateUdsJsonFile,&JsonTool::updateCanJsonFile };
-
-		if (fileName.size() != sizeof(readFnc) / sizeof(*readFnc)
-			|| fileName.size() != sizeof(writeFnc) / sizeof(*writeFnc)
-			|| fileName.size() != sizeof(updateFnc) / sizeof(*updateFnc))
+		bool (JsonTool:: * readFnc[])(const QString&) =
 		{
-			setLastError("文件名列表与函数指针数组不对应");
-			break;
-		}
+			&JsonTool::readDefJsonFile,
+			&JsonTool::readHwdJsonFile,
+			&JsonTool::readUdsJsonFile,
+			&JsonTool::readCanJsonFile,
+			&JsonTool::readImgJsonFile
+		};
+
+		bool (JsonTool:: * writeFnc[])(const QString&) =
+		{
+			&JsonTool::writeDefJsonFile,
+			&JsonTool::writeHwdJsonFile,
+			&JsonTool::writeUdsJsonFile,
+			&JsonTool::writeCanJsonFile,
+			&JsonTool::writeImgJsonFile
+		};
+
+		bool (JsonTool:: * updateFnc[])(const QString&) =
+		{
+			&JsonTool::updateDefJsonFile,
+			&JsonTool::updateHwdJsonFile,
+			&JsonTool::updateUdsJsonFile,
+			&JsonTool::updateCanJsonFile,
+			&JsonTool::updateImgJsonFile
+		};
+
+		RUN_BREAK(fileName.size() != sizeof(readFnc) / sizeof(*readFnc) ||
+			fileName.size() != sizeof(writeFnc) / sizeof(*writeFnc) ||
+			fileName.size() != sizeof(updateFnc) / sizeof(*updateFnc),
+			"文件名列表与函数指针数组不对应");
 
 		for (int i = 0; i < fileName.size(); i++)
 		{
@@ -817,8 +886,25 @@ bool JsonTool::initInstance(bool update, const QString& folderName, const QStrin
 
 const QStringList JsonTool::getAllMainKey()
 {
-	static QStringList keys = { "设备配置","硬件配置","继电器配置","范围配置","阈值配置","图像配置","按键电压配置","电压配置",
-	"电流配置","电阻配置","静态电流配置","版本配置","诊断故障码配置","启用配置","用户配置" };
+	//此列表顺序不可修改,否则将会导致SettingDlg加载崩溃
+	static QStringList keys =
+	{
+		"设备配置",//0
+		"硬件配置",//1
+		"继电器配置",//2
+		"范围配置",//3
+		"阈值配置",//4
+		"图像配置",//5
+		"按键电压配置",//6
+		"电压配置",//7
+		"电流配置",//8
+		"电阻配置",//9
+		"静态电流配置",//10
+		"版本配置",//11
+		"诊断故障码配置",//12
+		"启用配置",//13
+		"用户配置"//14
+	};
 	return keys;
 }
 
@@ -837,36 +923,247 @@ const QString JsonTool::getDcfVersion()
 	return DCF_VERSION;
 }
 
+bool JsonTool::writeDcfFile(const QString& name)
+{
+	bool result = false;
+	do 
+	{
+		QFile file(name);
+		if (!file.open(QFile::WriteOnly))
+		{
+			setLastError(file.errorString());
+			break;
+		}
+
+		int length = strlen(TextData::ntscData);
+		if (file.write(TextData::ntscData, length) != length)
+		{
+			setLastError("写入数据长度校验失败");
+			break;
+		}
+		file.close();
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::readFileToJson(const QString& name, QJsonObject& rootObj)
+{
+	bool result = false;
+	do 
+	{
+		QFile file(name);
+		RUN_BREAK(!file.open(QFile::ReadOnly), file.errorString());
+		QByteArray bytes = file.readAll();
+		file.close();
+
+		QJsonParseError jsonError;
+		QJsonDocument jsonDoc(QJsonDocument::fromJson(bytes, &jsonError));
+		RUN_BREAK(jsonError.error != QJsonParseError::NoError, jsonError.errorString());
+		rootObj = jsonDoc.object();
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::writeJsonToFile(const QString& name, const QJsonObject& rootObj)
+{
+	bool result = false;
+	do 
+	{
+		QJsonDocument doc(rootObj);
+		QByteArray bytes = doc.toJson();
+		QFile file(name);
+		RUN_BREAK(!file.open(QFile::WriteOnly), file.errorString());
+		if (bytes.length() != file.write(bytes))
+		{
+			setLastError(QString("写入%1数据校验失败").arg(name));
+			file.close();
+			break;
+		}
+		file.close();
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::testDefJsonFile(const QString& name)
+{
+	bool result = false, save = false;
+	do
+	{
+		QJsonObject rootObj;
+		RUN_BREAK(!readFileToJson(name, rootObj), "自检读取def.json文件失败," + getLastError())
+
+		QStringList keyList =
+		{
+			"设备配置",
+			"硬件配置",
+			"继电器配置",
+			"用户配置",
+			"范围配置",
+			"阈值配置",
+			"启用配置"
+		};
+
+		QList<QStringList*>memberKeyList = 
+		{ 
+			&m_deviceConfigKeyList,
+			&m_hardwareConfigKeyList,
+			&m_relayConfigKeyList,
+			&m_userConfigKeyList,
+			&m_rangeConfigKeyList,
+			&m_thresholdConfigKeyList,
+			&m_enableConfigKeyList 
+		};
+
+		QList<QStringList*>memberValueList = 
+		{
+			&m_deviceConfigValueList,
+			&m_hardwareConfigValueList,
+			&m_relayConfigValueList,
+			&m_userConfigValueList,
+			&m_rangeConfigValueList,
+			&m_thresholdConfigValueList,
+			&m_enableConfigValueList
+		};
+
+		const QString(JsonTool:: * valueFnc[])(const QString&) =
+		{
+			&JsonTool::getDeviceConfigDefaultValue,
+			&JsonTool::getHardwareConfigDefaultValue,
+			&JsonTool::getRelayConfigDefaultValue,
+			&JsonTool::getUserConfigDefaultValue,
+			&JsonTool::getRangeConfigDefaultValue,
+			&JsonTool::getThresholdConfigDefaultValue,
+			&JsonTool::getEnableConfigDefaultValue
+		};
+
+		for (int i = 0; i < keyList.count(); i++)
+		{
+			QStringList objectKeyList, loseKeyList, loseValueList;
+			if (rootObj.contains(keyList[i]))
+			{
+				loseKeyList = *memberKeyList[i];
+				QJsonObject jsonObject = rootObj.value(keyList[i]).toObject();
+				objectKeyList = jsonObject.keys();
+				QStringList oldObjectKeyList = objectKeyList;
+				if (removeList(*memberKeyList[i], objectKeyList))
+				{
+					QStringList removeObjList;
+					for (int j = 0; j < oldObjectKeyList.size(); j++)
+					{
+						if (!objectKeyList.contains(oldObjectKeyList[j]))
+						{
+							removeObjList.push_back(oldObjectKeyList[j]);
+						}
+					}
+
+					for (auto& x : removeObjList)
+					{
+						m_errorList.append(QString("%1 未知{ 键 }:{ %2 } 已自动删除").
+							arg(keyList[i], x));
+						jsonObject.remove(x);
+					}
+				}
+
+				if (!compareList(*memberKeyList[i], objectKeyList))
+				{
+					for (int j = 0; j < memberKeyList[i]->size(); j++)
+					{
+						for (int k = 0; k < objectKeyList.size(); k++)
+						{
+							if (memberKeyList[i]->at(j) == objectKeyList[k])
+							{
+								loseKeyList.removeOne(objectKeyList[k]);
+							}
+						}
+					}
+
+					for (int j = 0; j < loseKeyList.size(); j++)
+					{
+						loseValueList.append((this->*valueFnc[i])(loseKeyList[j]));
+					}
+
+					for (int j = 0; j < loseKeyList.size(); j++)
+					{
+						jsonObject.insert(loseKeyList[j], loseValueList[j]);
+						m_errorList.append(QString("%1 丢失{ 键 / 值 }:{ %2 / %3 } 已自动添加").
+							arg(keyList[i], loseKeyList[j], loseValueList[j]));
+					}
+				}
+
+				if (jsonObject != rootObj.value(keyList[i]).toObject())
+				{
+					save = true;
+					rootObj.insert(keyList[i], jsonObject);
+				}
+			}
+		}
+
+		if (save)
+		{
+			RUN_BREAK(!writeJsonToFile(name, rootObj), "自检写入def.json失败,"
+				+ getLastError());
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
+#define NEW_IMAGE_JSON 1
 bool JsonTool::readDefJsonFile(const QString& name)
 {
 	bool result = false, success = true;
 	do
 	{
-		QFile file(name);
-		if (!file.open(QFile::ReadOnly))
+		testDefJsonFile(name);
+
+		QJsonObject rootObj;
+		RUN_BREAK(!readFileToJson(name, rootObj), "读取def.json配置文件失败," + getLastError());
+
+#if NEW_IMAGE_JSON
+		QStringList keyList = 
+		{ 
+			"设备配置",
+			"硬件配置",
+			"继电器配置",
+			"用户配置",
+			"范围配置",
+			"阈值配置",
+			"启用配置" 
+		};
+
+		QList<QJsonObject*>objList =
 		{
-			m_lastError = file.errorString();
-			break;
-		}
+			&m_deviceConfigObj,
+			&m_hardwareConfigObj,
+			&m_relayConfigObj,
+			&m_userConfigObj,
+			&m_rangeConfigObj,
+			&m_thresholdConfigObj,
+			&m_enableConfigObj
+		};
 
-		QByteArray bytes = file.readAll();
-		file.close();
-		QJsonParseError jsonError;
-		QJsonDocument jsonDoc(QJsonDocument::fromJson(bytes, &jsonError));
-		if (jsonError.error != QJsonParseError::NoError)
+		bool (JsonTool:: * parseFnc[])() = 
 		{
-			m_lastError = jsonError.errorString();
-			break;
-		}
+			&JsonTool::parseDeviceConfigData,
+			&JsonTool::parseHardwareConfigData,
+			&JsonTool::parseRelayPortConfigData,
+			&JsonTool::parseUserConfigData,
+			&JsonTool::parseRangeConfigData,
+			&JsonTool::parseThresholdConfigData,
+			&JsonTool::parseEnableConfigData
+		};
 
-		QJsonObject rootObj = jsonDoc.object();
+#else
+		QStringList keyList = { "设备配置","硬件配置","继电器配置","用户配置",
+			"图像配置","范围配置","阈值配置","启用配置" };
 
-		QStringList keyList = { "设备配置","硬件配置","继电器配置","用户配置","图像配置","范围配置","阈值配置","启用配置" };
-		
 		QList<QJsonObject*>objList = { &m_deviceConfigObj,&m_hardwareConfigObj,&m_relayConfigObj,
 		&m_userConfigObj,&m_imageConfigObj,&m_rangeConfigObj,&m_thresholdConfigObj,&m_enableConfigObj };
 
-		bool (JsonTool:: * parseFnc[])() = { 
+		bool (JsonTool:: * parseFnc[])() = {
 			&JsonTool::parseDeviceConfigData,
 			&JsonTool::parseHardwareConfigData,
 			&JsonTool::parseRelayPortConfigData,
@@ -876,7 +1173,7 @@ bool JsonTool::readDefJsonFile(const QString& name)
 			&JsonTool::parseThresholdConfigData,
 			&JsonTool::parseEnableConfigData
 		};
-
+#endif
 		for (int i = 0; i < keyList.count(); i++)
 		{
 			if (rootObj.contains(keyList[i]))
@@ -941,6 +1238,7 @@ bool JsonTool::writeDefJsonFile(const QString& name)
 		rangeConfigObj.insert(m_rangeConfigKeyList[i], m_rangeConfigValueList[i]);
 	}
 
+#if !NEW_IMAGE_JSON
 	/*图像配置*/
 	QJsonObject childImageCheckObj[IMAGE_CHECK_COUNT];
 
@@ -957,11 +1255,12 @@ bool JsonTool::writeDefJsonFile(const QString& name)
 	{
 		imageConfigObj.insert(m_parentImageKeyList.value(i), childImageCheckObj[i]);
 	}
+#endif
 
 	/*阈值配置*/
-	for (int i = 0; i < m_thresholdKeyList.length(); i++)
+	for (int i = 0; i < m_thresholdConfigKeyList.length(); i++)
 	{
-		thresholdConfigObj.insert(m_thresholdKeyList[i], m_thresholdValueList[i]);
+		thresholdConfigObj.insert(m_thresholdConfigKeyList[i], m_thresholdConfigValueList[i]);
 	}
 
 	/*启用配置*/
@@ -974,30 +1273,17 @@ bool JsonTool::writeDefJsonFile(const QString& name)
 	rootObj.insert("硬件配置", hardwareConfigObj);
 	rootObj.insert("范围配置", rangeConfigObj);
 	rootObj.insert("用户配置", userConfigObj);
+#if !NEW_IMAGE_JSON
 	rootObj.insert("图像配置", imageConfigObj);
+#endif
 	rootObj.insert("继电器配置", relayIoConfigObj);
 	rootObj.insert("阈值配置", thresholdConfigObj);
 	rootObj.insert("启用配置", enableConfigObj);
 
 	bool result = false;
-	do
+	do 
 	{
-		QJsonDocument doc(rootObj);
-		QByteArray bytes = doc.toJson();
-		QFile file(name);
-		if (!file.open(QIODevice::WriteOnly))
-		{
-			m_lastError = file.errorString();
-			break;
-		}
-
-		if (bytes.length() != file.write(bytes))
-		{
-			m_lastError = QString("%1写入%2数据校验失败").arg(__FUNCTION__, name);
-			file.close();
-			break;
-		}
-		file.close();
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "写入def.json配置失败," + getLastError());
 		result = true;
 	} while (false);
 	return result;
@@ -1010,7 +1296,9 @@ bool JsonTool::updateDefJsonFile(const QString& name)
 	rootObj.insert("硬件配置", m_hardwareConfigObj);
 	rootObj.insert("范围配置", m_rangeConfigObj);
 	rootObj.insert("用户配置", m_userConfigObj);
+#if !NEW_IMAGE_JSON
 	rootObj.insert("图像配置", m_imageConfigObj);
+#endif
 	rootObj.insert("继电器配置", m_relayConfigObj);
 	rootObj.insert("阈值配置", m_thresholdConfigObj);
 	rootObj.insert("启用配置", m_enableConfigObj);
@@ -1018,22 +1306,7 @@ bool JsonTool::updateDefJsonFile(const QString& name)
 	bool result = false;
 	do
 	{
-		QJsonDocument doc(rootObj);
-		QByteArray bytes = doc.toJson();
-		QFile file(name);
-		if (!file.open(QIODevice::WriteOnly))
-		{
-			m_lastError = file.errorString();
-			break;
-		}
-
-		if (bytes.length() != file.write(bytes))
-		{
-			m_lastError = QString("%1写入%2数据校验失败").arg(__FUNCTION__, name);
-			file.close();
-			break;
-		}
-		file.close();
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "更新def.json配置文件失败," + getLastError());
 		result = true;
 	} while (false);
 	return result;
@@ -1044,22 +1317,8 @@ bool JsonTool::readHwdJsonFile(const QString& name)
 	bool result = false, success = true;
 	do
 	{
-		QFile file(name);
-		if (!file.open(QFile::ReadOnly))
-		{
-			setLastError(file.errorString());
-			break;
-		}
-		QByteArray bytes = file.readAll();
-		file.close();
-		QJsonParseError jsonError;
-		QJsonDocument doc(QJsonDocument::fromJson(bytes, &jsonError));
-		if (jsonError.error != QJsonParseError::NoError)
-		{
-			setLastError(jsonError.errorString());
-			break;
-		}
-		QJsonObject root = doc.object();
+		QJsonObject root;
+		RUN_BREAK(!readFileToJson(name, root), "读取hwd.json配置文件失败," + getLastError());
 
 		QStringList keyList = { "电压配置","按键电压配置","电流配置","静态电流配置","电阻配置" };
 		
@@ -1169,14 +1428,7 @@ bool JsonTool::writeHwdJsonFile(const QString& name)
 		rootObj.insert("静态电流配置", staticObj);
 		rootObj.insert("电阻配置", resObj);
 
-		QFile file(name);
-		if (!file.open(QFile::WriteOnly))
-		{
-			setLastError(file.errorString());
-			break;
-		}
-		file.write(QJsonDocument(rootObj).toJson());
-		file.close();
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "写入hwd.json配置文件失败," + getLastError());
 		result = true;
 	} while (false);
 	return result;
@@ -1194,14 +1446,92 @@ bool JsonTool::updateHwdJsonFile(const QString& name)
 		rootObj.insert("静态电流配置", m_staticConfigObj);
 		rootObj.insert("电阻配置", m_resConfigObj);
 
-		QFile file(name);
-		if (!file.open(QFile::WriteOnly))
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "更新hwd.json配置文件失败," + getLastError());
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::testImgJsonFile(const QString& name)
+{
+	bool result = false;
+	do 
+	{
+		QJsonObject rootObj;
+		RUN_BREAK(!readFileToJson(name, rootObj), "自检读取img.json文件失败," + getLastError());
+
+		if (rootObj.contains("图像配置"))
 		{
-			setLastError(file.errorString());
+			QJsonObject parentObj = rootObj.value("图像配置").toObject();
+		}
+
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::readImgJsonFile(const QString& name)
+{
+	bool result = false;
+	do 
+	{
+		QJsonObject rootObj;
+		RUN_BREAK(!readFileToJson(name, rootObj), "读取img.json配置文件失败," + getLastError());
+
+		if (!rootObj.contains("图像配置"))
+		{
+			setLastError(QString("%1配置文件未找到对象名图像配置").arg(name));
 			break;
 		}
-		file.write(QJsonDocument(rootObj).toJson());
-		file.close();
+
+		m_imageConfigObj = rootObj.value("图像配置").toObject();
+		if (!parseImageConfigData())
+		{
+			break;
+		}
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::writeImgJsonFile(const QString& name)
+{
+	bool result = false;
+	do 
+	{
+		QJsonObject rootObj;
+
+		QJsonObject childImageCheckObj[IMAGE_CHECK_COUNT];
+		for (int i = 0; i < IMAGE_CHECK_COUNT; i++)
+		{
+			for (int j = 0; j < m_childImageKeyList[i].size(); j++)
+			{
+				childImageCheckObj[i].insert(m_childImageKeyList[i].value(j), m_childImageValueList[i].value(j));
+			}
+		}
+
+		QJsonObject imageConfigObj;
+		for (int i = 0; i < m_parentImageKeyList.size(); i++)
+		{
+			imageConfigObj.insert(m_parentImageKeyList.value(i), childImageCheckObj[i]);
+		}
+
+		rootObj.insert("图像配置", imageConfigObj);
+
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "写入img.json配置失败," + getLastError());
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool JsonTool::updateImgJsonFile(const QString& name)
+{
+	bool result = false;
+	do 
+	{
+		QJsonObject rootObj;
+		rootObj.insert("图像配置", m_imageConfigObj);
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "更新img.json配置文件失败," + getLastError());
 		result = true;
 	} while (false);
 	return result;
@@ -1212,23 +1542,8 @@ bool JsonTool::readUdsJsonFile(const QString& name)
 	bool result = false, success = false;
 	do
 	{
-		QFile file(name);
-		if (!file.open(QFile::ReadOnly))
-		{
-			setLastError(file.errorString());
-			break;
-		}
-		QByteArray bytes = file.readAll();
-		file.close();
-		QJsonParseError jsonError;
-		QJsonDocument doc(QJsonDocument::fromJson(bytes, &jsonError));
-		if (jsonError.error != QJsonParseError::NoError)
-		{
-			setLastError(jsonError.errorString());
-			break;
-		}
-		QJsonObject root = doc.object();
-
+		QJsonObject root;
+		RUN_BREAK(!readFileToJson(name, root), "读取uds.json配置文件失败," + getLastError());
 		if (root.contains("版本配置"))
 		{
 			m_verConfigObj = root.value("版本配置").toObject();
@@ -1276,14 +1591,7 @@ bool JsonTool::writeUdsJsonFile(const QString& name)
 		rootObj.insert("版本配置", verObj2);
 		rootObj.insert("诊断配置", dtcObj2);
 
-		QFile file(name);
-		if (!file.open(QFile::WriteOnly))
-		{
-			setLastError(file.errorString());
-			break;
-		}
-		file.write(QJsonDocument(rootObj).toJson());
-		file.close();
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "写入uds.json配置文件失败," + getLastError());
 		result = true;
 	} while (false);
 	return result;
@@ -1292,20 +1600,13 @@ bool JsonTool::writeUdsJsonFile(const QString& name)
 bool JsonTool::updateUdsJsonFile(const QString& name)
 {
 	bool result = false;
-	do 
+	do
 	{
 		QJsonObject rootObj;
 		rootObj.insert("版本配置", m_verConfigObj);
 		rootObj.insert("诊断配置", m_dtcConfigObj);
 
-		QFile file(name);
-		if (!file.open(QFile::WriteOnly))
-		{
-			setLastError(file.errorString());
-			break;
-		}
-		file.write(QJsonDocument(rootObj).toJson());
-		file.close();
+		RUN_BREAK(!writeJsonToFile(name, rootObj), "更新uds.json配置文件失败," + getLastError());
 		result = true;
 	} while (false);
 	return result;
@@ -1443,9 +1744,17 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 		}
 		else if (key == "采集卡名称")
 		{
-			if (value != "MV800" && value != "MOR")
+			if (value != MV800_CC && value != MOR_CC && value != ANY_CC)
 			{
-				setLastError("采集卡仅支持[MOR]或者[MV800]");
+				setLastError("采集卡仅支持MOR,MV800,ANY");
+				break;
+			}
+		}
+		else if (key == "条码判断")
+		{
+			if (value.isEmpty())
+			{
+				setLastError("条码判断如果为空,请写NULL");
 				break;
 			}
 		}
@@ -1463,9 +1772,23 @@ bool JsonTool::setDeviceConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getDeviceConfigExplain()
 {
-	static QStringList explain = { "界面标题", "悬停查看所有", "ZLG ADV KVASER PORT",
-		"MOR MV800","最大支持2通道", "MV800,AV1是1,AV2是0","前N位字符串", "条码总长度" };
+	static QStringList explain = { "界面标题", "鼠标悬停查看提示", "ZLG ADV KVASER PORT",
+		"MOR MV800 ANY","鼠标悬停查看提示", "MV800,AV1是1,AV2是0","前N位字符串", "条码总长度" };
 	return explain;
+}
+
+const QString JsonTool::getDeviceConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_deviceConfigKeyList.size(); i++)
+	{
+		if (m_deviceConfigKeyList[i] == key)
+		{
+			result = m_deviceConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
 }
 
 const QString JsonTool::getHardwareConfigValue(const QString& key)
@@ -1520,6 +1843,20 @@ const QStringList& JsonTool::getHardwareConfigExplain()
 	return explain;
 }
 
+const QString JsonTool::getHardwareConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_hardwareConfigKeyList.size(); i++)
+	{
+		if (m_hardwareConfigKeyList[i] == key)
+		{
+			result = m_hardwareConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
+}
+
 const QString JsonTool::getRelayConfigValue(const QString& key)
 {
 	return m_relayConfigObj[key].toString();
@@ -1571,6 +1908,20 @@ const QStringList& JsonTool::getRelayConfigExplain()
 	return explain;
 }
 
+const QString JsonTool::getRelayConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_relayConfigKeyList.size(); i++)
+	{
+		if (m_relayConfigKeyList[i] == key)
+		{
+			result = m_relayConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
+}
+
 const QStringList& JsonTool::getUserConfigKeyList()
 {
 	return m_userConfigKeyList;
@@ -1612,6 +1963,20 @@ bool JsonTool::getUserPrivileges()
 {
 	const QString&& userName = getUserConfigValue("用户名").toUpper();
 	return (userName == "ROOT" || userName == "INVO");
+}
+
+const QString JsonTool::getUserConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_userConfigKeyList.size(); i++)
+	{
+		if (m_userConfigKeyList[i] == key)
+		{
+			result = m_userConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
 }
 
 const QString JsonTool::getRangeConfigValue(const QString& key)
@@ -1680,6 +2045,20 @@ const QStringList& JsonTool::getRangeConfigExplain()
 	return explain;
 }
 
+const QString JsonTool::getRangeConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_rangeConfigKeyList.size(); i++)
+	{
+		if (m_rangeConfigKeyList[i] == key)
+		{
+			result = m_rangeConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
+}
+
 const QString JsonTool::getThresholdConfigValue(const QString& key)
 {
 	return m_thresholdConfigObj[key].toString();
@@ -1692,7 +2071,7 @@ const int JsonTool::getThresholdConfigCount()
 
 const QStringList& JsonTool::getThresholdConfigKeyList()
 {
-	return m_thresholdKeyList;
+	return m_thresholdConfigKeyList;
 }
 
 const thresholdConfig_t& JsonTool::getParsedThresholdConfig()
@@ -1705,11 +2084,20 @@ bool JsonTool::setThresholdConfigValue(const QString& key, const QString& value)
 	bool result = false, convert = false;
 	do 
 	{
-		value.toFloat(&convert);
+		float data = value.toFloat(&convert);
 		if (!convert)
 		{
 			setLastError(QString("%1,必须为数字").arg(key));
 			break;
+		}
+
+		if (key == "启动延时")
+		{
+			if (data <= 0.1000000001f)
+			{
+				setLastError(QString("%1,不可小于等于0").arg(key));
+				break;
+			}
 		}
 
 		if (!m_thresholdConfigObj.contains(key))
@@ -1725,8 +2113,22 @@ bool JsonTool::setThresholdConfigValue(const QString& key, const QString& value)
 
 const QStringList& JsonTool::getThresholdConfigExplain()
 {
-	static QStringList explain = { "单位:A(安培)","单位:A(安培)" };
+	static QStringList explain = { "单位:MS(毫秒)","单位:A(安培)","单位:A(安培)" };
 	return explain;
+}
+
+const QString JsonTool::getThresholdConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_thresholdConfigKeyList.size(); i++)
+	{
+		if (m_thresholdConfigKeyList[i] == key)
+		{
+			result = m_thresholdConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
 }
 
 const imageConfig_t& JsonTool::getParsedImageConfig()
@@ -1881,6 +2283,20 @@ const QStringList& JsonTool::getEnableConfigExplain()
 		"0禁用,1启用", "0禁用,1启用" ,"0禁用,1启用",
 		"0禁用,1启用" };
 	return explain;
+}
+
+const QString JsonTool::getEnableConfigDefaultValue(const QString& key)
+{
+	QString result = "0";
+	for (int i = 0; i < m_thresholdConfigKeyList.size(); i++)
+	{
+		if (m_thresholdConfigKeyList[i] == key)
+		{
+			result = m_thresholdConfigValueList.at(i);
+			break;
+		}
+	}
+	return result;
 }
 
 DefConfig* JsonTool::getParsedDefConfig()
@@ -2555,5 +2971,65 @@ const CanMsg* JsonTool::getParsedCanMsg()
 QJsonObject& JsonTool::getCanMsgObj()
 {
 	return m_canMsgObj;
+}
+
+void JsonTool::setSkipItem(const SkipItem& item, bool skip)
+{
+	if (item > 0xff)
+		return;
+	m_skipItemVec[item] = skip;
+}
+
+bool JsonTool::getSkipItem(const SkipItem& item)
+{
+	if (item > 0xff)
+		return false;
+
+	if ((item == SI_SN || item == SI_DATE) && getSkipCode())
+		return true;
+
+	return m_skipItemVec.at(item);
+}
+
+void JsonTool::deleteSkipSymbol(QString& code)
+{
+	QString temp = code;
+	for (int i = 0; i < temp.length();)
+	{
+		bool exist = false;
+		if (temp.mid(i * 2, 2) == SKIP_MES_SYMBOL)
+		{
+			setSkipItem(SI_MES, true);
+			exist = true;
+		}
+
+		if (temp.mid(i * 2, 2) == SKIP_SN_SYMBOL)
+		{
+			setSkipItem(SI_SN, true);
+			exist = true;
+		}
+
+		if (temp.mid(i * 2, 2) == SKIP_DATE_SYMBOL)
+		{
+			setSkipItem(SI_DATE, true);
+			exist = true;
+		}
+
+		//"&^$^@^A5K-ABCEDFG"
+		if (exist)
+		{
+			i = 0;
+			temp = temp.remove(temp.mid(i * 2, 2));
+		}
+		else
+			i++;
+	}
+	code = temp;
+}
+
+bool JsonTool::getSkipCode()
+{
+	return m_defConfig.device.codeJudge == "NULL" &&
+		m_defConfig.device.codeLength.toInt() == 0;
 }
 

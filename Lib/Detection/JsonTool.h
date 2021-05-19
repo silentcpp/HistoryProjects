@@ -15,16 +15,46 @@
 #include <memory>
 #include <Common/Types.h>
 
-#define LIB_VERSION "1.0.0.6"
+#define GET_JSON() JsonTool::getInstance()
 
+#define RUN_BREAK(success,error) \
+if ((success))\
+{\
+	setLastError(error);\
+	break;\
+}
+
+//框架版本号
+#define LIB_VERSION "1.0.0.8"
+
+//DCF文件版本号
 #define DCF_VERSION "1.0.0.0"
 
+//JSON文件版本号
 #define JSON_VERSION "1.0.0.5"
 
+//跳过MES特殊符号
+#define SKIP_MES_SYMBOL "$^"
+
+//跳过检测序列号特殊符号
+#define SKIP_SN_SYMBOL "&^"
+
+//跳过检测日期特殊符号
+#define SKIP_DATE_SYMBOL "@^"
+
+//视频控件宽度
+#define VIDEO_WIDGET_WIDTH 720
+
+//视频控件高度
+#define VIDEO_WIDGET_HEIGHT 480
+
+//QString转char*
 #define Q_TO_C_STR(X) X.toStdString().c_str()
 
+//无抛错new
 #define NO_THROW_NEW new(std::nothrow)
 
+//安全删除数组
 #define SAFE_DELETE_A(X)\
 if (X)\
 {\
@@ -32,12 +62,36 @@ if (X)\
 	X = nullptr;\
 }
 
+//安全删除变量
 #define SAFE_DELETE(X)\
 if (X)\
 {\
 	delete X;\
 	X = nullptr;\
 }
+
+//目前支持的采集卡
+
+//MV800采集卡名称
+#define MV800_CC "MV800"
+
+//MOR采集卡名称
+#define MOR_CC "MOR"
+
+//任何采集卡
+#define ANY_CC "ANY"
+
+//跳过测试项
+enum SkipItem {
+	//MES
+	SI_MES,
+
+	//序列号
+	SI_SN,
+
+	//日期
+	SI_DATE
+};
 
 /************************************************************************/
 /* 设备配置														*/
@@ -262,6 +316,9 @@ typedef struct RangeConfig
 
 typedef struct ThresholdConfig
 {
+	/*启动延时*/
+	float startDelay;
+
 	/*CAN唤醒电流阈值*/
 	float canRouse;
 
@@ -515,6 +572,7 @@ public:
 	/************************************************************************/
 	/* 基本操作                                                             */
 	/************************************************************************/
+
 	/*拷贝构造删除*/
 	JsonTool(const JsonTool&) = delete;
 
@@ -534,7 +592,8 @@ public:
 	const QStringList& getErrorList();
 
 	/*初始化实例*/
-	bool initInstance(bool update = false, const QString& folderName = "Config", const QStringList& fileName = { "def.json","hwd.json","uds.json","can.json" });
+	bool initInstance(bool update = false, const QString& folderName = "Config",
+		const QStringList& fileName = { "def.json","hwd.json","uds.json","can.json","img.json" });
 
 	/*获取所有主键*/
 	const QStringList getAllMainKey();
@@ -552,9 +611,19 @@ public:
 	/*读写配置文件操作                                                      */
 	/************************************************************************/
 
+	bool writeDcfFile(const QString& name);
+
+	bool readFileToJson(const QString& name, QJsonObject& rootObj);
+
+	bool writeJsonToFile(const QString& name, const QJsonObject& rootObj);
+
 	/************************************************************************/
 	/* DEF                                                                  */
 	/************************************************************************/
+
+	/*读取json配置文件*/
+	bool testDefJsonFile(const QString& name = QString("def.json"));
+
 	/*读取json配置文件*/
 	bool readDefJsonFile(const QString& name = QString("def.json"));
 
@@ -575,6 +644,15 @@ public:
 
 	/*更新硬件json配置文件*/
 	bool updateHwdJsonFile(const QString& name = QString("hwd.json"));
+
+	//IMG
+	bool testImgJsonFile(const QString& name = QString("img.json"));
+
+	bool readImgJsonFile(const QString& name = QString("img.json"));
+
+	bool writeImgJsonFile(const QString& name = QString("img.json"));
+
+	bool updateImgJsonFile(const QString& name = QString("img.json"));
 
 	/************************************************************************/
 	/* UDS                                                                  */
@@ -624,6 +702,10 @@ public:
 
 	/*获取设备说明*/
 	const QStringList& getDeviceConfigExplain();
+
+	/*获取设备默认值*/
+	const QString getDeviceConfigDefaultValue(const QString& key);
+
 	/************************************************************************/
 	/* 硬件配置操作                                                         */
 	/************************************************************************/
@@ -645,9 +727,14 @@ public:
 
 	/*获取硬件说明*/
 	const QStringList& getHardwareConfigExplain();
+
+	/*获取硬件默认值*/
+	const QString getHardwareConfigDefaultValue(const QString& key);
+
 	/************************************************************************/
 	/* 继电器配置操作                                                       */
 	/************************************************************************/
+
 	/*通过键获取继电器IO配置值*/
 	const QString getRelayConfigValue(const QString& key);
 
@@ -665,11 +752,18 @@ public:
 
 	/*获取继电器说明*/
 	const QStringList& getRelayConfigExplain();
+
+	/*获取继电器默认值*/
+	const QString getRelayConfigDefaultValue(const QString& key);
+
 	/************************************************************************/
 	/* 用户配置操作                                                         */
 	/************************************************************************/
+
+	/*获取用户配置键列表*/
 	const QStringList& getUserConfigKeyList();
 
+	/*获取用户配置说明*/
 	const QStringList& getUserConfigExplain();
 
 	/*通过键获取用户配置值*/
@@ -678,12 +772,19 @@ public:
 	/*获取用户配置数量*/
 	const int getUserConfigCount();
 
+	/*设置用户配置值*/
 	bool setUserConfigValue(const QString& key, const QString& value);
 
+	/*获取用户权限*/
 	bool getUserPrivileges();
+
+	/*获取用户默认值*/
+	const QString getUserConfigDefaultValue(const QString& key);
+
 	/************************************************************************/
 	/* 范围配置操作                                                         */
 	/************************************************************************/
+
 	/*通过键获取范围配置值*/
 	const QString getRangeConfigValue(const QString& key);
 
@@ -701,9 +802,14 @@ public:
 
 	/*获取范围配置说明*/
 	const QStringList& getRangeConfigExplain();
+
+	/*获取范围默认值*/
+	const QString getRangeConfigDefaultValue(const QString& key);
+
 	/************************************************************************/
 	/* 阈值配置操作                                                         */
 	/************************************************************************/
+
 	/*通过键获取阈值配置值*/
 	const QString getThresholdConfigValue(const QString& key);
 
@@ -721,9 +827,14 @@ public:
 
 	/*获取阈值配置说明*/
 	const QStringList& getThresholdConfigExplain();
+
+	/*获取阈值默认值*/
+	const QString getThresholdConfigDefaultValue(const QString& key);
+
 	/************************************************************************/
 	/* 图像配置操作                                                         */
 	/************************************************************************/
+
 	/*获取已解析的图像配置*/
 	const imageConfig_t& getParsedImageConfig();
 
@@ -733,11 +844,13 @@ public:
 	/*获取父图像键列表*/
 	const QStringList getParentImageKeyList();
 
+	/*设置子图像键列表下标*/
 	void setChildImageKeyListSubscript(const int& subscript);
 
-	/*获取子图像键列表*/
+	/*获取子图像键列表[重载1]*/
 	const QStringList getChildImageKeyList(const int& id);
 
+	/*获取子图像键列表[重载2]*/
 	const QStringList& getChildImageKeyList();
 
 	/*获取子图像配置值*/
@@ -749,10 +862,12 @@ public:
 	/*设置图像配置值*/
 	bool setImageConfigValue(const QString& parentKey, const QString& childKey, const QString& value);
 
-	/*获取图像配置说明*/
+	/*获取图像配置说明[重载1]*/
 	const QStringList getImageConfigExplain(const int& i);
 
+	/*获取图像配置说明[重置2]*/
 	const QStringList& getImageConfigExplain();
+
 	/************************************************************************/
 	/* 启用配置操作                                                         */
 	/************************************************************************/
@@ -773,6 +888,9 @@ public:
 
 	/*获取启用配置说明*/
 	const QStringList& getEnableConfigExplain();
+
+	/*获取启用配置默认值*/
+	const QString getEnableConfigDefaultValue(const QString& key);
 
 	/************************************************************************/
 	/* 获取以上总配置                                                       */
@@ -830,10 +948,10 @@ public:
 	/*获取按键电压配置说明*/
 	const QStringList& getKeyVolConfigExplain();
 
-	/*按键电压*/
 	/************************************************************************/
 	/* 电流配置操作                                                         */
 	/************************************************************************/
+
 	/*获取父电流配置键列表*/
 	const QStringList getParentCurrentConfigKeyList();
 
@@ -863,6 +981,7 @@ public:
 
 	/*获取电流配置说明*/
 	const QStringList& getCurrentConfigExplain();
+
 	/************************************************************************/
 	/* 静态电流配置操作                                                     */
 	/************************************************************************/
@@ -888,6 +1007,7 @@ public:
 	/************************************************************************/
 	/* 电阻配置操作                                                         */
 	/************************************************************************/
+
 	/*获取父电阻配置键*/
 	const QStringList getParentResConfigKeyList();
 
@@ -918,12 +1038,14 @@ public:
 	/************************************************************************/
 	/* 获取以上总配置                                                       */
 	/************************************************************************/
+
 	/*获取已解析的硬件检测信息配置*/
 	HwdConfig* getParsedHwdConfig();
 
 	/************************************************************************/
 	/* 版本配置操作                                                          */
 	/************************************************************************/
+
 	/*获取版本配置数量*/
 	const int getVerConfigCount();
 
@@ -954,6 +1076,7 @@ public:
 	/************************************************************************/
 	/* 诊断故障码配置操作                                                   */
 	/************************************************************************/
+
 	/*获取故障码配置数量*/
 	const int getDtcConfigCount();
 
@@ -984,12 +1107,14 @@ public:
 	/************************************************************************/
 	/* 获取以上总配置                                                       */
 	/************************************************************************/
+
 	/*获取已解析的UDS信息配置*/
 	UdsConfig* getParsedUdsConfig();
 
 	/************************************************************************/
 	/* CanSender配置,此配置为预留配置,后期使用在做处理                      */
 	/************************************************************************/
+
 	/*获取CAN报文数量*/
 	const int getCanMsgCount();
 
@@ -1011,6 +1136,17 @@ public:
 	/*获取CAN报文JSON配置对象*/
 	QJsonObject& getCanMsgObj();
 
+	/*设置跳过项目*/
+	void setSkipItem(const SkipItem& item, bool skip);
+
+	/*获取跳过项目*/
+	bool getSkipItem(const SkipItem& item);
+
+	/*删除跳过符号*/
+	void deleteSkipSymbol(QString& code);
+
+	/*获取跳过条码*/
+	bool getSkipCode();
 protected:
 	/*设置错误*/
 	void setLastError(const QString& error);
@@ -1045,6 +1181,7 @@ protected:
 	/************************************************************************/
 	/* 硬件检测配置                                                         */
 	/************************************************************************/
+
 	/*解析电压配置*/
 	bool parseVoltageConfigData();
 
@@ -1063,6 +1200,7 @@ protected:
 	/************************************************************************/
 	/* UDS检测配置                                                          */
 	/************************************************************************/
+
 	/*解析版本配置*/
 	bool parseVerConfigData();
 
@@ -1075,6 +1213,7 @@ protected:
 	/************************************************************************/
 	/* CanSender配置                                                        */
 	/************************************************************************/
+
 	bool parseCanMsgData();
 
 private:
@@ -1095,11 +1234,11 @@ private:
 		"未知",
 		"GuangQiA56",//0
 		"ZLG",//1
-		"MV800",
+		"ANY",
 		"1",
-		"1",
-		"ABC",
-		"6"
+		"0",
+		"NULL",
+		"0"
 	};
 
 	/*硬件配置键列表*/
@@ -1126,23 +1265,23 @@ private:
 
 	/*硬件配置值列表*/
 	QStringList m_hardwareConfigValueList{
-		"4",//2
+		"1",//2
 		"19200",//3
 		"12.0",//4
 		"1.0",
-		"5",//6
+		"2",//6
 		"19200",//7
-		"2",//8
+		"3",//8
 		"9600",//9	
-		"3",//10
+		"4",//10
 		"9600",//11
-		"6",//12
+		"5",//12
 		"9600",//13
-		"7",//14
+		"6",//14
 		"9600",//15
-		"8",//16
+		"7",//16
 		"9600",//17
-		"9",
+		"8",
 		"9600"
 	};
 
@@ -1200,7 +1339,6 @@ private:
 	/*ROOT用户权限0,用于此程序开发者*/
 	/*INVO用户权限1,用于现场调试者*/
 	/*TEST用户权限2,用于作业员*/
-
 	QStringList m_userConfigKeyList = {
 		"用户名",
 		"密码"
@@ -1240,28 +1378,31 @@ private:
 
 	/*子图像值列表*/
 	QStringList m_childImageValueList[IMAGE_CHECK_COUNT] = {
-		{"!=黑色","201","212","85","100","55","20","50","80"},
-		{"!=黑色","255","255","255","100","75","380","40","60"},
-		{"!=黑色","176","58","177","100","5","100","40","180"},
-		{"!=黑色","164","78","7","100","120","130","40","180"},
-		{"!=黑色","153","212","81","100","320","80","110","250"},
-		{"!=黑色","113","50","34","100","300","50","110","250"},
-		{"!=黑色","100","108","30","18","96","88","10","25"},
-		{"!=黑色","168","55","66","77","88","100","99","68"},
+		{"!=黑色","201","212","85","100","80","48","64","76"},
+		{"!=黑色","255","255","255","100","88","352","51","67"},
+		{"!=黑色","176","58","177","100","4","147","53","159"},
+		{"!=黑色","164","78","7","100","155","149","60","157"},
+		{"!=黑色","153","212","81","100","391","130","148","114"},
+		{"!=黑色","113","50","34","100","391","130","148","114"},
+		{"!=黑色","100","108","30","18","391","130","148","114"},
+		{"!=黑色","168","55","66","77","391","130","148","114"},
 		{"1","1","1","0"}
 	};
 
+	/*子图像下标*/
 	int m_childImageSubscript = 0;
 
 	/*阈值键列表*/
-	QStringList m_thresholdKeyList =
+	QStringList m_thresholdConfigKeyList =
 	{
+		"启动延时",
 		"CAN唤醒电流",
 		"CAN休眠电流"
 	};
 
 	/*阈值值列表*/
-	QStringList m_thresholdValueList = {
+	QStringList m_thresholdConfigValueList = {
+		"15000",
 		"0.3",
 		"0.005"
 	};
@@ -1360,6 +1501,10 @@ private:
 	/*CanSender配置*/
 	QJsonObject m_canMsgObj;
 
+	/*CAN报文数组*/
 	CanMsg m_canMsg[MAX_MSG_COUNT] = { 0 };
+
+	/*跳过项目容器*/
+	QVector<bool> m_skipItemVec = QVector<bool>(256, false);
 };
 

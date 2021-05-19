@@ -73,7 +73,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="MainDlg.qrc">:/images/Resources/images/error.png</pixmap>
+          <pixmap resource="Resource.qrc">:/images/Resources/images/error.png</pixmap>
          </property>
          <property name="scaledContents">
           <bool>true</bool>
@@ -146,8 +146,8 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="MainDlg.qrc"/>
-  <include location="MainDlg.qrc"/>
+  <include location="Resource.qrc"/>
+  <include location="Resource.qrc"/>
  </resources>
  <connections/>
 </ui>

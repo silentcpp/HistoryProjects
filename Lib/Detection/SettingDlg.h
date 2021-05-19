@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QMessageBox>
 #include <QTimer>
+#include <QTreeWidgetItem>
 #include "JsonTool.h"
 #include "GeneratedFiles/ui_SettingDlg.h"
 #include "CanMatrix.hpp"
@@ -32,8 +33,6 @@ public:
 	bool setAuthDlg(const int& flag = 1);
 
 	bool initInstance();
-
-	void setAppName(const QString& name);
 
 	void setIsExistDlg(bool* existDlg);
 
@@ -127,6 +126,8 @@ signals:
 	void setAuthDlgSignal(bool* result, const int& flag);
 
 	void addCanTableItemSignal(const char* type, const MsgNode& msg);
+
+	void restartSignal(const QString& name);
 private:
 	Ui::SettingDlg ui;
 
@@ -135,8 +136,6 @@ private:
 	JsonTool* m_jsonTool = nullptr;
 
 	QString m_lastError = "No Error";
-
-	QString m_name = "Name";
 
 	bool m_configItemOpen = false;
 

@@ -14,14 +14,14 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 	return TRUE;
 }
 
-bool ScanCodeDlg::sendCode(const QString& code)
+bool ScanCodeDlg::sendCode()
 {
 	bool result = false;
 	do
 	{
-		if (code.mid(0, 2) == "$^")
+		if (JsonTool::getInstance()->getSkipCode() ||
+			JsonTool::getInstance()->getSkipItem(SI_MES))
 		{
-			g_code = code.mid(2, code.length() - 2);
 			this->hide();
 			g_threadWait = false;
 			result = true;
@@ -37,8 +37,8 @@ bool ScanCodeDlg::sendCode(const QString& code)
 		COPYDATASTRUCT cds;
 		memset(&cds, 0x00, sizeof(cds));
 		cds.dwData = WT_VERIFY_TEST;
-		cds.cbData = code.length() + 1;
-		QByteArray byteArray = code.toLatin1();
+		cds.cbData = m_code.length() + 1;
+		QByteArray byteArray = m_code.toLatin1();
 		char* byte = byteArray.data();
 		cds.lpData = byte;
 		HWND sender = (HWND)effectiveWinId();
@@ -101,27 +101,32 @@ bool ScanCodeDlg::eventFilter(QObject* obj, QEvent* event)
 	return QObject::eventFilter(obj, event);
 }
 
-bool ScanCodeDlg::judgeCode(const QString& code)
+bool ScanCodeDlg::judgeCode()
 {
 	bool result = false;
 	do
 	{
-		if (!m_deviceConfig.codeLength.toInt() && m_deviceConfig.codeJudge == "NULL")
+		if (JsonTool::getInstance()->getSkipCode())
 		{
 			result = true;
 			break;
 		}
 
-		QString temp = code;
-		if (temp.mid(0, 2) == "$^")
+		JsonTool::getInstance()->deleteSkipSymbol(m_code);
+		if (m_deviceConfig.codeJudge == "NULL")
 		{
-			temp = temp.mid(2, temp.length() - 2);
+			if (m_code.length() != m_deviceConfig.codeLength.toInt())
+			{
+				break;
+			}
 		}
-
-		if (temp.length() != m_deviceConfig.codeLength.toInt()
-			|| temp.mid(0, m_deviceConfig.codeJudge.length()) != m_deviceConfig.codeJudge)
+		else
 		{
-			break;
+			if (m_code.length() != m_deviceConfig.codeLength.toInt()
+				|| m_code.mid(0, m_deviceConfig.codeJudge.length()) != m_deviceConfig.codeJudge)
+			{
+				break;
+			}
 		}
 		result = true;
 	} while (false);
@@ -136,7 +141,7 @@ bool ScanCodeDlg::nativeEvent(const QByteArray& eventType, void* message, long* 
 		COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(msg->lParam);
 		if (cds->dwData == QR_OK)
 		{
-			g_code = ui.codeLine->text();
+			g_code = m_code;
 			this->hide();
 			g_threadWait = false;
 		}
@@ -211,13 +216,14 @@ void ScanCodeDlg::returnPressedSlot()
 	this->hide();
 	g_threadWait = false;
 #else
-	if (!judgeCode(ui.codeLine->text()))
+	m_code = ui.codeLine->text();
+	if (!judgeCode())
 	{
 		ui.titleLabel->setText("条码格式错误");
 		goto clear;
 	}
 	
-	if (!sendCode(ui.codeLine->text()))
+	if (!sendCode())
 	{
 		ui.titleLabel->setText("发送到采集端失败,请开启采集软件");
 		goto clear;

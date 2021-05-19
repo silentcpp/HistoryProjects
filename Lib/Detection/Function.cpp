@@ -68,8 +68,15 @@ bool Fnc::GAC::writeSet(const uchar& value)
 	bool result = false;
 	do 
 	{
-		uchar data[1] = { value };
-		RUN_BREAK(!writeDataByDid(0x01, 0x10, 1, data), "写入工厂设置失败," + getLastError());
+		uchar data[1] = { 0 };
+		int size = 0;
+		RUN_BREAK(!readDataByDid(0x01, 0x10, &size, data), "读取工厂设置失败," + getLastError());
+		RUN_BREAK(size != 1, "工厂设置字节长度错误");
+		if (data[0] != value)
+		{
+			data[0] = value;
+			RUN_BREAK(!writeDataByDid(0x01, 0x10, 1, data), "写入工厂设置失败," + getLastError());
+		}
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入工厂设置", OK_NG(result));
@@ -113,7 +120,7 @@ bool Fnc::GAC::generateSn(uchar* data, int* const size)
 /************************************************************************/
 Fnc::BAIC::BAIC(QObject* parent)
 {
-	setSysStatusMsg(DvrTypes::SSM_BAIC);
+	setSysStatusMsg(DvrTypes::SSM_BAIC_C62X);
 	setSystemStatus(DvrTypes::SS_GENERAL_RECORD);
 	setAddressPort("10.0.0.10", 2000);
 }
@@ -156,7 +163,7 @@ bool Fnc::BAIC::checkSn()
 		const QString code = g_code.mid(10, 11);
 		int size = 0;
 		char data[32] = { 0 };
-		RUN_BREAK(!m_udsApplyMgr->SafeReadDataByIdentifier(0xf1, 0x8c, &size, (uchar*)data), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &size, (uchar*)data), "读取序列号失败," + getUdsLastError());
 
 		//A512E01905L051800002XA00087710
 		//L051800002X
@@ -184,10 +191,10 @@ bool Fnc::BAIC::checkRecord()
 		bool success = false, trigger = false;
 		size_t&& startTime = GetTickCount();
 		MsgNode msgNode[512] = { 0 };
-		m_canConnMgr->ClearRecBuffer();
+		m_canTransfer->ClearRecBuffer();
 		while (true)
 		{
-			int size = m_canConnMgr->QuickReceive(msgNode, 512, 100);
+			int size = m_canTransfer->QuickReceive(msgNode, 512, 100);
 			for (int i = 0; i < size; i++)
 			{
 				if (msgNode[i].id == 0x5A0)
@@ -227,7 +234,7 @@ bool Fnc::BAIC::checkRecord()
 /************************************************************************/
 Fnc::CHJAutoMotive::CHJAutoMotive(QObject* parent)
 {
-	setSysStatusMsg(DvrTypes::SSM_CHJ);
+	setSysStatusMsg(DvrTypes::SSM_CHJ_M01);
 	setAddressPort("192.168.42.1", 2000); 
 }
 
@@ -272,8 +279,19 @@ bool Fnc::CHJAutoMotive::checkSn()
 		uchar readData[32] = { 0 }, cmpData[32] = { 0 };
 		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &size, readData), "读取序列号失败," + getUdsLastError());
 		RUN_BREAK(size != 16, "序列号长度错误");
-		sprintf((char*)cmpData, "M01 %s", Q_TO_C_STR(g_code.right(10)));
-		RUN_BREAK(memcmp(readData, cmpData, 16), "序列号对比失败");
+		if (TYPE_NAME_IS("M01"))
+		{
+			sprintf((char*)cmpData, "M01 %s", Q_TO_C_STR(g_code.right(10)));
+		}
+		else if (TYPE_NAME_IS("M01B"))
+		{
+			sprintf((char*)cmpData, "M01B %s", Q_TO_C_STR(g_code.right(10)));
+		}
+		else
+		{
+			RUN_BREAK(true, "机种名称,必须为M01或M01B,请重新设置机种名称");
+		}
+		RUN_BREAK(memcmp(readData, cmpData, 16), "校验序列号失败");
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 检测序列号", OK_NG(result));
@@ -310,11 +328,40 @@ bool Fnc::CHJAutoMotive::checkRecord(const ulong& timeout)
 	bool result = false, success = false;
 	do
 	{
-		RUN_BREAK(!setSoundLight(true), "打开音响和灯光失败");
 		addListItem("检测紧急录制中,请耐心等待...");
-		m_canSender.AddMsg({ 0x39a,8,{0,0,0,0,2} }, 100);
-		success = autoProcessStatus(DvrTypes::SS_HARDWARE_KEY, timeout);
-		m_canSender.DeleteOneMsg(0x39a);
+		//if (GET_TYPE_NAME().contains("M01"))
+		//{
+		//	RUN_BREAK(!setLight(true), "打开灯光失败");
+		//}
+		//else
+		{
+			RUN_BREAK(!setSoundLight(true), "打开音响和灯光失败");
+		}
+
+		if (TYPE_NAME_IS("M01B"))
+		{
+			m_canSender.AddMsg({ 0x095,8,{0,0,0,2} }, 20);
+			success = autoProcessStatus(DvrTypes::SS_CRASH_KEY, timeout);
+			m_canSender.DeleteOneMsg(0x095);
+		}
+		else if (TYPE_NAME_IS("M01"))
+		{
+			m_canSender.AddMsg({ 0x39a,8,{0,0,0,0,2} }, 100);
+			success = autoProcessStatus(DvrTypes::SS_HARDWARE_KEY, timeout);
+			m_canSender.DeleteOneMsg(0x39a);
+		}
+		else
+		{
+			addListItem("未设置正确的机种名称,无法触发紧急录制,请进入设置界面设置");
+			RUN_BREAK(!success, "机种名称,必须为M01或M01B,请重新设置机种名称");
+		}
+
+		//if (GET_TYPE_NAME().contains("M01"))
+		//{
+		//	msleep(3000); 
+		//	RUN_BREAK(!setSound(true), "打开音响失败");
+		//}
+
 		addListItem(Q_SPRINTF("触发紧急录制 %s", OK_NG(success)));
 		RUN_BREAK(!success, "触发紧急录制失败");
 		result = true;
@@ -417,5 +464,35 @@ bool Fnc::CHJAutoMotive::getWifiInfo(bool rawData, bool showLog)
 		result = true;
 	}
 	while (false);
+	return result;
+}
+
+//五菱
+Fnc::SGMW::SGMW(QObject* parent)
+{
+
+}
+
+Fnc::SGMW::~SGMW()
+{
+
+}
+
+bool Fnc::SGMW::checkSn()
+{
+	bool result = false;
+	setCurrentStatus("检测序列号");
+	do 
+	{
+		uchar data[12] = { 0 };
+		int size = 0;
+		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &size, data), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(size != 7, "序列号长度错误");
+		QString cmp = g_code.right(10).left(2) + g_code.right(4);
+		RUN_BREAK(!QString((const char*)data).contains(cmp), "校验序列号失败");
+		result = true;
+	} while (false);
+	WRITE_LOG("%s 检测序列号", OK_NG(result));
+	addListItemEx(Q_SPRINTF("检测序列号 %s", OK_NG(result)));
 	return result;
 }

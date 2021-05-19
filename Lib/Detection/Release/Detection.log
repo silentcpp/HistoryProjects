@@ -1,2 +1,20 @@
-﻿  Types.cpp
+﻿  AuthDlg.cpp
+  DownloadDlg.cpp
+  Function.cpp
+  Hardware.cpp
+  MainDlg.cpp
+  ScanCodeDlg.cpp
+  SettingDlg.cpp
+  UnlockDlg.cpp
+  UpdateDlg.cpp
+  moc_AuthDlg.cpp
+  moc_DownloadDlg.cpp
+  moc_Function.cpp
+  moc_Hardware.cpp
+  moc_MainDlg.cpp
+  moc_ScanCodeDlg.cpp
+  moc_SettingDlg.cpp
+  moc_UnlockDlg.cpp
+  moc_UpdateDlg.cpp
+  qrc_Resource.cpp
   Detection.vcxproj -> E:\Silence\Lib\Release\Detection.lib

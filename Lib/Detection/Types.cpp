@@ -43,11 +43,25 @@ bool Misc::cvImageToQtImage(IplImage* cv, QImage* qt)
 	do
 	{
 		if (!cv || !qt)
-		{
 			break;
-		}
+
 		cvCvtColor(cv, cv, CV_BGR2RGB);
 		*qt = QImage((uchar*)cv->imageData, cv->width, cv->height, cv->widthStep, QImage::Format_RGB888);
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool Misc::cvImageToQtImage(Mat* mat, QImage* qt)
+{
+	bool result = false;
+	do
+	{
+		if (!mat || !qt)
+			break;
+
+		cvtColor(*mat, *mat, CV_BGR2RGB);
+		*qt = QImage(mat->data, mat->cols, mat->rows, QImage::Format_RGB888);
 		result = true;
 	} while (false);
 	return result;
@@ -366,6 +380,25 @@ const char* Misc::qstringToMultiByte(const QString& str)
 	return result;
 }
 
+bool Misc::createShortcut()
+{
+	QString typeName = GET_TYPE_NAME();
+	if (typeName == "Î´Öª")
+		return false;
+
+	QString fileName = typeName + GET_DT_TYPE() + QString("¼ì²â[") + getAppVersion() + QString("].lnk");
+	QString linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "\\" + fileName;
+
+	if (QDir(linkPath).exists())
+		return true;
+
+	wchar_t temp[512] = { 0 };
+	GetModuleFileNameW(NULL, temp, sizeof(temp));
+	QString fileFullPath = WC_TO_Q_STR(temp, sizeof(temp));
+	QFile app(fileFullPath);
+	return app.link(linkPath);
+}
+
 bool Misc::saveBitmapToFile(HBITMAP hBitmap, const QString& fileName)
 {
 	HDC     hDC;
@@ -464,6 +497,14 @@ bool Misc::saveBitmapToFile(HBITMAP hBitmap, const QString& fileName)
 	GlobalFree(hDib);
 	CloseHandle(fh);
 	return true;
+}
+
+bool Misc::ping(const char* address, const int& times)
+{
+	QProcess process;
+	process.start(Q_SPRINTF("ping %s -n %d", address, times));
+	process.waitForFinished();
+	return process.exitCode() == 0;
 }
 
 /*

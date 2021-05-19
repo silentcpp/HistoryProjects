@@ -6,11 +6,32 @@
 #include <QApplication>
 #include <QVector>
 
-#include "JsonTool.h"
-
 class QLabelEx : public QLabel
 {
 	Q_OBJECT
+public:
+	QLabelEx(QWidget* parent = nullptr);
+	
+	~QLabelEx();
+	
+	void enableDebug(bool debug);
+
+	void getCoordinate(QVector<QPoint>* start, QVector<QPoint>* end);
+
+	void clearCoordinate();
+
+protected:
+	void paintEvent(QPaintEvent* paintEvent);
+
+	void mousePressEvent(QMouseEvent* event);
+	
+	void mouseReleaseEvent(QMouseEvent* event);
+	
+	void mouseMoveEvent(QMouseEvent* event);
+
+signals:
+	void coordinateSignal(const QPoint& point);
+
 private:
 	bool m_debug = true;
 
@@ -27,23 +48,4 @@ private:
 	QVector<QPoint> m_startCoord;
 	
 	QVector<QPoint> m_endCoord;
-protected:
-	void paintEvent(QPaintEvent* paintEvent);
-
-	void mousePressEvent(QMouseEvent* event);
-	
-	void mouseReleaseEvent(QMouseEvent* event);
-	
-	void mouseMoveEvent(QMouseEvent* event);
-public:
-	QLabelEx(QWidget* parent = nullptr);
-	
-	~QLabelEx();
-	
-	void enableDebug(bool debug);
-
-	void getCoordinate(QVector<QPoint>* start, QVector<QPoint>* end);
-
-signals:
-	void coordinateSignal(const QPoint& point);
 };

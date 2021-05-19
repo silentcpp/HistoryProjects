@@ -48,11 +48,11 @@ protected:
 	
 	virtual bool eventFilter(QObject* obj, QEvent* event);
 
-	bool judgeCode(const QString& code);
+	bool judgeCode();
 	
 	bool nativeEvent(const QByteArray& eventType, void* message, long* result);
 	
-	bool sendCode(const QString& code);
+	bool sendCode();
 private slots:
 	void returnPressedSlot();
 private:
@@ -61,4 +61,6 @@ private:
 	const DeviceConfig& m_deviceConfig;
 
 	QLabel m_minimize;
+
+	QString m_code;
 };

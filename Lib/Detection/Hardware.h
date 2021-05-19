@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 //兼容旧的MsgNode结构体
 //如果在你的项目中报错,未定义_MsgNode.xxxx
 //需要在你的项目中#define USE_NEW_MSG_NODE
@@ -52,6 +56,22 @@ namespace Hwd {
 		explicit CHJAutoMotive(QObject* parent = nullptr) {};
 
 		~CHJAutoMotive() {};
+	protected:
+		virtual void run() = 0;
+	private:
+	};
+
+	//五菱
+	class SGMW :public Dt::Hardware {
+		Q_OBJECT
+	public:
+		explicit SGMW(QObject* parent = nullptr) {};
+
+		~SGMW() {}
+
+		bool writeSn();
+
+		bool writeDate();
 	protected:
 		virtual void run() = 0;
 	private:

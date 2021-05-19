@@ -20,6 +20,12 @@ void QLabelEx::getCoordinate(QVector<QPoint>* start, QVector<QPoint>* end)
 	*end = m_endCoord;
 }
 
+void QLabelEx::clearCoordinate()
+{
+	m_startCoord.clear();
+	m_endCoord.clear();
+}
+
 void QLabelEx::mousePressEvent(QMouseEvent* event)
 {
 	if (!m_debug)

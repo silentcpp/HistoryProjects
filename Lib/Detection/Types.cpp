@@ -18,7 +18,7 @@ bool Misc::writeRunError(const QString& error)
 	bool result = false;
 	do
 	{
-		QString path = QString(".\\%1\\RUN\\").arg(GET_DT_DIR());
+		QString path = QString(".\\%1\\RUN\\").arg(GET_LOG_DIR());
 		if (!Misc::makePath(path))
 		{
 			break;
@@ -52,19 +52,21 @@ bool Misc::cvImageToQtImage(IplImage* cv, QImage* qt)
 	return result;
 }
 
-bool Misc::cvImageToQtImage(Mat* mat, QImage* qt)
+bool Misc::cvImageToQtImage(const Mat& mat, QImage& image)
 {
-	bool result = false;
-	do
+	if (mat.empty())
 	{
-		if (!mat || !qt)
-			break;
+		image = QImage();
+		return false;
+	}
 
-		cvtColor(*mat, *mat, CV_BGR2RGB);
-		*qt = QImage(mat->data, mat->cols, mat->rows, QImage::Format_RGB888);
-		result = true;
-	} while (false);
-	return result;
+	cv::Mat temp;
+	cv::cvtColor(mat, temp, CV_BGR2RGB);
+
+	image = QImage(temp.data, temp.cols, temp.rows, QImage::Format_RGB888).
+		copy(0, 0, temp.cols, temp.rows);
+
+	return true;
 }
 
 const QString Misc::getFileNameByUrl(const QString& url)
@@ -207,7 +209,10 @@ bool Misc::renameAppByVersion(QWidget* widget)
 		}
 
 		QString title, newName;
-		title = newName = QString("%1%2检测[%3]").arg(device.modelName, GET_DT_TYPE(), Misc::getAppVersion());
+		title = newName = QString("%1%2[%3]").arg(device.modelName,
+			Dt::Base::getDetectionName(),
+			Misc::getAppVersion());
+
 		title = QString("%1[权限:%3]").arg(title, user);
 
 		widget->setWindowTitle(title);
@@ -224,7 +229,7 @@ bool Misc::renameAppByVersion(QWidget* widget)
 	return result;
 }
 
-bool Misc::startApp(const QString& name, const int& show, bool absolutely)
+bool Misc::startApp(const QString& name, int show, bool absolutely)
 {
 	bool result = false;
 	do
@@ -274,6 +279,13 @@ bool Misc::finishApp(const QString& name)
 		result = true;
 	} while (false);
 	return result;
+}
+
+const SYSTEMTIME Misc::getLocalTime()
+{
+	SYSTEMTIME sysTime;
+	::GetLocalTime(&sysTime);
+	return sysTime;
 }
 
 const QString Misc::getCurrentTime(bool fileFormat)
@@ -386,7 +398,8 @@ bool Misc::createShortcut()
 	if (typeName == "未知")
 		return false;
 
-	QString fileName = typeName + GET_DT_TYPE() + QString("检测[") + getAppVersion() + QString("].lnk");
+	QString fileName = typeName + Dt::Base::getDetectionName() + 
+		QString("检测[") + getAppVersion() + QString("].lnk");
 	QString linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "\\" + fileName;
 
 	if (QDir(linkPath).exists())
@@ -399,112 +412,145 @@ bool Misc::createShortcut()
 	return app.link(linkPath);
 }
 
-bool Misc::saveBitmapToFile(HBITMAP hBitmap, const QString& fileName)
-{
-	HDC     hDC;
-	//当前分辨率下每象素所占字节数          
-	int     iBits;
-	//位图中每象素所占字节数          
-	WORD     wBitCount;
-	//定义调色板大小，     位图中像素字节大小     ，位图文件大小     ，     写入文件字节数              
-	DWORD     dwPaletteSize = 0, dwBmBitsSize = 0, dwDIBSize = 0, dwWritten = 0;
-	//位图属性结构              
-	BITMAP     Bitmap;
-	//位图文件头结构          
-	BITMAPFILEHEADER     bmfHdr;
-	//位图信息头结构              
-	BITMAPINFOHEADER     bi;
-	//指向位图信息头结构                  
-	LPBITMAPINFOHEADER     lpbi;
-	//定义文件，分配内存句柄，调色板句柄              
-	HANDLE     fh, hDib, hPal, hOldPal = NULL;
-
-	//计算位图文件每个像素所占字节数              
-	hDC = CreateDC(L"DISPLAY", NULL, NULL, NULL);
-	iBits = GetDeviceCaps(hDC, BITSPIXEL) * GetDeviceCaps(hDC, PLANES);
-	DeleteDC(hDC);
-	if (iBits <= 1)
-		wBitCount = 1;
-	else  if (iBits <= 4)
-		wBitCount = 4;
-	else if (iBits <= 8)
-		wBitCount = 8;
-	else
-		wBitCount = 24;
-
-	GetObject(hBitmap, sizeof(Bitmap), (LPSTR)&Bitmap);
-	bi.biSize = sizeof(BITMAPINFOHEADER);
-	bi.biWidth = Bitmap.bmWidth;
-	bi.biHeight = Bitmap.bmHeight;
-	bi.biPlanes = 1;
-	bi.biBitCount = wBitCount;
-	bi.biCompression = BI_RGB;
-	bi.biSizeImage = 0;
-	bi.biXPelsPerMeter = 0;
-	bi.biYPelsPerMeter = 0;
-	bi.biClrImportant = 0;
-	bi.biClrUsed = 0;
-
-	dwBmBitsSize = ((Bitmap.bmWidth * wBitCount + 31) / 32) * 4 * Bitmap.bmHeight;
-
-	//为位图内容分配内存              
-	hDib = GlobalAlloc(GHND, dwBmBitsSize + dwPaletteSize + sizeof(BITMAPINFOHEADER));
-	lpbi = (LPBITMAPINFOHEADER)GlobalLock(hDib);
-	*lpbi = bi;
-
-	//     处理调色板                  
-	hPal = GetStockObject(DEFAULT_PALETTE);
-	if (hPal)
-	{
-		hDC = ::GetDC(NULL);
-		hOldPal = ::SelectPalette(hDC, (HPALETTE)hPal, FALSE);
-		RealizePalette(hDC);
-	}
-
-	//     获取该调色板下新的像素值              
-	GetDIBits(hDC, hBitmap, 0, (UINT)Bitmap.bmHeight,
-		(LPSTR)lpbi + sizeof(BITMAPINFOHEADER) + dwPaletteSize,
-		(BITMAPINFO*)lpbi, DIB_RGB_COLORS);
-
-	//恢复调色板                  
-	if (hOldPal)
-	{
-		::SelectPalette(hDC, (HPALETTE)hOldPal, TRUE);
-		RealizePalette(hDC);
-		::ReleaseDC(NULL, hDC);
-	}
-
-	//创建位图文件                  
-	fh = CreateFileW(Q_TO_WC_STR(fileName), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-
-	if (fh == INVALID_HANDLE_VALUE)
-		return false;
-
-	//     设置位图文件头              
-	bmfHdr.bfType = 0x4D42;     //     "BM"              
-	dwDIBSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + dwPaletteSize + dwBmBitsSize;
-	bmfHdr.bfSize = dwDIBSize;
-	bmfHdr.bfReserved1 = 0;
-	bmfHdr.bfReserved2 = 0;
-	bmfHdr.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER) + dwPaletteSize;
-	//     写入位图文件头              
-	WriteFile(fh, (LPSTR)&bmfHdr, sizeof(BITMAPFILEHEADER), &dwWritten, NULL);
-	//     写入位图文件其余内容              
-	WriteFile(fh, (LPSTR)lpbi, dwDIBSize, &dwWritten, NULL);
-	//清除                  
-	GlobalUnlock(hDib);
-	GlobalFree(hDib);
-	CloseHandle(fh);
-	return true;
-}
-
-bool Misc::ping(const char* address, const int& times)
+bool Misc::ping(const QString& address, int times)
 {
 	QProcess process;
-	process.start(Q_SPRINTF("ping %s -n %d", address, times));
+	process.start(QString("ping %1 -n %2").arg(address).arg(times));
 	process.waitForFinished();
 	return process.exitCode() == 0;
+}
+
+bool Misc::ipLive(const QString& address, int port, int timeout)
+{
+	QTcpSocket tcp;
+	tcp.connectToHost(address, port);
+	return tcp.waitForConnected(timeout);
+}
+
+bool Misc::execute(const QString& cmd, const QStringList& arguments)
+{
+	return (arguments.size() ? QProcess::execute(cmd,arguments):
+		QProcess::execute(cmd)) == 0;
+}
+
+bool Misc::setIpAddress(int netCardId, QString ip, QString mask, QString gateway)
+{
+	bool result = false;
+	do
+	{
+		if (netCardId <= 0)
+		{
+			break;
+		}
+
+		QStringList adapterNameList, descriptionList, ipList, maskList, gatewayList;
+
+		ULONG adapterSize = sizeof(IP_ADAPTER_INFO);
+		PIP_ADAPTER_INFO adapterInfo = (PIP_ADAPTER_INFO)new char[adapterSize];
+
+		if (GetAdaptersInfo(adapterInfo, &adapterSize) == ERROR_BUFFER_OVERFLOW)
+		{
+			delete adapterInfo;
+			adapterInfo = (PIP_ADAPTER_INFO)new char[adapterSize];
+		}
+
+		if (GetAdaptersInfo(adapterInfo, &adapterSize) != ERROR_SUCCESS)
+		{
+			break;
+		}
+		do
+		{
+			if (adapterInfo->Type == MIB_IF_TYPE_ETHERNET)
+			{
+				if (strstr(adapterInfo->Description, "PCI"))
+				{
+					auto addressPtr = &adapterInfo->IpAddressList;
+					while (addressPtr)
+					{
+						ipList.append(addressPtr->IpAddress.String);
+						maskList.append(addressPtr->IpMask.String);
+						auto gatewayPtr = &adapterInfo->GatewayList;
+						while (gatewayPtr)
+						{
+							gatewayList.append(gatewayPtr->IpAddress.String);
+							gatewayPtr = gatewayPtr->Next;
+						}
+						addressPtr = addressPtr->Next;
+					}
+
+					adapterNameList.append(adapterInfo->AdapterName);
+					descriptionList.append(adapterInfo->Description);
+				}
+			}
+			adapterInfo = adapterInfo->Next;
+		} while (adapterInfo);
+		delete[] adapterInfo;
+
+		if (adapterNameList.size() <= 0)
+		{
+			break;
+		}
+
+		//if (netCardId > adapterNameList.size())
+		//{
+		//	break;
+		//}
+
+		int index = 1;
+		if (netCardId != 1)
+		{
+			index = 0;
+			for (auto x : descriptionList)
+			{
+				if (x.contains(Q_SPRINTF("#%d", netCardId)))
+				{
+					break;
+				}
+				index++;
+			}
+		}
+
+		if (ipList.at(index - 1) == ip &&
+			maskList.at(index - 1) == mask &&
+			gatewayList.at(index - 1) == gateway)
+		{
+			result = true;
+			break;
+		}
+
+		QString subKey = QString("SYSTEM\\ControlSet001\\Control\\Network\\"
+			"{4D36E972-E325-11CE-BFC1-08002BE10318}\\%1\\Connection")
+			.arg(adapterNameList.at(index));
+
+		HKEY key = nullptr;
+		LSTATUS status = RegOpenKeyExW(HKEY_LOCAL_MACHINE, Q_TO_WC_STR(subKey), 0,
+			KEY_READ, &key);
+
+		if (status != ERROR_SUCCESS)
+		{
+			break;
+		}
+
+		wchar_t data[512] = { 0 };
+		DWORD size = 512;
+		status = RegQueryValueExW(key, L"Name", 0, 0, (LPBYTE)data, &size);
+		if (status != ERROR_SUCCESS)
+		{
+			RegCloseKey(key);
+			break;
+		}
+		RegCloseKey(key);
+
+		QString cmd = QString("netsh interface ip set address name=\"%1\" "
+			"source=static %2 %3 %4").arg(WC_TO_Q_STR(data)).arg(ip, mask, gateway);
+
+		if (!Misc::execute(cmd))
+		{
+			break;
+		}
+		result = true;
+	} while (false);
+	return result;
 }
 
 /*

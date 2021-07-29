@@ -213,10 +213,21 @@ void MainDlg::settingButtonSlot()
 
 void MainDlg::connectButtonSlot()
 {
+	if (!m_connected)
+	{
+		if (!m_base->openDevice())
+		{
+			return;
+		}
+	}
+	else
+	{
+		m_base->closeDevice();
+	}
+
 	ui.connectButton->setEnabled(false);
 	ui.connectButton->setIcon(!m_connected ? QIcon(":/images/Resources/images/disconnect.ico") :
 		QIcon(":/images/Resources/images/connect.ico"));
-	!m_connected ? m_base->openDevice() : m_base->closeDevice();
 	ui.connectButton->setEnabled(true);
 	ui.exitButton->setEnabled(m_connected);
 	m_base->setTestSequence(!m_connected ? TS_SCAN_CODE : TS_NO);
@@ -284,7 +295,7 @@ void MainDlg::setCurrentStatusSlot(const QString& status, bool systemStatus)
 	systemStatus ? ui.systemLabel->setText(status) : ui.statusLabel->setText(status);
 }
 
-void MainDlg::setTestResultSlot(const BaseTypes::TestResult& testResult)
+void MainDlg::setTestResultSlot(BaseTypes::TestResult testResult)
 {
 	QString result = "NO", color = "black";
 	switch (testResult)

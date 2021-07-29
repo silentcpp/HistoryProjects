@@ -13,7 +13,6 @@
 #include <QDir>
 #include <QFileInfo>
 #include <memory>
-#include <Common/Types.h>
 
 #define GET_JSON() JsonTool::getInstance()
 
@@ -25,7 +24,7 @@ if ((success))\
 }
 
 //框架版本号
-#define LIB_VERSION "1.0.0.8"
+#define LIB_VERSION "1.0.0.9"
 
 //DCF文件版本号
 #define DCF_VERSION "1.0.0.0"
@@ -33,14 +32,14 @@ if ((success))\
 //JSON文件版本号
 #define JSON_VERSION "1.0.0.5"
 
-//跳过MES特殊符号
-#define SKIP_MES_SYMBOL "$^"
-
-//跳过检测序列号特殊符号
-#define SKIP_SN_SYMBOL "&^"
-
-//跳过检测日期特殊符号
-#define SKIP_DATE_SYMBOL "@^"
+////跳过查询工站特殊符号
+//#define SKIP_QS_SYMBOL "$^"
+//
+////跳过检测序列号特殊符号
+//#define SKIP_SN_SYMBOL "&^"
+//
+////跳过检测日期特殊符号
+//#define SKIP_DATE_SYMBOL "@^"
 
 //视频控件宽度
 #define VIDEO_WIDGET_WIDTH 720
@@ -83,20 +82,23 @@ if (X)\
 
 //跳过测试项
 enum SkipItem {
-	//MES
-	SI_MES,
+	//跳过条码判断
+	SI_JC,//JC[JUDGE CODE]
+	
+	//跳过查询工站
+	SI_QS,//QS[QUERY STATION]
 
-	//序列号
+	//跳过序列号
 	SI_SN,
 
-	//日期
+	//跳过日期
 	SI_DATE
 };
 
 /************************************************************************/
 /* 设备配置														*/
 /************************************************************************/
-typedef struct DeviceConfig
+struct DeviceConfig
 {
 	/*机种名*/
 	QString modelName;
@@ -106,6 +108,12 @@ typedef struct DeviceConfig
 
 	/*CAN名称*/
 	QString canName;
+
+	/*CAN波特率*/
+	QString canBaudrate;
+
+	/*CAN拓展帧*/
+	QString canExtFrame;
 
 	/*采集卡名称*/
 	QString cardName;
@@ -121,12 +129,12 @@ typedef struct DeviceConfig
 
 	/*条码长度*/
 	QString codeLength;
-}deviceConfig_t;
+};
 
 /************************************************************************/
 /* 硬件配置                                                             */
 /************************************************************************/
-typedef struct HardwareConfig
+struct HardwareConfig
 {
 	/*电源串口号*/
 	int powerPort;
@@ -181,12 +189,12 @@ typedef struct HardwareConfig
 
 	/*拓展波特率*/
 	int expandBaud4;
-}hardwareConfig_t;
+};
 
 /************************************************************************/
 /* 继电器IO口配置用于JSON                                               */
 /************************************************************************/
-typedef struct RelayConfig {
+struct RelayConfig {
 	/*GND IO口*/
 	int gnd;
 
@@ -216,12 +224,12 @@ typedef struct RelayConfig {
 
 	/*信号灯绿*/
 	int green;
-}relayConfig_t;
+};
 
 /************************************************************************/
 /* 矩形框结构体定义,用于前后左右摄像头和中间大矩形框                    */
 /************************************************************************/
-typedef struct RectConfig
+struct RectConfig
 {
 	/*颜色*/
 	QString color;
@@ -249,17 +257,18 @@ typedef struct RectConfig
 
 	/*高*/
 	int height;
-}rectConfig_t;
+};
 
 #define SMALL_RECT_  4
 
 #define BIG_RECT_ 4
 
 #define IMAGE_CHECK_COUNT  9
+
 /************************************************************************/
 /* 图像配置结构体定义                                                    */
 /************************************************************************/
-typedef struct ImageConfig
+struct ImageConfig
 {
 	/*忽略RGB*/
 	int ignoreRgb;
@@ -274,16 +283,16 @@ typedef struct ImageConfig
 	int saveLog;
 
 	/*小矩形框配置*/
-	rectConfig_t smallRect[SMALL_RECT_];
+	RectConfig smallRect[SMALL_RECT_];
 
 	/*大矩形框配置*/
-	rectConfig_t bigRect[BIG_RECT_];
-}imageConfig_t;
+	RectConfig bigRect[BIG_RECT_];
+};
 
 /************************************************************************/
 /* 范围配置结构体定义                                                   */
 /************************************************************************/
-typedef struct RangeConfig
+struct RangeConfig
 {
 	/*DVR网速速率*/
 	float minNetworkSpeed;
@@ -312,9 +321,9 @@ typedef struct RangeConfig
 	/*最大电流*/
 	float maxCurrent0;
 	float maxCurrent1;
-}rangeConfig_t;
+};
 
-typedef struct ThresholdConfig
+struct ThresholdConfig
 {
 	/*启动延时*/
 	float startDelay;
@@ -324,7 +333,7 @@ typedef struct ThresholdConfig
 
 	/*CAN休眠电流阈值*/
 	float canSleep;
-}thresholdConfig_t;
+};
 
 /*启用配置*/
 struct EnableConfig
@@ -349,6 +358,18 @@ struct EnableConfig
 
 	/*启用信号灯*/
 	int signalLight;
+	
+	//条码判断
+	int codeJudge;
+
+	//查询工站
+	int queryStation;
+
+	//序列号读写
+	int snReadWrite;
+
+	//日期读写
+	int dateReadWrite;
 };
 
 /*默认配置*/
@@ -474,14 +495,14 @@ struct ResConfig
 	char name[HWD_BUF];
 };
 
-typedef struct HwdConfig
+struct HwdConfig
 {
 	VoltageConfig* voltage;
 	ResConfig* res;
 	CurrentConfig* current;
-	StaticConfig	staticCurrent;
-	KeyVolConfig	keyVol;
-}hwdConfig_t;
+	StaticConfig staticCurrent;
+	KeyVolConfig keyVol;
+};
 
 /************************************************************************/
 /* UDS定义                                                              */
@@ -526,40 +547,10 @@ struct DtcConfig
 	char name[HWD_BUF];
 };
 
-typedef struct UdsConfig
+struct UdsConfig
 {
 	VersonConfig* ver;
 	DtcConfig* dtc;
-}udsConfig_t;
-
-
-/************************************************************************/
-/* CanSender定义                                                        */
-/************************************************************************/
-#define MAX_MSG_COUNT 256
-
-enum SendType {
-	ST_Period,
-
-	ST_Event,
-
-	ST_PE,
-};
-
-struct CanMsg {
-	MsgNode msg;
-
-	int delay;
-
-	SendType type;
-
-	int count;
-
-	bool valid;
-
-	int time;
-
-	std::function<void(MsgNode& msg)> fnc;
 };
 
 /************************************************************************/
@@ -591,21 +582,24 @@ public:
 	/*获取错误列表*/
 	const QStringList& getErrorList();
 
+	/*设置文件夹名称*/
+	void setFolderName(const QString& name);
+
 	/*初始化实例*/
 	bool initInstance(bool update = false, const QString& folderName = "Config",
-		const QStringList& fileName = { "def.json","hwd.json","uds.json","can.json","img.json" });
+		const QStringList& fileName = { "def.json","hwd.json","uds.json","img.json","oth.json" });
 
 	/*获取所有主键*/
-	const QStringList getAllMainKey();
+	QStringList getAllMainKey();
 
 	/*获取库版本*/
-	static const QString getLibVersion();
+	static QString getLibVersion();
 
 	/*获取JSON文件版本*/
-	static const QString getJsonVersion();
+	static QString getJsonVersion();
 
 	/*获取DCF文件版本*/
-	static const QString getDcfVersion();
+	static QString getDcfVersion();
 
 	/************************************************************************/
 	/*读写配置文件操作                                                      */
@@ -613,46 +607,59 @@ public:
 
 	bool writeDcfFile(const QString& name);
 
-	bool readFileToJson(const QString& name, QJsonObject& rootObj);
+	bool readJsonFile(const QString& name, QJsonObject& rootObj);
 
-	bool writeJsonToFile(const QString& name, const QJsonObject& rootObj);
+	bool writeJsonFile(const QString& name, const QJsonObject& rootObj);
 
 	/************************************************************************/
 	/* DEF                                                                  */
 	/************************************************************************/
 
 	/*读取json配置文件*/
-	bool testDefJsonFile(const QString& name = QString("def.json"));
+	bool testDefJsonFile(const QString& name = "def.json");
 
 	/*读取json配置文件*/
-	bool readDefJsonFile(const QString& name = QString("def.json"));
+	bool readDefJsonFile(const QString& name = "def.json");
 
 	/*写入默认json配置文件*/
-	bool writeDefJsonFile(const QString& name = QString("def.json"));
+	bool writeDefJsonFile(const QString& name = "def.json");
 
 	/*更新默认json配置文件*/
-	bool updateDefJsonFile(const QString& name = QString("def.json"));
+	bool updateDefJsonFile(const QString& name = "def.json");
 
 	/************************************************************************/
 	/* HWD                                                                  */
 	/************************************************************************/
 	/*读取硬件json配置文件*/
-	bool readHwdJsonFile(const QString& name = QString("hwd.json"));
+	bool readHwdJsonFile(const QString& name = "hwd.json");
 
 	/*写入硬件json配置文件*/
-	bool writeHwdJsonFile(const QString& name = QString("hwd.json"));
+	bool writeHwdJsonFile(const QString& name = "hwd.json");
 
 	/*更新硬件json配置文件*/
-	bool updateHwdJsonFile(const QString& name = QString("hwd.json"));
+	bool updateHwdJsonFile(const QString& name = "hwd.json");
 
 	//IMG
-	bool testImgJsonFile(const QString& name = QString("img.json"));
+	bool testImgJsonFile(const QString& name = "img.json");
 
-	bool readImgJsonFile(const QString& name = QString("img.json"));
+	bool readImgJsonFile(const QString& name = "img.json");
 
-	bool writeImgJsonFile(const QString& name = QString("img.json"));
+	bool writeImgJsonFile(const QString& name = "img.json");
 
-	bool updateImgJsonFile(const QString& name = QString("img.json"));
+	bool updateImgJsonFile(const QString& name = "img.json");
+
+	/*
+	* OTH(other)
+	* @notice,这个是为了给一些以其他的配置,所写入的文件
+	* @example,比如我需要检测一个控制器内部版本号,需要用scp
+	* 将其下载到本地,然后对比文件内部的数据,所对比的正确数据,
+	* 将写入在oth.json中.
+	*/
+	bool readOthJsonFile(const QString& name = "oth.json");
+
+	bool writeOthJsonFile(const QString& name = "oth.json");
+
+	bool updateOthJsonFile(const QString& name = "oth.json");
 
 	/************************************************************************/
 	/* UDS                                                                  */
@@ -665,18 +672,6 @@ public:
 
 	/*更新uds json 配置文件*/
 	bool updateUdsJsonFile(const QString& name = QString("uds.json"));
-
-	/************************************************************************/
-	/* CAN                                                                  */
-	/************************************************************************/
-	/*读取can json 配置文件*/
-	bool readCanJsonFile(const QString& name = QString("can.json"));
-
-	/*写入can json 配置文件*/
-	bool writeCanJsonFile(const QString& name = QString("can.json"));
-
-	/*更新can json 配置文件*/
-	bool updateCanJsonFile(const QString& name = QString("can.json"));
 
 	/************************************************************************/
 	/* 设备配置操作                                                         */
@@ -692,7 +687,7 @@ public:
 	const QStringList& getDeviceConfigKeyList();
 
 	/*获取已解析的设备配置*/
-	const deviceConfig_t& getParsedDeviceConfig();
+	const DeviceConfig& getParsedDeviceConfig();
 
 	/*获取Json对象*/
 	const QJsonObject& getDeviceConfigObj();
@@ -720,7 +715,7 @@ public:
 	const QStringList& getHardwareConfigKeyList();
 
 	/*获取已解析的硬件配置*/
-	const hardwareConfig_t& getParseHardwareConfig();
+	const HardwareConfig& getParseHardwareConfig();
 
 	/*设置硬件配置值*/
 	bool setHardwareConfigValue(const QString& key, const QString& value);
@@ -742,7 +737,7 @@ public:
 	const int getRelayConfigCount();
 
 	/*获取已解析的继电器IO配置*/
-	const relayConfig_t& getParsedRelayConfig();
+	const RelayConfig& getParsedRelayConfig();
 
 	/*获取继电器对象键*/
 	const QStringList& getRelayConfigKeyList();
@@ -795,7 +790,7 @@ public:
 	const QStringList& getRangeConfigKeyList();
 
 	/*获取已解析的范围配置*/
-	const rangeConfig_t& getParsedRangeConfig();
+	const RangeConfig& getParsedRangeConfig();
 
 	/*设置范围配置值*/
 	bool setRangeConfigValue(const QString& key, const QString& value);
@@ -820,7 +815,7 @@ public:
 	const QStringList& getThresholdConfigKeyList();
 
 	/*获取已解析的阈值配置*/
-	const thresholdConfig_t& getParsedThresholdConfig();
+	const ThresholdConfig& getParsedThresholdConfig();
 
 	/*设置阈值配置值*/
 	bool setThresholdConfigValue(const QString& key, const QString& value);
@@ -836,7 +831,7 @@ public:
 	/************************************************************************/
 
 	/*获取已解析的图像配置*/
-	const imageConfig_t& getParsedImageConfig();
+	const ImageConfig& getParsedImageConfig();
 
 	/*获取父图像配置数量*/
 	const int getImageConfigCount();
@@ -1111,42 +1106,23 @@ public:
 	/*获取已解析的UDS信息配置*/
 	UdsConfig* getParsedUdsConfig();
 
-	/************************************************************************/
-	/* CanSender配置,此配置为预留配置,后期使用在做处理                      */
-	/************************************************************************/
+	/*获取其他配置值*/
+	const QString getOthConfigValue(const QString& key);
 
-	/*获取CAN报文数量*/
-	const int getCanMsgCount();
-
-	/*获取CAN报文键列表*/
-	const QStringList getCanMsgKeyList();
-
-	/*获取CAN报文值*/
-	const QString getCanMsgValue(const QString& parentKey, const QString& childKey);
-
-	/*设置CAN报文键*/
-	void setCanMsgKey(const QString& oldParentKey, const QString& newParentKey);
-
-	/*设置CAN报文值*/
-	void setCanMsgValue(const QString& parentKey, const QString& childKey, const QString& value);
-
-	/*获取已解析的CAN报文*/
-	const CanMsg* getParsedCanMsg();
-
-	/*获取CAN报文JSON配置对象*/
-	QJsonObject& getCanMsgObj();
+	/*获取其他配置数量*/
+	const int getOthConfigCount();
 
 	/*设置跳过项目*/
-	void setSkipItem(const SkipItem& item, bool skip);
+	//void setSkipItem(const SkipItem& item, bool skip);
 
 	/*获取跳过项目*/
 	bool getSkipItem(const SkipItem& item);
 
 	/*删除跳过符号*/
-	void deleteSkipSymbol(QString& code);
+	//void deleteSkipSymbol(QString& code);
 
 	/*获取跳过条码*/
-	bool getSkipCode();
+	//bool getSkipCode();
 protected:
 	/*设置错误*/
 	void setLastError(const QString& error);
@@ -1208,20 +1184,21 @@ protected:
 	bool parseDtcConfigData();
 
 	/*DTC种类转换*/
-	const QString dtcCategoryConvert(const QString& dtc);
-
-	/************************************************************************/
-	/* CanSender配置                                                        */
-	/************************************************************************/
-
-	bool parseCanMsgData();
+	QString dtcCategoryConvert(const QString& dtc);
 
 private:
+	/*
+	* @notice,此处如果添加键/值,还需进入结构体中添加变量,
+	* 添加变量需注意,变量类型是否一致,否则将会导致程序崩溃.
+	*/
+
 	/*设备配置键列表*/
 	QStringList m_deviceConfigKeyList = {
 		"机种名称",
 		"UDS名称",//0
 		"CAN名称",//1
+		"CAN波特率",
+		"CAN拓展帧",
 		"采集卡名称",
 		"采集卡通道数",
 		"采集卡通道号",
@@ -1232,10 +1209,12 @@ private:
 	/*设备配置值列表*/
 	QStringList m_deviceConfigValueList = {
 		"未知",
-		"GuangQiA56",//0
+		"GACA56",//0
 		"ZLG",//1
+		"500",
+		"0",
 		"ANY",
-		"1",
+		"2",
 		"0",
 		"NULL",
 		"0"
@@ -1413,9 +1392,13 @@ private:
 		"错误对话框",//2
 		"保存CAN日志",//3
 		"忽略失败",//4
-		"输出运行日志",
-		"保存运行日志",//5
-		"信号灯"
+		"输出运行日志",//5
+		"保存运行日志",//6
+		"信号灯提示",//7
+		"条码判断",//8
+		"查询工站",//9
+		"序列号读写",//10
+		"日期读写"//11
 	};
 
 	/*启用配置值列表*/
@@ -1425,8 +1408,12 @@ private:
 		"0",//3
 		"0",//4
 		"0",//5
-		"0",
-		"0"
+		"0",//6
+		"0",//7
+		"1",//8
+		"1",//9
+		"1",//10
+		"1"//11
 	};
 
 	/*构造*/
@@ -1498,13 +1485,13 @@ private:
 	/*DTC配置*/
 	QJsonObject m_dtcConfigObj;
 
-	/*CanSender配置*/
-	QJsonObject m_canMsgObj;
-
-	/*CAN报文数组*/
-	CanMsg m_canMsg[MAX_MSG_COUNT] = { 0 };
-
 	/*跳过项目容器*/
-	QVector<bool> m_skipItemVec = QVector<bool>(256, false);
+	//QVector<bool> m_skipItemVec = QVector<bool>(256, false);
+
+	/*其他配置*/
+	QJsonObject m_othConfigObj;
+
+	//初始化文件夹名称
+	QString m_folderName;
 };
 

@@ -128,7 +128,7 @@ void Dt::Base::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
         case 2: _t->setMessageBoxExSignal((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< const QPoint(*)>(_a[3]))); break;
         case 3: _t->setQuestionBoxSignal((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< bool*(*)>(_a[3]))); break;
         case 4: _t->setQuestionBoxExSignal((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< bool*(*)>(_a[3])),(*reinterpret_cast< const QPoint(*)>(_a[4]))); break;
-        case 5: _t->setTestResultSignal((*reinterpret_cast< const BaseTypes::TestResult(*)>(_a[1]))); break;
+        case 5: _t->setTestResultSignal((*reinterpret_cast< BaseTypes::TestResult(*)>(_a[1]))); break;
         case 6: _t->setCurrentStatusSignal((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
         case 7: _t->setScanCodeDlgSignal((*reinterpret_cast< bool(*)>(_a[1]))); break;
         case 8: _t->setUnlockDlgSignal((*reinterpret_cast< bool(*)>(_a[1]))); break;
@@ -176,7 +176,7 @@ void Dt::Base::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
             }
         }
         {
-            typedef void (Base::*_t)(const BaseTypes::TestResult & );
+            typedef void (Base::*_t)(BaseTypes::TestResult );
             if (*reinterpret_cast<_t *>(func) == static_cast<_t>(&Base::setTestResultSignal)) {
                 *result = 5;
                 return;
@@ -299,7 +299,7 @@ void Dt::Base::setQuestionBoxExSignal(const QString & _t1, const QString & _t2, 
 }
 
 // SIGNAL 5
-void Dt::Base::setTestResultSignal(const BaseTypes::TestResult & _t1)
+void Dt::Base::setTestResultSignal(BaseTypes::TestResult _t1)
 {
     void *_a[] = { Q_NULLPTR, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 5, _a);
@@ -723,6 +723,74 @@ void *Dt::Tap::qt_metacast(const char *_clname)
 int Dt::Tap::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
     _id = Function::qt_metacall(_c, _id, _a);
+    if (_id < 0)
+        return _id;
+    return _id;
+}
+struct qt_meta_stringdata_Dt__Module_t {
+    QByteArrayData data[1];
+    char stringdata0[11];
+};
+#define QT_MOC_LITERAL(idx, ofs, len) \
+    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
+    qptrdiff(offsetof(qt_meta_stringdata_Dt__Module_t, stringdata0) + ofs \
+        - idx * sizeof(QByteArrayData)) \
+    )
+static const qt_meta_stringdata_Dt__Module_t qt_meta_stringdata_Dt__Module = {
+    {
+QT_MOC_LITERAL(0, 0, 10) // "Dt::Module"
+
+    },
+    "Dt::Module"
+};
+#undef QT_MOC_LITERAL
+
+static const uint qt_meta_data_Dt__Module[] = {
+
+ // content:
+       7,       // revision
+       0,       // classname
+       0,    0, // classinfo
+       0,    0, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       0,       // signalCount
+
+       0        // eod
+};
+
+void Dt::Module::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+{
+    Q_UNUSED(_o);
+    Q_UNUSED(_id);
+    Q_UNUSED(_c);
+    Q_UNUSED(_a);
+}
+
+const QMetaObject Dt::Module::staticMetaObject = {
+    { &Base::staticMetaObject, qt_meta_stringdata_Dt__Module.data,
+      qt_meta_data_Dt__Module,  qt_static_metacall, Q_NULLPTR, Q_NULLPTR}
+};
+
+
+const QMetaObject *Dt::Module::metaObject() const
+{
+    return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
+}
+
+void *Dt::Module::qt_metacast(const char *_clname)
+{
+    if (!_clname) return Q_NULLPTR;
+    if (!strcmp(_clname, qt_meta_stringdata_Dt__Module.stringdata0))
+        return static_cast<void*>(const_cast< Module*>(this));
+    return Base::qt_metacast(_clname);
+}
+
+int Dt::Module::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+{
+    _id = Base::qt_metacall(_c, _id, _a);
     if (_id < 0)
         return _id;
     return _id;

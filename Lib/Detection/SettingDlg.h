@@ -4,9 +4,10 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QTreeWidgetItem>
+#include <Can/Can.h>
+
 #include "JsonTool.h"
 #include "GeneratedFiles/ui_SettingDlg.h"
-#include "CanMatrix.hpp"
 
 #define ITEM_TO_STR(I,N) I->data(N, Qt::EditRole).toString()
 
@@ -152,8 +153,7 @@ private:
 		UW_EMPTY,
 	}m_updateWarn = UW_NO;
 
-	MsgNode m_msg;
-	MsgNode m_msg2;
+	MsgNode m_msg, m_msg2;
 
 	QTimer m_canBaseSendTimer;
 	QTimer m_canBaseSendTimer2;

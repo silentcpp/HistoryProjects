@@ -1,7 +1,12 @@
 #pragma once
 
+/*
+* @Detection.h不可单独include这个头文件,否则将会报错
+* @notice1,如果需要写功能,请#include <Function.h>
+* @notice2,如果需要写硬件,请#include <Hardware.h>
+*/
+
 #include "Types.h"
-#include <ClientCore/DLLExport.h>
 
 #pragma warning(disable:4838)
 #pragma execution_character_set("utf-8")
@@ -65,16 +70,19 @@ namespace Dt {
 		const QString& getLastError();
 
 		/*设置测试顺序*/
-		void setTestSequence(const int& testSequence);
+		void setTestSequence(int testSequence);
 
 		/*设置检测类型*/
-		void setDetectionType(const BaseTypes::DetectionType& type);
-
-		/*设置SOC延时*/
-		void setSocDelay(const ulong& delay);
+		void setDetectionType(BaseTypes::DetectionType type);
 
 		/*获取检测类型*/
-		static const BaseTypes::DetectionType& getDetectionType();
+		static BaseTypes::DetectionType getDetectionType();
+		
+		/*获取检测名称*/
+		static QString getDetectionName();
+
+		/*设置SOC延时*/
+		void setSocDelay(ulong delay);
 
 		/*初始化实例*/
 		virtual bool initInstance();
@@ -96,18 +104,18 @@ namespace Dt {
 		virtual bool closeDevice();
 
 		/*准备测试,重载1*/
-		virtual bool prepareTest(const ulong& delay = START_DELAY);
+		virtual bool prepareTest(ulong delay = START_DELAY);
 
 		/*
 		 准备测试,重载2
 		 @param1,总线状态报文ID
 		 @param2,启动超时
 		 @notice,如果不需要等待ECU完全启动则param3,4忽略
-		 @param3,完全启动请求
+		 @param3,完全启动的值
 		 @param4,完全启动处理
 		 @return,bool
 		 */
-		virtual bool prepareTest(const int& id, const ulong& timeout, const int& req = 0, MsgProc msgProc = nullptr);
+		virtual bool prepareTest(int id, ulong timeout, int value = 0, MsgProc msgProc = nullptr);
 
 		/*结束测试*/
 		virtual bool finishTest(bool success);
@@ -139,10 +147,32 @@ namespace Dt {
 		* @param2,如果失败,重复读取多少次
 		* @return,bool
 		*/
-		virtual bool checkVersion(const ulong& delay = 200, const int& tryTimes = 3);
+		virtual bool checkVersion(ulong delay = 200, int tryTimes = 3);
 
 		/*检测DTC*/
 		virtual bool checkDtc();
+
+		/*写入序列号*/
+		bool writeSn(const std::function<bool()>& lambda);
+
+		/*检测序列号*/
+		bool checkSn(const std::function<bool()>& lambda);
+
+		/*写入日期*/
+		bool writeDate(const std::function<bool()>& lambda);
+
+		/*检测日期*/
+		bool checkDate(const std::function<bool()>& lambda);
+
+		/*写入设置*/
+		bool writeSet(const std::function<bool()>& lambda);
+
+		/*
+		* @setFnc,设置函数
+		* @notice,此函数用于,处理一些没有在框架中的函数,
+		* 将其放入到lambda中执行
+		*/
+		bool setFnc(const std::function<bool()>& lambda);
 
 		/*输出CAN日志*/
 		void outputCanLog(bool enable = true);
@@ -156,35 +186,35 @@ namespace Dt {
 		/*刷新CAN日志缓冲区*/
 		void flushCanLogBuffer();
 
-		/*清空CAN接收缓冲区*/
-		void clearCanRecvBuffer();
+		/*清空CAN缓冲区*/
+		void clearCanBuffer();
 
 		/*快速接收CAN消息*/
-		const int quickRecvCanMsg(MsgNode* msgNode, const int& maxSize, const int& ms);
+		int quickRecvCanMsg(MsgNode* msgNode, int maxSize, int ms);
 
 		/*自动处理CAN消息,[重载1]*/
-		bool autoProcessCanMsg(const int& id, const int& request, MsgProc msgProc, const ulong& timeout = 10000U);
+		bool autoProcessCanMsg(int id, int value, MsgProc msgProc, ulong timeout = 10000U);
 
 		/*自动处理CAN消息拓展,[重载2]*/
-		bool autoProcessCanMsgEx(IdList idList, ReqList reqList, MsgProc msgProc, const ulong& timeout = 10000U);
+		bool autoProcessCanMsgEx(IdList idList, ValList valList, MsgProc msgProc, ulong timeout = 10000U);
 
 		/*设置Can处理函数[重载1]*/
 		bool setCanProcessFnc(const char* name, const CanMsg& msg, const CanProcInfo& procInfo);
 
 		/*设置Can处理函数[重载2]*/
-		bool setCanProcessFnc(const char* name, const CanMsg& msg, const int& id, const int& req, CanProc proc);
+		bool setCanProcessFnc(const char* name, const CanMsg& msg, int id, int value, CanProc proc);
 
 		/*设置Can处理函数,拓展版[重载1]*/
 		bool setCanProcessFncEx(const char* name, CanList list, const CanProcInfo& procInfo);
 
 		/*设置Can处理函数,拓展版[重载2]*/
-		bool setCanProcessFncEx(const char* name, CanList list, const int& id, const int& req, CanProc proc);
+		bool setCanProcessFncEx(const char* name, CanList list, int id, int value, CanProc proc);
 
 		/*设置UDS处理函数*/
-		bool setUdsProcessFnc(const char* name, DidList list, const int& req, const int& size, UdsProc proc, const ulong& timeout = 10000U);
+		bool setUdsProcessFnc(const char* name, DidList list, int value, int size, UdsProc proc, ulong timeout = 10000U);
 
 		/*设置UDS处理函数,拓展版*/
-		bool setUdsProcessFncEx(const char* name, DidList list, ReqList req, const int& size, UdsProcEx procEx, const ulong& timeout = 10000U);
+		bool setUdsProcessFncEx(const char* name, DidList list, ValList valList, int size, UdsProcEx procEx, ulong timeout = 10000U);
 
 		/*
 		 *自动回收,用于处理缓存,导致占用空间的问题
@@ -195,7 +225,7 @@ namespace Dt {
 		*/
 		void autoRecycle(const QStringList& path,
 			const QStringList& suffixName = { ".mp4",".jpg",".png",".bmp",".net",".run",".can" },
-			const int& interval = 1);
+			int interval = 1);
 
 		/*启用自动回收*/
 		void enableRecycle(bool enable) { m_autoRecycle = enable; };
@@ -204,12 +234,12 @@ namespace Dt {
 		void setRecycleSuffixName(const QStringList& suffixName) { m_recycleSuffixName = suffixName; }
 
 		/*设置回收间隔月*/
-		void setRecycleIntervalMonth(const int& interval) { m_recycleIntervalMonth = interval; }
+		void setRecycleIntervalMonth(int interval) { m_recycleIntervalMonth = interval; }
 
 		/************************************************************************/
 		/* Get Local Function                                                   */
 		/************************************************************************/
-		static IConnMgr* getCanConnect();
+		static CanTransfer* getCanTransfer();
 
 		static CanSender* getCanSender();
 
@@ -226,10 +256,10 @@ namespace Dt {
 		/************************************************************************/
 
 		/*设置访问等级*/
-		void setAccessLevel(const int& udsLevel);
+		void setAccessLevel(int udsLevel);
 
 		/*设置诊断会话*/
-		void setDiagnosticSession(const int& udsSession);
+		void setDiagnosticSession(int udsSession);
 
 		/*还原访问等级*/
 		void restoreAccessLevel();
@@ -238,25 +268,28 @@ namespace Dt {
 		void restoreDiagnosticSession();
 
 		/*进入安全访问*/
-		bool enterSecurityAccess(const uchar& session = 0x03, const uchar& access = 0x01);
+		bool enterSecurityAccess(uchar session = SL_EXTENDED, uchar access = SAL_LEVEL2, int repeat = 3);
 
 		/*通过DID读数据*/
-		bool readDataByDid(const uchar& did0, const uchar& did1, int* size, uchar* data);
+		bool readDataByDid(uchar did0, uchar did1, uchar* data, int* size);
 
-		/*通过DID写数据*/
-		bool writeDataByDid(const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+		/*通过DID写数据[重载1]*/
+		bool writeDataByDid(uchar did0, uchar did1, const uchar* data, int size);
+
+		/*通过DID写数据[重载2]*/
+		bool writeDataByDid(uchar did0, uchar did1, const std::initializer_list<uchar>& data);
 
 		/*通过DID写数据,不安全,拓展版本[重载1]*/
-		bool writeDataByDidEx(const uchar* routine, const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+		bool writeDataByDidEx(const uchar* routine, uchar did0, uchar did1, const uchar* data, int size);
 
 		/*通过DID写数据,拓展版本[重载2]*/
-		bool writeDataByDidEx(const std::initializer_list<uchar>& routine, const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+		bool writeDataByDidEx(const std::initializer_list<uchar>& routine, uchar did0, uchar did1, const uchar* data, int size);
 
 		/*通过DID确认数据*/
-		bool confirmDataByDid(const uchar& did0, const uchar& did1, const int& size, const uchar* data);
+		bool confirmDataByDid(uchar did0, uchar did1, const uchar* data, int size);
 
 		/*获取UDS最终错误*/
-		const QString getUdsLastError();
+		QString getUdsLastError() const;
 
 		/************************************************************************/
 		/* Log                                                                  */
@@ -266,10 +299,10 @@ namespace Dt {
 		void initDetectionLog();
 
 		/*设置检测日志*/
-		void setDetectionLog(const BaseTypes::DetectionLog& log = BaseTypes::DL_ALL, const std::function<void(const int&)>& fnc = nullptr);
+		void setDetectionLog(BaseTypes::DetectionLog log = BaseTypes::DL_ALL, const std::function<void(const int&)>& fnc = nullptr);
 
 		/*创建日志文件*/
-		const QString createLogFile(bool success);
+		QString createLogFile(bool success);
 
 		/*写入日志*/
 		bool writeLog(bool success);
@@ -312,7 +345,7 @@ namespace Dt {
 		bool setQuestionBoxEx(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
 
 		/*设置测试结果*/
-		void setTestResult(const BaseTypes::TestResult& testResult);
+		void setTestResult(BaseTypes::TestResult testResult);
 
 		/*设置当前状态*/
 		void setCurrentStatus(const QString& status, bool systemStatus = false);
@@ -336,14 +369,25 @@ namespace Dt {
 		* @param1,启动延时
 		* @return,bool
 		*/
-		bool waitStartup(const ulong& delay);
+		bool waitStartup(ulong delay);
 
 		/*
-		* 检测是否Ping通
+		* @checkPing,检测是否Ping通
+		* @notice,与操作系统有关,可能会不准确
 		* @param1,IP地址
 		* @param2,次数
+		* @return,bool
 		*/
-		bool checkPing(const char* address, const int& times);
+		bool checkPing(const QString& address, int times);
+
+		/*
+		* @checkPing,检测是否Ping通
+		* @param1,IP地址
+		* @param2,端口
+		* @param3,超时时间
+		* @return,bool
+		*/
+		bool checkPing(const QString& address, int port, int timeout);
 	protected:
 		/*线程是否退出*/
 		bool m_quit = false;
@@ -390,19 +434,14 @@ namespace Dt {
 		/*电流表*/
 		static StaticCurrentMgr m_current;
 
-		/*CAN连接工厂*/
-		CConnFactory m_canConnFactory;
-
 		/*CAN连接管理*/
 		static CanTransfer* m_canTransfer;
 
-		/*UDS工厂*/
-		CUdsFactory m_udsFactory;
-
+		/*UDS传输*/
 		UdsTransfer* m_udsTransfer = nullptr;
 
 		/*CAN发送者*/
-		static CanSender m_canSender;
+		static CanSender* m_canSender;
 
 		/*保存错误*/
 		QString m_lastError = "No Error";
@@ -460,7 +499,7 @@ namespace Dt {
 		void setQuestionBoxExSignal(const QString& title, const QString& text, bool* result, const QPoint& point);
 
 		/*设置测试结果信号*/
-		void setTestResultSignal(const BaseTypes::TestResult& result);
+		void setTestResultSignal(BaseTypes::TestResult result);
 
 		/*设置当前状态信号*/
 		void setCurrentStatusSignal(const QString& status, bool append);
@@ -493,6 +532,7 @@ namespace Dt {
 
 	protected:
 		virtual void run() override = 0;
+
 	private:
 
 	};
@@ -537,7 +577,7 @@ namespace Dt {
 		 *@param5,报文处理函数
 		 *@return,bool
 		*/
-		virtual bool checkCanRouseSleep(const MsgNode& msg, const ulong& delay, const int& id, const int& req = 0, MsgProc msgProc = nullptr);
+		virtual bool checkCanRouseSleep(const MsgNode& msg, ulong delay, int id, int value = 0, MsgProc msgProc = nullptr);
 
 		/*
 		* 检测CAN唤醒休眠,[重载2]
@@ -547,7 +587,7 @@ namespace Dt {
 		* @param4,报文处理函数
 		* @return,bool
 		*/
-		virtual bool checkCanRouseSleep(const int& id, const ulong& delay = 0U, const int& req = 0, MsgProc msgProc = nullptr);
+		virtual bool checkCanRouseSleep(int id, ulong delay = 0U, int value = 0, MsgProc msgProc = nullptr);
 
 		/************************************************************************/
 		/* 图像控制                                                              */
@@ -557,10 +597,10 @@ namespace Dt {
 		void setCaptureCardAttribute();
 
 		/*开始采集卡采集数据*/
-		void startCaptureCard();
+		void startCapture();
 
 		/*停止采集卡采集数据*/
-		void endCaptureCard();
+		void stopCapture();
 
 		/*打开采集卡*/
 		bool openCaptureCard();
@@ -581,13 +621,13 @@ namespace Dt {
 		inline void drawRectOnImage(cv::Mat& mat);
 
 		/*在图像上检测矩形*/
-		bool checkRectOnImage(IplImage* cvImage, const rectConfig_t& rectConfig, QString& colorData);
+		bool checkRectOnImage(IplImage* cvImage, const RectConfig& rectConfig, QString& colorData);
 
 		/*设置矩形类型*/
-		void setRectType(const FcTypes::RectType& rectType = FcTypes::RT_SMALL);
+		void setRectType(FcTypes::RectType rectType = FcTypes::RT_SMALL);
 
 		/*获取矩形类型*/
-		const FcTypes::RectType& getRectType();
+		FcTypes::RectType getRectType() const;
 
 		/*还原矩形类型*/
 		void restoreRectType();
@@ -605,11 +645,9 @@ namespace Dt {
 
 		inline CMV800Mgr* getMv800() { return &m_mv800; }
 
-		inline Cc::CaptureCard* getCaptureCard() { return m_captureCard; }
+		inline Cc::CaptureCard* getCaptureCard() { return m_cap; }
 
-		bool getCaptureCardConnect();
-
-		inline bool isCapture() { return m_capture; };
+		bool getCardConnectStatus();
 
 		inline const int& getMilChannelId() { return m_cardConfig.channelId; }
 
@@ -617,13 +655,13 @@ namespace Dt {
 
 		inline const int& getCaptureCardId() { return m_cardConfig.channelId; }
 
-		inline const FcTypes::CardConfig& getCaptureCardConfig() { return m_cardConfig; };
+		const FcTypes::CardConfig* getCaptureCardConfig();
 
-		void setCallOpen(bool enable) { m_callOpen = enable; }
+		/*设置采集状态*/
+		void setCaptureStatus(bool capture);
 
-		void setCaptureImage(bool capture);
-
-		bool getCaptureImage();
+		/*获取采集状态*/
+		bool getCaptureStatus();
 	protected:
 		/*必须重写线程*/
 		virtual void run() override = 0;
@@ -645,16 +683,13 @@ namespace Dt {
 		CMV800Mgr m_mv800;
 
 		/*采集卡通用类*/
-		Cc::CaptureCard* m_captureCard = nullptr;
+		Cc::CaptureCard* m_cap = nullptr;
 
 		/*采集卡结构体*/
 		FcTypes::CardConfig m_cardConfig;
 
 		/*抓图*/
 		bool m_capture = false;
-
-		/*调用打开*/
-		bool m_callOpen = false;
 	};
 
 	/************************************************************************/
@@ -687,8 +722,7 @@ namespace Dt {
 		* @param4,处理AVM反馈函数
 		* @return,bool
 		*/
-		virtual bool triggerAvmByKey(const ulong& delay = 300, const int& id = 0, const int& req = 0,
-			MsgProc proc = nullptr);
+		virtual bool triggerAvmByKey(ulong delay = 300, int id = 0, int value = 0, MsgProc proc = nullptr);
 
 		/*
 		* 通过报文触发AVM
@@ -698,8 +732,7 @@ namespace Dt {
 		* @param4,处理AVM反馈函数
 		* @return,bool
 		*/
-		virtual bool triggerAvmByMsg(const CanMsg& msg, const int& id = 0, const int& req = 0,
-			MsgProc proc = nullptr);
+		virtual bool triggerAvmByMsg(const CanMsg& msg, int id = 0, int value = 0, MsgProc proc = nullptr);
 
 		/*检测视频出画不使用任何*/
 		virtual bool checkVideoUseNot();
@@ -712,7 +745,7 @@ namespace Dt {
 		* @param4,触发全景成功函数处理
 		* @return,bool
 		*/
-		virtual bool checkVideoUseMsg(const CanMsg& msg, const int& id, const int& req0, MsgProc msgProc0);
+		virtual bool checkVideoUseMsg(const CanMsg& msg, int id, int value, MsgProc proc);
 
 		/*
 		* 检测视频出画使用按键
@@ -723,8 +756,7 @@ namespace Dt {
 		* @param5,触发成功延时
 		* @return,bool
 		*/
-		virtual bool checkVideoUseKey(const int& id, const int& req, MsgProc msgProc, const ulong& hDelay = 300,
-			const ulong& sDelay = 3000);
+		virtual bool checkVideoUseKey(int id, int req, MsgProc proc, ulong hDelay = 300, ulong sDelay = 3000);
 
 		/*检测视频出画使用人工
 		* @return,bool
@@ -741,8 +773,8 @@ namespace Dt {
 		* @param6,超时
 		* @return,bool
 		*/
-		bool checkSingleImageUseMsg(const FcTypes::RectType& type, const CanMsg& msg,
-			const int& id = 0, const int& req = 0, MsgProc proc = 0, const ulong& timeout = 10000U);
+		bool checkSingleImageUseMsg(FcTypes::RectType type, const CanMsg& msg,
+			int id = 0, int value = 0, MsgProc proc = 0, ulong timeout = 10000U);
 
 		/*
 		* 检测AVM前后视图使用报文
@@ -755,7 +787,7 @@ namespace Dt {
 		* @param5,lambda
 		* @return,bool
 		*/
-		virtual bool checkFRViewUseMsg(CanList msgList, const int& id, ReqList reqList, MsgProc proc);
+		virtual bool checkFRViewUseMsg(CanList msgList, int id, ValList valList, MsgProc proc);
 
 		/*
 		* 检测按键电压
@@ -767,8 +799,7 @@ namespace Dt {
 		* @notice,延时取决于高电平电压是否准确
 		* @return,bool
 		*/
-		virtual bool checkFRViewUseKey(const int& id, const int& req, MsgProc proc, const ulong& hDelay = 300U,
-			const ulong& sDelay = 3000U);
+		virtual bool checkFRViewUseKey(int id, int value, MsgProc proc, ulong hDelay = 300U, ulong sDelay = 3000U);
 
 		/*
 		* 检测按键电压
@@ -780,8 +811,8 @@ namespace Dt {
 		* @param4,处理进入全景的报文
 		* @return,bool
 		*/
-		virtual bool checkKeyVoltage(const ulong& hDelay = 300U, const ulong& sDelay = 3000U,
-			const int& id = 0, const int& req = 0, MsgProc proc = nullptr);
+		virtual bool checkKeyVoltage(ulong hDelay = 300U, ulong sDelay = 3000U,
+			int id = 0, int value = 0, MsgProc proc = nullptr);
 
 	protected:
 		/*必须重写线程*/
@@ -805,19 +836,19 @@ namespace Dt {
 		virtual bool initInstance();
 
 		/*开始测试*/
-		virtual bool prepareTest(const ulong& delay = 30000U);
+		virtual bool prepareTest(ulong delay = 30000U);
 
 		/*结束测试*/
 		virtual bool finishTest(bool success);
 
 		/*设置系统状态报文*/
-		void setSysStatusMsg(const DvrTypes::SysStatusMsg& msg);
+		void setSysStatusMsg(DvrTypes::SysStatusMsg msg);
 
 		/*设置SD卡状态*/
-		void setSdCardStatus(const DvrTypes::SdCardStatus& status);
+		void setSdCardStatus(DvrTypes::SdCardStatus status);
 
 		/*设置系统状态*/
-		void setSystemStatus(const DvrTypes::SystemStatus& status);
+		void setSystemStatus(DvrTypes::SystemStatus status);
 
 		/*设置其他动作,[比如时间同步,激活控制器报文...]*/
 		virtual bool setOtherAction() { return true; };
@@ -834,7 +865,7 @@ namespace Dt {
 		* @param2,处理超时
 		* @return,bool
 		*/
-		template<class T>bool autoProcessStatus(const ulong& timeout = 30000U);
+		template<class T>bool autoProcessStatus(ulong timeout = 30000U);
 
 		/*自动处理状态,[重载2]
 		* @param1,系统状态报文
@@ -842,7 +873,7 @@ namespace Dt {
 		* @param3,处理超时
 		* @return,bool
 		*/
-		template<class T>bool autoProcessStatus(const T& value, const ulong& timeout = 30000U);
+		template<class T>bool autoProcessStatus(T value, ulong timeout = 30000U);
 
 		/*检测DVR[重载1]
 		* @param1,RTSP协议地址
@@ -883,16 +914,16 @@ namespace Dt {
 		bool vlcRtspStop();
 
 		/*获取文件列表,重载1*/
-		bool getFileUrl(QString& url, const DvrTypes::FilePath& filePath);
+		bool getFileUrl(QString& url, DvrTypes::FilePath filePath);
 
 		/*下载紧急录制文件,重载1*/
 		bool downloadFile(const QString& url, const QString& dirName, bool isVideo = true);
 
 		/*下载紧急录制文件,重载2*/
-		bool downloadFile(const QString& url, const DvrTypes::FileType& types);
+		bool downloadFile(const QString& url, DvrTypes::FileType types);
 
 		/*设置下载文件目录*/
-		void setDownloadFileDir(const DvrTypes::FileType& types, const QString& dirName);
+		void setDownloadFileDir(DvrTypes::FileType types, const QString& dirName);
 
 		/*检测DVR光轴*/
 		bool checkRayAxis(const QString& url, const QString& dirName);
@@ -904,11 +935,11 @@ namespace Dt {
 		* 检测光轴解像度使用报文
 		* @param1,CAN报文列表
 		* @param2,接收报文ID
-		* @param3,请求结果
+		* @param3,数值
 		* @param4,lambda
 		* @return,bool
 		*/
-		bool checkRayAxisSfrUseMsg(CanList list, const int& id, const int& req, MsgProc proc);
+		bool checkRayAxisSfrUseMsg(CanList list, int id, int req, MsgProc proc);
 
 		/*
 		* 检测光轴解像度使用网络
@@ -953,7 +984,7 @@ namespace Dt {
 		virtual bool getWifiInfo(bool rawData = false, bool showLog = true);
 
 		/*写入网络日志*/
-		bool writeNetLog(const char* name, const char* data, const size_t& size);
+		bool writeNetLog(const char* name, const char* data, size_t size);
 	protected:
 		/*WIFI*/
 		WifiMgr m_wifiMgr;
@@ -1057,10 +1088,32 @@ namespace Dt {
 		virtual void run() override = 0;
 	private:
 		/*串口工具*/
-		SerialPortTool* m_serialPortTool = nullptr;
+		SerialPort* m_serialPort = nullptr;
 
 		/*TAP左右屏幕处理*/
 		void screenUartHandler(const QString& port, const QByteArray& bytes);
+	};
+
+	/*
+	* Module Class
+	*/
+	class Module : public Base {
+		Q_OBJECT
+	public:
+		explicit Module(QObject* parent = nullptr);
+
+		~Module();
+
+		virtual bool initInstance();
+
+		bool printLabel(const std::function<bool(void)>& fnc);
+	protected:
+		virtual void run() override = 0;
+
+		QString getPrinterError();
+
+		TSCPrinterMgr m_printer;
+	private:
 	};
 
 	template<class T> inline bool Dvr::getAllStatus(T& status)
@@ -1071,7 +1124,7 @@ namespace Dt {
 			const size_t& statusCode = typeid(status).hash_code();
 			MsgNode msg[512] = { 0 };
 			size_t&& startTime = GetTickCount();
-			clearCanRecvBuffer();
+			clearCanBuffer();
 			for (;;)
 			{
 				int size = quickRecvCanMsg(msg, 512, 100);
@@ -1198,7 +1251,7 @@ namespace Dt {
 		return result;
 	}
 
-	template<class T> inline bool Dvr::autoProcessStatus(const ulong& timeout)
+	template<class T> inline bool Dvr::autoProcessStatus(ulong timeout)
 	{
 		T status;
 		const size_t& statusCode = typeid(status).hash_code();
@@ -1265,7 +1318,7 @@ namespace Dt {
 		return result;
 	}
 
-	template<class T> inline bool Dvr::autoProcessStatus(const T& value, const ulong& timeout)
+	template<class T> inline bool Dvr::autoProcessStatus(T value, ulong timeout)
 	{
 		T status;
 		const size_t& statusCode = typeid(status).hash_code();
@@ -1345,7 +1398,7 @@ namespace Cc {
 		~Mil();
 
 		/*打开MIL设备驱动*/
-		bool open(const QString& name, const int& channel);
+		bool open(const QString& name, int channel);
 
 		/*关闭MIL设备驱动*/
 		void close();
@@ -1357,7 +1410,7 @@ namespace Cc {
 		void startCapture();
 
 		/*结束采集*/
-		void endCapture();
+		void stopCapture();
 
 		/*获取错误信息*/
 		const QString& getLastError();
@@ -1396,7 +1449,7 @@ namespace Cc {
 
 		const QString& getLastError();
 
-		bool openDevice(const int& id, const int& count);
+		bool openDevice(int id, int count);
 
 		bool closeDevice();
 
@@ -1406,7 +1459,7 @@ namespace Cc {
 
 		bool stopCapture();
 
-		void setFPS(const int fps);
+		void setFPS(int fps);
 	public slots:
 		void getImageSlot();
 	protected:
@@ -1448,9 +1501,9 @@ namespace Nt {
 
 		bool getSfr(const char* filePath, float& sfr);
 
-		int send(const char* buffer, const int& len);
+		int send(const char* buffer, int len);
 
-		int recv(char* buffer, const int& len);
+		int recv(char* buffer, int len);
 
 		void closeListen();
 
@@ -1478,33 +1531,33 @@ namespace Nt {
 	public:
 		DvrClient();
 
-		DvrClient(const QString& address, const ushort& port);
+		DvrClient(const QString& address, ushort port);
 
 		~DvrClient();
 
 		void setAddressPort(const QString& address, const ushort& port);
 
-		bool connect(const int& count = 10);
+		bool connect(int count = 10);
 
-		bool connect(const QString& address, const ushort& port, const int& count = 10);
+		bool connect(const QString& address, ushort port, int count = 10);
 
 		void disconnect();
 
-		int send(const char* buffer, const int& len);
+		int send(const char* buffer, int len);
 
-		int recv(char* buffer, const int& len);
+		int recv(char* buffer, int len);
 
-		bool sendFrameData(const char* buffer, const int& len, const uchar& cmd, const uchar& sub);
+		bool sendFrameData(const char* buffer, int len, uchar cmd, uchar sub);
 
 		bool recvFrameData(char* buffer, int* const len);
 
-		bool sendFrameDataEx(const std::initializer_list<char>& buffer, const uchar& cmd, const uchar& sub);
+		bool sendFrameDataEx(const std::initializer_list<char>& buffer, uchar cmd, uchar sub);
 
-		bool sendFrameDataEx(const char* buffer, const int& len, const uchar& cmd, const uchar& sub);
+		bool sendFrameDataEx(const char* buffer, int len, uchar cmd, uchar sub);
 
-		bool recvFrameDataEx(char* buffer, int* const len, const uchar& cmd, const uchar& sub);
+		bool recvFrameDataEx(char* buffer, int* const len, uchar cmd, uchar sub);
 
-		const size_t crc32Algorithm(uchar const* memoryAddr, const size_t& memoryLen, const size_t& oldCrc32);
+		const size_t crc32Algorithm(uchar const* memoryAddr, size_t memoryLen, size_t oldCrc32);
 
 		const char* getAddress();
 

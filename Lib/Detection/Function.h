@@ -3,12 +3,6 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-//兼容旧的MsgNode结构体
-//如果在你的项目中报错,未定义_MsgNode.xxxx
-//需要在你的项目中#define USE_NEW_MSG_NODE
-#ifndef USE_NEW_MSG_NODE
-#define USE_NEW_MSG_NODE
-#endif //!USE_NEW_MSG_NODE
 
 #include "MainDlg.h"
 
@@ -73,7 +67,7 @@ namespace Fnc {
 
 		bool checkMaxCurrent();
 
-		bool checkRecord(const ulong& timeout = 10000U);
+		bool checkRecord(ulong timeout = 10000U);
 
 		bool writeDate();
 

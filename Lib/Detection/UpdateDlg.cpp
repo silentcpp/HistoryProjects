@@ -15,7 +15,7 @@ UpdateDlg::UpdateDlg(QWidget* args, QWidget* parent)
 	p.setBrush(Qt::black);
 	p.drawRoundedRect(bmp.rect(), 20, 20);
 	this->setMask(bmp);
-	
+
 	QObject::connect(this, &UpdateDlg::setQuestionBoxSignal,
 		this, &UpdateDlg::setQuestionBoxSlot);
 
@@ -143,7 +143,6 @@ void UpdateDlg::setProgressSlot(ulong current, ulong total, ulong status)
 	if (total)
 		ui.progressBar->setValue(((float)current / total) * 100);
 }
-
 
 void UpdateDlg::setShowDlgSlot(bool show)
 {

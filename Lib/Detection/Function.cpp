@@ -14,7 +14,7 @@ bool Fnc::GAC::writeSn()
 		uchar data[32] = { 0 };
 		int size = 0;
 		RUN_BREAK(!generateSn(data, &size), "条码为空");
-		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, size, data), "写入序列号失败," + getUdsLastError());
+		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, data, size), "写入序列号失败," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入序列号", OK_NG(result));
@@ -30,7 +30,7 @@ bool Fnc::GAC::checkSn()
 	{
 		uchar readData[32] = { 0 };
 		int readSize = 0;
-		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &readSize, readData), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(!readDataByDid(0xf1, 0x8c, readData, &readSize), "读取序列号失败," + getUdsLastError());
 		RUN_BREAK(readSize != 16, "读取序列号长度不等于16");
 
 		uchar cmpData[32] = { 0 };
@@ -52,7 +52,7 @@ bool Fnc::GAC::checkOldSn()
 		RUN_BREAK(g_code.isEmpty(), "条码为空");
 		int size = 0;
 		uchar data[32] = {};
-		RUN_BREAK(!readDataByDid(0x0e, 0x01, &size, data), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(!readDataByDid(0x0e, 0x01, data, &size), "读取序列号失败," + getUdsLastError());
 		RUN_BREAK(size != 20, "读取序列号长度不等于20");
 		RUN_BREAK(g_code != (const char*)data, "序列号对比失败");
 		result = true;
@@ -70,12 +70,12 @@ bool Fnc::GAC::writeSet(const uchar& value)
 	{
 		uchar data[1] = { 0 };
 		int size = 0;
-		RUN_BREAK(!readDataByDid(0x01, 0x10, &size, data), "读取工厂设置失败," + getLastError());
+		RUN_BREAK(!readDataByDid(0x01, 0x10, data, &size), "读取工厂设置失败," + getLastError());
 		RUN_BREAK(size != 1, "工厂设置字节长度错误");
 		if (data[0] != value)
 		{
 			data[0] = value;
-			RUN_BREAK(!writeDataByDid(0x01, 0x10, 1, data), "写入工厂设置失败," + getLastError());
+			RUN_BREAK(!writeDataByDid(0x01, 0x10, data, 1), "写入工厂设置失败," + getLastError());
 		}
 		result = true;
 	} while (false);
@@ -148,7 +148,7 @@ bool Fnc::BAIC::setOtherAction()
 	msg.data[3] |= (0x1f & (time.wYear - 2014)) >> 4;
 	msg.data[4] = (0x0f & (time.wYear - 2014)) << 4;
 	msg.data[3] |= (0x0f & time.wMonth) << 1;
-	m_canSender.AddMsg(msg, 1000);
+	m_canSender->addMsg(msg, 1000);
 	msleep(1000);
 	return true;
 }
@@ -163,7 +163,7 @@ bool Fnc::BAIC::checkSn()
 		const QString code = g_code.mid(10, 11);
 		int size = 0;
 		char data[32] = { 0 };
-		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &size, (uchar*)data), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(!readDataByDid(0xf1, 0x8c, (uchar*)data, &size), "读取序列号失败," + getUdsLastError());
 
 		//A512E01905L051800002XA00087710
 		//L051800002X
@@ -185,16 +185,16 @@ bool Fnc::BAIC::checkRecord()
 		msg.id = 0x5D5;
 		msg.dlc = 8;
 		msg.data[3] = 0x02;
-		m_canSender.AddMsg(msg, 100);
+		m_canSender->addMsg(msg, 100);
 		msleep(100);
 
 		bool success = false, trigger = false;
 		size_t&& startTime = GetTickCount();
 		MsgNode msgNode[512] = { 0 };
-		m_canTransfer->ClearRecBuffer();
+		clearCanBuffer();
 		while (true)
 		{
-			int size = m_canTransfer->QuickReceive(msgNode, 512, 100);
+			int size = quickRecvCanMsg(msgNode, 512, 100);
 			for (int i = 0; i < size; i++)
 			{
 				if (msgNode[i].id == 0x5A0)
@@ -223,7 +223,7 @@ bool Fnc::BAIC::checkRecord()
 		RUN_BREAK(!success, "触发紧急录制失败");
 		result = true;
 	} while (false);
-	m_canSender.DeleteOneMsg(0x5D5);
+	m_canSender->deleteOneMsg(0x5D5);
 	addListItem(Q_SPRINTF("紧急录制 %s", OK_NG(result)), false);
 	WRITE_LOG("%s 紧急录制", OK_NG(result));
 	return result;
@@ -235,7 +235,7 @@ bool Fnc::BAIC::checkRecord()
 Fnc::CHJAutoMotive::CHJAutoMotive(QObject* parent)
 {
 	setSysStatusMsg(DvrTypes::SSM_CHJ_M01);
-	setAddressPort("192.168.42.1", 2000); 
+	setAddressPort("192.168.42.1", 2000);
 }
 
 Fnc::CHJAutoMotive::~CHJAutoMotive()
@@ -248,9 +248,9 @@ bool Fnc::CHJAutoMotive::setOtherAction()
 	bool result = false;
 	do
 	{
-		m_canSender.AddMsg({ 0x440,8,{0} }, 100, ST_Event, 10);
+		m_canSender->addMsg({ 0x440,8,{0} }, 100, ST_EVENT, 10);
 		msleep(1000);
-		m_canSender.AddMsg(SEND_PROC_FNC() {
+		m_canSender->addMsg(SEND_PROC_FNC() {
 			time_t tm = time(NULL) * 1000;
 			uchar temp[6] = { 0 };
 			memcpy(temp, &tm, 6);
@@ -277,7 +277,7 @@ bool Fnc::CHJAutoMotive::checkSn()
 		RUN_BREAK(g_code.isEmpty(), "输入的条码为空");
 		int size = 0;
 		uchar readData[32] = { 0 }, cmpData[32] = { 0 };
-		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &size, readData), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(!readDataByDid(0xf1, 0x8c, readData, &size), "读取序列号失败," + getUdsLastError());
 		RUN_BREAK(size != 16, "序列号长度错误");
 		if (TYPE_NAME_IS("M01"))
 		{
@@ -322,7 +322,7 @@ bool Fnc::CHJAutoMotive::checkMaxCurrent()
 	return result;
 }
 
-bool Fnc::CHJAutoMotive::checkRecord(const ulong& timeout)
+bool Fnc::CHJAutoMotive::checkRecord(ulong timeout)
 {
 	setCurrentStatus("检测紧急录制");
 	bool result = false, success = false;
@@ -340,15 +340,15 @@ bool Fnc::CHJAutoMotive::checkRecord(const ulong& timeout)
 
 		if (TYPE_NAME_IS("M01B"))
 		{
-			m_canSender.AddMsg({ 0x095,8,{0,0,0,2} }, 20);
+			m_canSender->addMsg({ 0x095,8,{0,0,0,2} }, 20);
 			success = autoProcessStatus(DvrTypes::SS_CRASH_KEY, timeout);
-			m_canSender.DeleteOneMsg(0x095);
+			m_canSender->deleteOneMsg(0x095);
 		}
 		else if (TYPE_NAME_IS("M01"))
 		{
-			m_canSender.AddMsg({ 0x39a,8,{0,0,0,0,2} }, 100);
+			m_canSender->addMsg({ 0x39a,8,{0,0,0,0,2} }, 100);
 			success = autoProcessStatus(DvrTypes::SS_HARDWARE_KEY, timeout);
-			m_canSender.DeleteOneMsg(0x39a);
+			m_canSender->deleteOneMsg(0x39a);
 		}
 		else
 		{
@@ -384,7 +384,7 @@ bool Fnc::CHJAutoMotive::writeDate()
 		data[1] = time.wMonth;
 		data[2] = time.wDay;
 
-		RUN_BREAK(!writeDataByDidEx({ 0x01, 0xFD, 0x00,0x00,0x00 }, 0xf1, 0x8b, 3, data), "写入生产日期失败," + getUdsLastError());
+		RUN_BREAK(!writeDataByDidEx({ 0x01, 0xFD, 0x00,0x00,0x00 }, 0xf1, 0x8b, data, 3), "写入生产日期失败," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入生产日期", OK_NG(result));
@@ -486,7 +486,7 @@ bool Fnc::SGMW::checkSn()
 	{
 		uchar data[12] = { 0 };
 		int size = 0;
-		RUN_BREAK(!readDataByDid(0xf1, 0x8c, &size, data), "读取序列号失败," + getUdsLastError());
+		RUN_BREAK(!readDataByDid(0xf1, 0x8c, data, &size), "读取序列号失败," + getUdsLastError());
 		RUN_BREAK(size != 7, "序列号长度错误");
 		QString cmp = g_code.right(10).left(2) + g_code.right(4);
 		RUN_BREAK(!QString((const char*)data).contains(cmp), "校验序列号失败");

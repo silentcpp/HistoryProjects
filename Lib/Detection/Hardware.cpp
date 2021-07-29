@@ -30,7 +30,7 @@ bool Hwd::GAC::writeSn()
 		sendData[6] = month;
 		sendData[7] = day;
 
-		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, sendSize, sendData), "写入序列号失败," + getUdsLastError());
+		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, sendData, sendSize), "写入序列号失败," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入序列号", OK_NG(result));
@@ -46,7 +46,7 @@ bool Hwd::GAC::writeOldSn()
 	{
 		RUN_BREAK(g_code.isEmpty(), "条码为空");
 
-		RUN_BREAK(!writeDataByDid(0x0e, 0x01, g_code.size(), (uchar*)Q_TO_C_STR(g_code)),
+		RUN_BREAK(!writeDataByDid(0x0e, 0x01, (uchar*)Q_TO_C_STR(g_code), g_code.size()),
 			"写入序列号失败," + getUdsLastError());
 		result = true;
 	} while (false);
@@ -68,7 +68,7 @@ bool Hwd::GAC::writeDate()
 		data[1] = time.wYear % 100;
 		data[2] = time.wMonth;
 		data[3] = time.wDay;
-		RUN_BREAK(!writeDataByDid(0xf1, 0x8b, 4, data), "写入生产日期失败," + getUdsLastError());
+		RUN_BREAK(!writeDataByDid(0xf1, 0x8b, data, 4), "写入生产日期失败," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入生产日期", OK_NG(result));
@@ -92,7 +92,7 @@ bool Hwd::SGMW::writeSn()
 		data[1] = Q_TO_C_STR(line)[1];
 		memcpy(&data[2], Q_TO_C_STR(sn), Q_TO_C_LEN(sn));
 
-		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, 7, data), "写入序列号失败," + getUdsLastError());
+		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, data, 7), "写入序列号失败," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入序列号", OK_NG(result));
@@ -113,7 +113,7 @@ bool Hwd::SGMW::writeDate()
 		data[1] = DEC_TO_HEX(time.wYear % 100);
 		data[2] = DEC_TO_HEX(time.wMonth);
 		data[3] = DEC_TO_HEX(time.wDay);
-		RUN_BREAK(!writeDataByDid(0xf1, 0x8b, 4, data), "写入生产日期失败," + getUdsLastError());
+		RUN_BREAK(!writeDataByDid(0xf1, 0x8b, data, 4), "写入生产日期失败," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s 写入生产日期", OK_NG(result));

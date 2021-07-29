@@ -169,7 +169,7 @@ void MainDlg::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, voi
         case 10: _t->setQuestionBoxExSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< bool*(*)>(_a[3])),(*reinterpret_cast< const QPoint(*)>(_a[4]))); break;
         case 11: _t->setPlayQuestionBoxSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2])),(*reinterpret_cast< int*(*)>(_a[3])),(*reinterpret_cast< const QPoint(*)>(_a[4]))); break;
         case 12: _t->setCurrentStatusSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
-        case 13: _t->setTestResultSlot((*reinterpret_cast< const BaseTypes::TestResult(*)>(_a[1]))); break;
+        case 13: _t->setTestResultSlot((*reinterpret_cast< BaseTypes::TestResult(*)>(_a[1]))); break;
         case 14: _t->addListItemSlot((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< bool(*)>(_a[2]))); break;
         case 15: _t->clearListItemSlot(); break;
         case 16: _t->updateImageSlot((*reinterpret_cast< const QImage(*)>(_a[1]))); break;

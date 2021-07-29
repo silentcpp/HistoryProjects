@@ -19,8 +19,9 @@ bool ScanCodeDlg::sendCode()
 	bool result = false;
 	do
 	{
-		if (JsonTool::getInstance()->getSkipCode() ||
-			JsonTool::getInstance()->getSkipItem(SI_MES))
+		//if (GET_JSON()->getSkipCode() ||
+		//	GET_JSON()->getSkipItem(SI_MES))
+		if (!GET_JSON()->getSkipItem(SkipItem::SI_QS))
 		{
 			this->hide();
 			g_threadWait = false;
@@ -106,13 +107,15 @@ bool ScanCodeDlg::judgeCode()
 	bool result = false;
 	do
 	{
-		if (JsonTool::getInstance()->getSkipCode())
+		if (!GET_JSON()->getSkipItem(SkipItem::SI_JC))
 		{
+			g_code = m_code;
 			result = true;
 			break;
 		}
 
-		JsonTool::getInstance()->deleteSkipSymbol(m_code);
+		//GET_JSON()->deleteSkipSymbol(m_code);
+
 		if (m_deviceConfig.codeJudge == "NULL")
 		{
 			if (m_code.length() != m_deviceConfig.codeLength.toInt())

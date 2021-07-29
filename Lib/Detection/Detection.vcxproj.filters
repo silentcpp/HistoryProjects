@@ -79,9 +79,6 @@
     <ClCompile Include="QLabelEx.cpp">
       <Filter>Source Files\Control</Filter>
     </ClCompile>
-    <ClCompile Include="CanSender.cpp">
-      <Filter>Source Files\Manage</Filter>
-    </ClCompile>
     <ClCompile Include="Detection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -91,7 +88,7 @@
     <ClCompile Include="AuthDlg.cpp">
       <Filter>Source Files\Dialog</Filter>
     </ClCompile>
-    <ClCompile Include="SerialPortTool.cpp">
+    <ClCompile Include="SerialPort.cpp">
       <Filter>Source Files\Manage</Filter>
     </ClCompile>
     <ClCompile Include="jqcpumonitor.cpp">
@@ -118,12 +115,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RayAxis.h">
-      <Filter>Header Files\Algorithm</Filter>
-    </ClInclude>
-    <ClInclude Include="CanSender.h">
-      <Filter>Header Files\Manage</Filter>
-    </ClInclude>
-    <ClInclude Include="CanMatrix.hpp">
       <Filter>Header Files\Algorithm</Filter>
     </ClInclude>
     <ClInclude Include="TextData.h">
@@ -155,7 +146,7 @@
     <QtMoc Include="AuthDlg.h">
       <Filter>Header Files\Dialog</Filter>
     </QtMoc>
-    <QtMoc Include="SerialPortTool.h">
+    <QtMoc Include="SerialPort.h">
       <Filter>Header Files\Manage</Filter>
     </QtMoc>
     <QtMoc Include="QMessageBoxEx.h">

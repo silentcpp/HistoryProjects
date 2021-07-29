@@ -54,7 +54,7 @@ public slots:
 	void setTitleSlot(const QString& title);
 private:
 	Ui::UpdateDlg ui;
-	
+
 	bool m_wait = false;
 
 	QWidget* m_parent = nullptr;

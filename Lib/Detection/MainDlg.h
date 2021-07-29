@@ -179,7 +179,7 @@ public slots:
 	* @param1,测试结果枚举
 	* @return,void
 	*/
-	void setTestResultSlot(const BaseTypes::TestResult& result);
+	void setTestResultSlot(BaseTypes::TestResult result);
 
 	/*
 	* @addListItemSlot,添加列表项目槽

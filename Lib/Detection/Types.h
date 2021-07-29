@@ -33,20 +33,22 @@
 
 #include <QStandardPaths>
 
+#include <QTcpSocket>
+
 #include <VoltageTestMgr/VoltageTestMgr.h>
 #pragma comment(lib, "VoltageTestMgr.lib")
 
 #include <MR-DO16-KNMgr/MR-DO16-KNMgr.h>
 #pragma comment(lib, "MR-DO16-KNMgr.lib")
 
-#include <UdsProtocolMgr/UdsProtocolMgr.h>
-#pragma comment(lib, "UdsProtocolMgr.lib")
-
 #include <ItechSCPIMgr/ItechSCPIMgr.h>
 #pragma comment(lib, "ItechSCPIMgr.lib")
 
-#include <CanMgr/CanMgr.h>
-#pragma comment(lib, "CanMgr.lib")
+#include <Can/Can.h>
+#pragma comment(lib, "Can.lib")
+
+#include <Uds/Uds.h>
+#pragma comment(lib, "Uds.lib")
 
 #include <StaticCurrentMgr/StaticCurrentMgr.h>
 #pragma comment(lib, "StaticCurrentMgr.lib")
@@ -57,6 +59,9 @@
 #include <WifiMgr/WifiMgr.h>
 #pragma comment(lib, "WifiMgr.lib")
 
+#include <TSCPrinterMgr/TSCPrinterMgr.h>
+#pragma comment(lib, "TSCPrinterMgr.lib")
+
 #include "QMessageBoxEx.h"
 
 #include "QLabelEx.h"
@@ -65,11 +70,7 @@
 
 #include "RayAxis.h"
 
-#include "CanMatrix.hpp"
-
-#include "CanSender.h"
-
-#include "SerialPortTool.h"
+#include "SerialPort.h"
 
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
@@ -114,6 +115,8 @@ using namespace cv;
 #endif
 
 #define MY_KITS_PATH "C:\\Windows\\MyKits\\"
+
+#define OVERRIDE_INIT_INSTANCE virtual bool initInstance
 
 /************************************************************************/
 /* Define                                                               */
@@ -186,22 +189,35 @@ timer->start(DELAY);\
 
 #define NO_THROW_NEW new(std::nothrow)
 
-#define GET_DT_DIR() ((Dt::Base::getDetectionType() == BaseTypes::DT_HARDWARE) ? "HwLog" : "FcLog")
+/*
+* @GET_LOG_DIR,获取日志目录
+* @return,const char*
+*/
+#define GET_LOG_DIR() ((Dt::Base::getDetectionType() == BaseTypes::DT_HARDWARE) ? "HwLog" : "FcLog")
 
-#define GET_DT_TYPE() ((Dt::Base::getDetectionType() == BaseTypes::DT_HARDWARE) ? "硬件" : "功能")
-
+/*
+* @GET_TYPE_NAME,获取机种名称
+* @return,const QString
+*/
 #define GET_TYPE_NAME() GET_JSON()->getDeviceConfigValue("机种名称")
 
+/*
+* @START_DELAY,启动延时
+* @return,const ULONG
+*/
 #define START_DELAY (ULONG)GET_JSON()->getParsedThresholdConfig().startDelay
 
+/*
+* @TYPE_NAME_IS,判断机种名是否为NAME
+* @param1,对比的名字
+* @return,bool
+*/
 #define TYPE_NAME_IS(NAME) (GET_TYPE_NAME() == NAME)
 
 #define AUTO_RESIZE(X) X->resize(QApplication::desktop()->screenGeometry().width() / 2 + 100,\
 QApplication::desktop()->screenGeometry().height() / 2 + 100)
 
-#define FREQ req
-
-#define FREQL reqL
+#define FVAL val
 
 #define FMSG msg
 
@@ -209,19 +225,19 @@ QApplication::desktop()->screenGeometry().height() / 2 + 100)
 
 #define FDATA data
 
-#define MSG_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const MsgNode& FMSG)mutable->bool
+#define MSG_PROC_FNC(...) [__VA_ARGS__](int FVAL,const MsgNode& FMSG)mutable->bool
 
-#define CAN_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const MsgNode& FMSG)mutable->bool
+#define CAN_PROC_FNC(...) [__VA_ARGS__](int FVAL,const MsgNode& FMSG)mutable->bool
 
-#define UDS_PROC_FNC(...) [__VA_ARGS__](const int& FREQ,const int& FSIZE,const uchar* FDATA)mutable->bool
+#define UDS_PROC_FNC(...) [__VA_ARGS__](int FVAL,int FSIZE,const uchar* FDATA)mutable->bool
 
-#define UDS_PROC_FNC_EX(...) [__VA_ARGS__](ReqList FREQL,const int& FSIZE,const uchar* FDATA)mutable->bool
+#define UDS_PROC_FNC_EX(...) [__VA_ARGS__](ValList FREQL,int FSIZE,const uchar* FDATA)mutable->bool
 
 #define TEST_PASS []()->bool{ return true; }
 
 typedef const std::initializer_list<int>& IdList;
 
-typedef const std::initializer_list<int>& ReqList;
+typedef const std::initializer_list<int>& ValList;
 
 typedef const std::initializer_list<CanMsg>& CanList;
 
@@ -229,11 +245,11 @@ typedef const std::initializer_list<MsgNode>& MsgList;
 
 typedef const std::initializer_list<uchar>& DidList;
 
-typedef const std::function<bool(const int&, const MsgNode&)>& MsgProc;
+typedef const std::function<bool(int, const MsgNode&)>& MsgProc;
 
-typedef const std::function<bool(const int&, const int&, const uchar* data)>& UdsProc;
+typedef const std::function<bool(int, int, const uchar* data)>& UdsProc;
 
-typedef const std::function<bool(ReqList, const int&, const uchar* data)>& UdsProcEx;
+typedef const std::function<bool(ValList, int, const uchar* data)>& UdsProcEx;
 
 typedef MsgProc CanProc;
 
@@ -251,13 +267,13 @@ struct CanProcInfo {
 
 struct MsgProcInfoEx {
 	IdList idList;
-	ReqList reqList;
+	ValList reqList;
 	MsgProc proc;
 };
 
 struct CanProcInfoEx {
 	IdList idList;
-	ReqList reqList;
+	ValList reqList;
 	CanProc proc;
 };
 
@@ -323,6 +339,11 @@ enum TestSequence {
 	TS_UDS_PROC9,
 	TS_CHECK_NETWORK,
 	TS_CHECK_PING,
+	TS_PRINT_LABEL,
+	TS_CHECK_OTHER0,
+	TS_CHECK_OTHER1,
+	TS_CHECK_OTHER2,
+	TS_CHECK_OTHER3,
 	TS_NO
 };
 
@@ -360,29 +381,11 @@ template<class T, class ...args> static void _assertProcCall(const T& fnc, args.
 #define ASSERT_TEST(CURR,FNC,NEXT,...)\
 case CURR:\
 {\
-	if (!FNC)\
-	{\
-		if (CURR == TS_SAVE_LOG)\
-		{\
-			setMessageBox("保存日志失败",getLastError());\
-		}\
-		else\
-		{\
-			GO_SAVE_LOG();\
-		}\
-	}\
-	_assertProcCall(ASSERT_PROC_FNC(){},__VA_ARGS__);\
-	GO_NEXT_TEST(NEXT);\
-}
-
-#define ASSERT_TEST_EX(CURR,FNC,NEXT,...)\
-case CURR:\
-{\
-	if ((CURR == TS_CHECK_SN || CURR == TS_WRITE_SN) && m_jsonTool->getSkipItem(SI_SN))\
+	if ((CURR == TS_CHECK_SN || CURR == TS_WRITE_SN) && !GET_JSON()->getSkipItem(SI_SN))\
 	{\
 		\
 	}\
-	else if ((CURR == TS_CHECK_DATE || CURR == TS_WRITE_DATE) && m_jsonTool->getSkipItem(SI_DATE))\
+	else if ((CURR == TS_CHECK_DATE || CURR == TS_WRITE_DATE) && !GET_JSON()->getSkipItem(SI_DATE))\
 	{\
 		\
 	}\
@@ -460,7 +463,7 @@ namespace BaseTypes {
 	};
 
 	/*检测类型*/
-	enum DetectionType { DT_AVM, DT_DVR, DT_HARDWARE, DT_TAP };
+	enum DetectionType { DT_AVM, DT_DVR, DT_HARDWARE, DT_TAP, DT_MODULE };
 
 	/*测试结果*/
 	enum TestResult { TR_NO, TR_OK, TR_NG, TR_TS };
@@ -711,7 +714,7 @@ namespace Misc {
 	bool cvImageToQtImage(IplImage* cv, QImage* qt);
 
 	/*Cv图像转Qt图像[重载2]*/
-	bool cvImageToQtImage(Mat* mat,QImage* qt);
+	bool cvImageToQtImage(const Mat& mat, QImage& qt);
 
 	/*通过URL获取文件名*/
 	const QString getFileNameByUrl(const QString& url);
@@ -744,10 +747,13 @@ namespace Misc {
 	bool renameAppByVersion(QWidget* widget);
 
 	/*启动应用程序*/
-	bool startApp(const QString& name, const int& show, bool absolutely = false);
+	bool startApp(const QString& name, int show, bool absolutely = false);
 
 	/*结束应用程序*/
 	bool finishApp(const QString& name);
+
+	/*获取本地时间,WIN API*/
+	const SYSTEMTIME getLocalTime();
 
 	/*获取当前时间*/
 	const QString getCurrentTime(bool fileFormat = false);
@@ -773,16 +779,39 @@ namespace Misc {
 	//创建快捷方式
 	bool createShortcut();
 
-	//保存位图到文件
-	bool saveBitmapToFile(HBITMAP hBitmap, const QString& fileName);
-
 	/*
 	* @ping,测试网络是否畅通
-	* @param1,地址
+	* @param1,IP地址
 	* @param2,次数
 	* @return,bool
 	*/
-	bool ping(const char* address, const int& times);
+	bool ping(const QString& address, int times);
+
+	/*
+	* @ipLive,IP是否存活
+	* @param1,IP地址
+	* @param2,端口
+	* @param3,超时
+	* @return,bool
+	*/
+	bool ipLive(const QString& address, int port, int timeout);
+
+	/*
+	* @execute,执行
+	* @param1,cmd命令
+	* @param2,参数[可选]
+	* @return,bool
+	*/
+	bool execute(const QString& cmd, const QStringList& arguments = {});
+
+	/*
+	* @setIpAddress,设置IP地址
+	* @param1,网卡号
+	* @param2,IP地址
+	* @param3,子网掩码
+	* @param4,网关
+	*/
+	bool setIpAddress(int netCardId, QString ip, QString mask, QString gateway);
 
 	/*
 	* @ThemeFactory,主题工厂类

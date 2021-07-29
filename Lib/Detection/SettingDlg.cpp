@@ -11,8 +11,12 @@ SettingDlg::SettingDlg(QWidget* parent)
 SettingDlg::~SettingDlg()
 {
 	*m_isExistDlg = false;
-	Dt::Base::getCanConnect()->SetDynamicDisplay();
-	Dt::Base::getCanConnect()->EndReceiveThread();
+	CanTransfer* transfer = Dt::Base::getCanTransfer();
+	if (transfer)
+	{
+		transfer->setProcessFnc();
+		transfer->stopReceiveThread();
+	}
 }
 
 bool SettingDlg::setAuthDlg(const int& flag)
@@ -36,7 +40,7 @@ bool SettingDlg::initInstance()
 		RUN_BREAK(!m_jsonTool, "JSON工具初始化失败");
 
 		QString&& newTitle = QString("%1%2%3设置[%4]").arg(m_jsonTool->getParsedDefConfig()->device.modelName,
-			Misc::getAppAppendName(), GET_DT_TYPE(), Misc::getAppVersion());
+			Misc::getAppAppendName(), Dt::Base::getDetectionName(), Misc::getAppVersion());
 
 		setWindowTitle(newTitle);
 
@@ -741,8 +745,8 @@ void SettingDlg::canBaseSendSlot()
 		}
 
 		ui.canBaseSend->setEnabled(false);
-		Dt::Base::getCanSender()->AddMsg(m_msg, delay, ST_Event, sendCount);
-		Dt::Base::getCanSender()->Start();
+		Dt::Base::getCanSender()->addMsg(m_msg, delay, ST_EVENT, sendCount);
+		Dt::Base::getCanSender()->start();
 
 		m_canBaseSendTimer.start(delay * sendCount);
 	} while (false);
@@ -805,8 +809,8 @@ void SettingDlg::canBaseSendSlot2()
 			break;
 		}
 		ui.canBaseSend2->setEnabled(false);
-		Dt::Base::getCanSender()->AddMsg(m_msg2, delay, ST_Event, sendCount);
-		Dt::Base::getCanSender()->Start();
+		Dt::Base::getCanSender()->addMsg(m_msg2, delay, ST_EVENT, sendCount);
+		Dt::Base::getCanSender()->start();
 
 		m_canBaseSendTimer2.start(delay * sendCount);
 	} while (false);
@@ -817,14 +821,14 @@ void SettingDlg::canBaseStopSlot()
 {
 	if (m_canBaseSendTimer.isActive())
 	{
-		Dt::Base::getCanSender()->DeleteOneMsg(m_msg.id);
+		Dt::Base::getCanSender()->deleteOneMsg(m_msg.id);
 		m_canBaseSendTimer.stop();
 		ui.canBaseSend->setEnabled(true);
 	}
 
 	if (m_canBaseSendTimer2.isActive())
 	{
-		Dt::Base::getCanSender()->DeleteOneMsg(m_msg2.id);
+		Dt::Base::getCanSender()->deleteOneMsg(m_msg2.id);
 		m_canBaseSendTimer2.stop();
 		ui.canBaseSend2->setEnabled(true);
 	}
@@ -836,21 +840,33 @@ void SettingDlg::canStartupSlot()
 	{
 		ui.canStartup->setText("停止");
 		connect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
-		Dt::Base::getCanConnect()->StartReceiveThread();
+		Dt::Base::getCanTransfer()->startReceiveThread();
 	}
 	else
 	{
 		ui.canStartup->setText("开始");
 		disconnect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
-		Dt::Base::getCanConnect()->EndReceiveThread();
+		Dt::Base::getCanTransfer()->stopReceiveThread();
 	}
 	m_canThreadStart = !m_canThreadStart;
 }
 
 void SettingDlg::canConnectSlot()
 {
-	auto canConnect = Dt::Base::getCanConnect();
-	m_canConnect ? canConnect->DisConnect() : canConnect->Connect(500, 0);
+	const DeviceConfig& config = GET_JSON()->getParsedDeviceConfig();
+	CanTransfer* transfer = Dt::Base::getCanTransfer();
+	if (m_canConnect)
+	{
+		transfer->disconnect();
+	}
+	else
+	{
+		if (!transfer->connect(config.canBaudrate.toInt(), config.canExtFrame.toInt()))
+		{
+			QMessageBoxEx::warning(this, "错误", transfer->getLastError());
+			return;
+		}
+	}
 	ui.canConnect->setText(m_canConnect ? "连接" : "断开");
 	m_canConnect = !m_canConnect;
 }
@@ -1126,10 +1142,8 @@ bool SettingDlg::initConfigTreeWidget()
 				childList[j]->setText(2, (m_jsonTool->*getExplain1Fnc[i])().value(j));
 				if ((m_jsonTool->*getKey1Fnc[i])().value(j) == "UDS名称")
 				{
-					QStringList udsNameList;
-					const char** udsName = UdsProtocolMgr::getSupportUdsName();
-					udsNameList.append("支持以下UDS名称");
-					while (*udsName) { udsNameList.append(*udsName++); }
+					QStringList udsNameList = { "支持以下UDS名称" };
+					udsNameList.append(Uds::getSupportUds());
 					childList[j]->setToolTip(2, udsNameList.join('\n'));
 				}
 				else if ((m_jsonTool->*getKey1Fnc[i])().value(j) == "采集卡通道数")
@@ -1238,7 +1252,7 @@ bool SettingDlg::initHardwareWidget()
 		}
 
 		//COMBOBOX配置
-		SerialPortTool serial;
+		SerialPort serial;
 		auto&& portList = serial.getSerialPortList();
 		for (int i = 0; i < portList.size(); i++)
 		{
@@ -1354,7 +1368,16 @@ bool SettingDlg::initHardwareWidget()
 
 bool SettingDlg::initCanTableWidget()
 {
-	ui.canConnect->setEnabled(!Dt::Base::getCanConnect()->IsConnected());
+	CanTransfer* transfer = Dt::Base::getCanTransfer();
+	if (!transfer)
+	{
+		ui.canBaseSend->setEnabled(false);
+		ui.canBaseSend2->setEnabled(false);
+		ui.canBaseStop->setEnabled(false);
+		ui.canStartup->setEnabled(false);
+	}
+	ui.canConnect->setEnabled(transfer ? !transfer->connected() : false);
+
 	connect(ui.canStartup, &QPushButton::clicked, this, &SettingDlg::canStartupSlot);
 	connect(ui.canConnect, &QPushButton::clicked, this, &SettingDlg::canConnectSlot);
 
@@ -1374,10 +1397,11 @@ bool SettingDlg::initCanTableWidget()
 	ui.canTable->setColumnWidth(7, 150);
 
 	qRegisterMetaType<MsgNode>("MsgNode");
-	//connect(this, &SettingDlg::addCanTableItemSignal, this, &SettingDlg::addCanTableItemSlot);
 	ui.canTable->verticalHeader()->setHidden(true);
 
-	Dt::Base::getCanConnect()->SetDynamicDisplay([&](const char* type, const MsgNode& msg)->void {emit addCanTableItemSignal(type, msg); Sleep(10); });
+	if (transfer)
+		transfer->setProcessFnc([&](const char* type, const MsgNode& msg)->void
+			{emit addCanTableItemSignal(type, msg); Sleep(10); });
 
 	connect(ui.canBaseSend, &QPushButton::clicked, this, &SettingDlg::canBaseSendSlot);
 
@@ -1405,10 +1429,8 @@ bool SettingDlg::initCanTableWidget()
 bool SettingDlg::initPaintWidget()
 {
 	Dt::Function* function = dynamic_cast<Dt::Function*>((Dt::Base*)m_basePointer);
-	if (function)
-		ui.connectCapture->setEnabled(!function->getCaptureCardConnect());
-	else
-		ui.connectCapture->setEnabled(false);
+	ui.connectCapture->setEnabled(function ? !function->getCardConnectStatus() : false);
+
 	connect(ui.startCapture, &QPushButton::clicked, this, &SettingDlg::startCaptureSlot);
 	connect(ui.stopCapture, &QPushButton::clicked, this, &SettingDlg::stopCaptureSlot);
 	connect(ui.saveCoord, &QPushButton::clicked, this, &SettingDlg::saveCoordSlot);

@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Header Files\CanCard">
+      <UniqueIdentifier>{e67ea598-37ba-4578-9e1b-4e77fd188aac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CanCard">
+      <UniqueIdentifier>{fedae304-7554-4995-ade2-0f58329cd9e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Manage">
+      <UniqueIdentifier>{03fd2073-7568-41a0-ab96-8c6a3b639ce1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Manage">
+      <UniqueIdentifier>{bda0660d-94c9-4af1-958a-223e977c0f45}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AdvCan.cpp">
+      <Filter>Source Files\CanCard</Filter>
+    </ClCompile>
+    <ClCompile Include="ZlgCan.cpp">
+      <Filter>Source Files\CanCard</Filter>
+    </ClCompile>
+    <ClCompile Include="UartCan.cpp">
+      <Filter>Source Files\CanCard</Filter>
+    </ClCompile>
+    <ClCompile Include="KvaserCan.cpp">
+      <Filter>Source Files\CanCard</Filter>
+    </ClCompile>
+    <ClCompile Include="GCanFd.cpp">
+      <Filter>Source Files\CanCard</Filter>
+    </ClCompile>
+    <ClCompile Include="CanFactory.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="CanMessage.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="CanSender.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="CanTransfer.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="Can.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Can.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AdvCan.h">
+      <Filter>Header Files\CanCard</Filter>
+    </ClInclude>
+    <ClInclude Include="GCanFd.h">
+      <Filter>Header Files\CanCard</Filter>
+    </ClInclude>
+    <ClInclude Include="KvaserCan.h">
+      <Filter>Header Files\CanCard</Filter>
+    </ClInclude>
+    <ClInclude Include="UartCan.h">
+      <Filter>Header Files\CanCard</Filter>
+    </ClInclude>
+    <ClInclude Include="ZlgCan.h">
+      <Filter>Header Files\CanCard</Filter>
+    </ClInclude>
+    <ClInclude Include="CanFactory.h">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+    <ClInclude Include="CanMatrix.hpp">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+    <ClInclude Include="CanMessage.h">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+    <ClInclude Include="CanSender.h">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+    <ClInclude Include="CanTransfer.h">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

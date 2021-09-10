@@ -62,6 +62,7 @@ void AuthDlg::mouseMoveEvent(QMouseEvent* event)
 int AuthDlg::exec()
 {
 	ui.userName->setText(JsonTool::getInstance()->getUserConfigValue("ÓÃ»§Ãû"));
+	ui.password->setFocus();
 	return QDialog::exec();
 }
 

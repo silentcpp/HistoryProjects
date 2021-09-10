@@ -1,16 +1,35 @@
-﻿  Detection.cpp
+﻿  AuthDlg.cpp
+  Detection.cpp
   DownloadDlg.cpp
+  Downloader.cpp
   Function.cpp
   Hardware.cpp
   JsonTool.cpp
   MainDlg.cpp
+  QLabelEx.cpp
+  RayAxis.cpp
+  ScanCodeDlg.cpp
+  SerialPort.cpp
   SettingDlg.cpp
   Types.cpp
+  UnlockDlg.cpp
   UpdateDlg.cpp
+  jqcpumonitor.cpp
+  moc_AuthDlg.cpp
   moc_Detection.cpp
+  moc_DownloadDlg.cpp
+  moc_Downloader.cpp
   moc_Function.cpp
   moc_Hardware.cpp
+  moc_JsonTool.cpp
   moc_MainDlg.cpp
+  moc_QLabelEx.cpp
+  moc_QMessageBoxEx.cpp
+  moc_ScanCodeDlg.cpp
+  moc_SerialPort.cpp
   moc_SettingDlg.cpp
   moc_Types.cpp
+  moc_UnlockDlg.cpp
+  moc_UpdateDlg.cpp
+  moc_jqcpumonitor.cpp
   Detection.vcxproj -> E:\Silence\Lib\Release\Detection.lib

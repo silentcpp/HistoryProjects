@@ -857,11 +857,11 @@ void SettingDlg::canConnectSlot()
 	CanTransfer* transfer = Dt::Base::getCanTransfer();
 	if (m_canConnect)
 	{
-		transfer->disconnect();
+		transfer->close();
 	}
 	else
 	{
-		if (!transfer->connect(config.canBaudrate.toInt(), config.canExtFrame.toInt()))
+		if (!transfer->open(config.canBaudrate.toInt(), config.canExtFrame.toInt()))
 		{
 			QMessageBoxEx::warning(this, "´íÎó", transfer->getLastError());
 			return;
@@ -1376,7 +1376,7 @@ bool SettingDlg::initCanTableWidget()
 		ui.canBaseStop->setEnabled(false);
 		ui.canStartup->setEnabled(false);
 	}
-	ui.canConnect->setEnabled(transfer ? !transfer->connected() : false);
+	ui.canConnect->setEnabled(transfer ? !transfer->isOpened() : false);
 
 	connect(ui.canStartup, &QPushButton::clicked, this, &SettingDlg::canStartupSlot);
 	connect(ui.canConnect, &QPushButton::clicked, this, &SettingDlg::canConnectSlot);

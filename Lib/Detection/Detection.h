@@ -288,6 +288,9 @@ namespace Dt {
 		/*通过DID确认数据*/
 		bool confirmDataByDid(uchar did0, uchar did1, const uchar* data, int size);
 
+		/*安全通过DID写数据*/
+		bool safeWriteDataByDid(uchar did0, uchar did1, const uchar* data, int size);
+
 		/*获取UDS最终错误*/
 		QString getUdsLastError() const;
 
@@ -359,7 +362,7 @@ namespace Dt {
 		/*清空列表控件*/
 		void clearListItem();
 
-		/* 设置下载对话框槽*/
+		/*设置下载对话框槽*/
 		bool setDownloadDlg(BaseTypes::DownloadInfo* info);
 
 		bool callPythonFnc();
@@ -369,7 +372,7 @@ namespace Dt {
 		* @param1,启动延时
 		* @return,bool
 		*/
-		bool waitStartup(ulong delay);
+		virtual bool waitStartup(ulong delay);
 
 		/*
 		* @checkPing,检测是否Ping通
@@ -582,12 +585,11 @@ namespace Dt {
 		/*
 		* 检测CAN唤醒休眠,[重载2]
 		* @param1,总线状态报文ID
-		* @param2,唤醒休眠之后延时
-		* @param3,唤醒成功的值
-		* @param4,报文处理函数
+		* @param2,唤醒成功的值
+		* @param3,报文处理函数
 		* @return,bool
 		*/
-		virtual bool checkCanRouseSleep(int id, ulong delay = 0U, int value = 0, MsgProc msgProc = nullptr);
+		virtual bool checkCanRouseSleep(int id, int value = 0, MsgProc msgProc = nullptr);
 
 		/************************************************************************/
 		/* 图像控制                                                              */
@@ -973,7 +975,7 @@ namespace Dt {
 		Nt::SfrServer* getSfrServer();
 
 		/*播放询问对话框*/
-		const int setPlayQuestionBox(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
+		int setPlayQuestionBox(const QString& title, const QString& text, const QPoint& point = QPoint(0, 0));
 	signals:
 		void setPlayQuestionBoxSignal(const QString&, const QString&, int* result, const QPoint& point);
 	protected:

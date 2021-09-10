@@ -193,7 +193,7 @@ bool Dt::Base::openDevice()
 	bool result = false, success = true;
 	do
 	{
-		if (!m_canTransfer->connect(m_defConfig->device.canBaudrate.toInt(),
+		if (!m_canTransfer->open(m_defConfig->device.canBaudrate.toInt(),
 			m_defConfig->device.canExtFrame.toInt()))
 		{
 			setLastError("连接CAN卡失败," + m_canTransfer->getLastError(), false, true);
@@ -241,7 +241,7 @@ bool Dt::Base::closeDevice()
 	{
 		setScanCodeDlg(m_connect = false);
 
-		if (!m_canTransfer->disconnect())
+		if (!m_canTransfer->close())
 		{
 			setLastError("CAN断开连接失败", false, true);
 		}
@@ -1151,7 +1151,7 @@ bool Dt::Base::setCanProcessFncEx(const char* name, CanList list, const CanProcI
 			msleep(x.type == ST_EVENT ? x.delay * x.count : x.delay);
 		}
 
-		if (!autoProcessCanMsg(procInfo.id, procInfo.req, procInfo.proc))
+		if (!autoProcessCanMsg(procInfo.id, procInfo.val, procInfo.proc))
 		{
 			break;
 		}
@@ -1163,17 +1163,6 @@ bool Dt::Base::setCanProcessFncEx(const char* name, CanList list, const CanProcI
 		if (x.type == ST_PERIOD)
 		{
 			m_canSender->deleteOneMsg(x.msg.id);
-		}
-		else if (x.type == ST_PE)
-		{
-			//只能用于处理简单的PE
-			CanMsg value = x;
-			value.count = 10;
-			value.delay = x.delay / 20;
-			value.type = ST_EVENT;
-			memset(value.msg.data, 0x00, sizeof(value.msg.data));
-			m_canSender->addMsg(value);
-			msleep(value.count * value.delay);
 		}
 	}
 	WRITE_LOG("%s %s", OK_NG(result), name);
@@ -1506,6 +1495,38 @@ bool Dt::Base::confirmDataByDid(uchar did0, uchar did1, const uchar* data, int s
 		RUN_BREAK(size != recvSize, "读取长度对比失败");
 
 		RUN_BREAK(memcmp(data, buffer, size), "对比数据失败");
+		result = true;
+	} while (false);
+	return result;
+}
+
+bool Dt::Base::safeWriteDataByDid(uchar did0, uchar did1, const uchar* data, int size)
+{
+	bool result = false, success = true;
+	do
+	{
+		if (!writeDataByDid(did0, did1, data, size))
+		{
+			break;
+		}
+
+		addListItem("系统将重启进行校验");
+		msleep(300);
+		m_power.Output(false);
+		addListItem("正在等待控制器放电");
+		msleep(5000);
+		addListItem("控制器放电完成");
+		m_power.Output(true);
+		addListItem(Q_SPRINTF("系统正在启动,请耐心等待,大约需要%ld秒", START_DELAY / 1000));
+		msleep(START_DELAY);
+		addListItem(Q_SPRINTF("正在进行重新校验 0x%02x%02x", did0, did1));
+		success = confirmDataByDid(did0, did1, data, size);
+		addListItem(Q_SPRINTF("重新校验 0x%02x%02x %s", did0, did1, OK_NG(success)));
+
+		if (!success)
+		{
+			break;
+		}
 		result = true;
 	} while (false);
 	return result;
@@ -2137,7 +2158,7 @@ bool Dt::Function::checkCanRouseSleep(const MsgNode& msg, ulong delay, int id, i
 	return result;
 }
 
-bool Dt::Function::checkCanRouseSleep(int id, ulong delay, int value, MsgProc msgProc)
+bool Dt::Function::checkCanRouseSleep(int id, int value, MsgProc msgProc)
 {
 	bool result = false;
 	do
@@ -2148,10 +2169,7 @@ bool Dt::Function::checkCanRouseSleep(int id, ulong delay, int value, MsgProc ms
 			break;
 		}
 
-		if (delay)
-		{
-			msleep(delay);
-		}
+		waitStartup(START_DELAY);
 		result = true;
 	} while (false);
 	return result;
@@ -3977,7 +3995,7 @@ Nt::SfrServer* Dt::Dvr::getSfrServer()
 	return m_sfrServer;
 }
 
-const int Dt::Dvr::setPlayQuestionBox(const QString& title, const QString& text, const QPoint& point)
+int Dt::Dvr::setPlayQuestionBox(const QString& title, const QString& text, const QPoint& point)
 {
 	int result = DvrTypes::PR_NG;
 	emit setPlayQuestionBoxSignal(title, text, &result, point);

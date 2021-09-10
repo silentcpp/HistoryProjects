@@ -92,7 +92,7 @@ bool Hwd::SGMW::writeSn()
 		data[1] = Q_TO_C_STR(line)[1];
 		memcpy(&data[2], Q_TO_C_STR(sn), Q_TO_C_LEN(sn));
 
-		RUN_BREAK(!writeDataByDid(0xf1, 0x8c, data, 7), "–¥»Î–Ú¡–∫≈ ß∞‹," + getUdsLastError());
+		RUN_BREAK(!safeWriteDataByDid(0xf1, 0x8c, data, 7), "–¥»Î–Ú¡–∫≈ ß∞‹," + getUdsLastError());
 		result = true;
 	} while (false);
 	WRITE_LOG("%s –¥»Î–Ú¡–∫≈", OK_NG(result));

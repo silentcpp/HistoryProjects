@@ -183,10 +183,23 @@ timer->start(DELAY);\
 }\
 }
 
+/*
+* @GET_FNC_NAME,获取函数名
+* @param1,函数
+* @return,const char*
+*/
 #define GET_FNC_NAME(X) #X
 
+/*
+* @BUFF_SIZE,缓存区大小
+* @return,int
+*/
 #define BUFF_SIZE 0x1000
 
+/*
+* @NO_THROW_NEW,无抛错new
+* @return,void*
+*/
 #define NO_THROW_NEW new(std::nothrow)
 
 /*
@@ -197,15 +210,15 @@ timer->start(DELAY);\
 
 /*
 * @GET_TYPE_NAME,获取机种名称
-* @return,const QString
+* @return,QString
 */
 #define GET_TYPE_NAME() GET_JSON()->getDeviceConfigValue("机种名称")
 
 /*
 * @START_DELAY,启动延时
-* @return,const ULONG
+* @return,ulong
 */
-#define START_DELAY (ULONG)GET_JSON()->getParsedThresholdConfig().startDelay
+#define START_DELAY (ulong)GET_JSON()->getParsedThresholdConfig().startDelay
 
 /*
 * @TYPE_NAME_IS,判断机种名是否为NAME
@@ -255,25 +268,25 @@ typedef MsgProc CanProc;
 
 struct MsgProcInfo {
 	int id;
-	int req;
+	int val;
 	MsgProc proc;
 };
 
 struct CanProcInfo {
 	int id;
-	int req;
+	int val;
 	CanProc proc;
 };
 
 struct MsgProcInfoEx {
 	IdList idList;
-	ValList reqList;
+	ValList valList;
 	MsgProc proc;
 };
 
 struct CanProcInfoEx {
 	IdList idList;
-	ValList reqList;
+	ValList valList;
 	CanProc proc;
 };
 

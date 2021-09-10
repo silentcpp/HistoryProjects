@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Header Files\Device">
+      <UniqueIdentifier>{b5a7015f-31c2-4957-a32a-8bb4e6b2deba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Device">
+      <UniqueIdentifier>{89d49974-1658-4475-a6dc-b937bf49231f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Device\Aardvark">
+      <UniqueIdentifier>{93920180-2713-4dba-985a-2fa9f3c84010}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Device\Aardvark">
+      <UniqueIdentifier>{59785f9e-529e-4f25-bc40-0a64bcc8ed2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Burn">
+      <UniqueIdentifier>{5b31f6a1-e7d5-48e7-a28c-fade78483d1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Burn\ASX340">
+      <UniqueIdentifier>{9c2884a8-4160-495b-b462-abcbc96b9462}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Burn\OV7958">
+      <UniqueIdentifier>{470ce1c8-caed-4add-bea2-68985f00fd92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Burn\OVX1E">
+      <UniqueIdentifier>{05e1750e-eb45-4fb0-a5a3-90e5ebcc8fa5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Burn\Sony016">
+      <UniqueIdentifier>{ca6b176f-2926-44f4-b424-49a74d54e201}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Burn\Sony019">
+      <UniqueIdentifier>{8ef07009-8aa9-4c68-95da-5d6c813addb0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Burn">
+      <UniqueIdentifier>{01c1d177-fcfe-4f58-9e06-a8cbccb41557}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Burn\ASX340">
+      <UniqueIdentifier>{ac266582-122a-4738-86e8-7305454ffe1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Burn\OV7958">
+      <UniqueIdentifier>{36755553-2a1f-46e0-9d7d-38e6775da784}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Burn\OVX1E">
+      <UniqueIdentifier>{a21d172b-89df-49e7-931e-db43eb13c450}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Burn\Sony016">
+      <UniqueIdentifier>{172ef860-d92e-4fca-8c65-d73e9073d6e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Burn\Sony019">
+      <UniqueIdentifier>{c87aa768-e92e-47f7-81ea-3ddbce6c68c4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Device\Aardvark\aardvark.cpp">
+      <Filter>Source Files\Device\Aardvark</Filter>
+    </ClCompile>
+    <ClCompile Include="Device\BaseDevice.cpp">
+      <Filter>Source Files\Device</Filter>
+    </ClCompile>
+    <ClCompile Include="Burn\ASX340\ASX340.cpp">
+      <Filter>Source Files\Burn\ASX340</Filter>
+    </ClCompile>
+    <ClCompile Include="Burn\OV7958\OV7958.cpp">
+      <Filter>Source Files\Burn\OV7958</Filter>
+    </ClCompile>
+    <ClCompile Include="Burn\0VX1E\OVX1E.cpp">
+      <Filter>Source Files\Burn\OVX1E</Filter>
+    </ClCompile>
+    <ClCompile Include="Burn\Sony016\Sony016.cpp">
+      <Filter>Source Files\Burn\Sony016</Filter>
+    </ClCompile>
+    <ClCompile Include="Burn\Sony019\Sony019.cpp">
+      <Filter>Source Files\Burn\Sony019</Filter>
+    </ClCompile>
+    <ClCompile Include="Device\Aardvark\AardvarkDevice.cpp">
+      <Filter>Source Files\Device\Aardvark</Filter>
+    </ClCompile>
+    <ClCompile Include="Burn\BaseBurn.cpp">
+      <Filter>Source Files\Burn</Filter>
+    </ClCompile>
+    <ClCompile Include="ChipBurn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Device\Aardvark\aardvark.h">
+      <Filter>Header Files\Device\Aardvark</Filter>
+    </ClInclude>
+    <ClInclude Include="Device\BaseDevice.h">
+      <Filter>Header Files\Device</Filter>
+    </ClInclude>
+    <ClInclude Include="Burn\ASX340\ASX340.h">
+      <Filter>Header Files\Burn\ASX340</Filter>
+    </ClInclude>
+    <ClInclude Include="Burn\OV7958\OV7958.h">
+      <Filter>Header Files\Burn\OV7958</Filter>
+    </ClInclude>
+    <ClInclude Include="Burn\0VX1E\OVX1E.h">
+      <Filter>Header Files\Burn\OVX1E</Filter>
+    </ClInclude>
+    <ClInclude Include="Burn\Sony016\Sony016.h">
+      <Filter>Header Files\Burn\Sony016</Filter>
+    </ClInclude>
+    <ClInclude Include="Burn\Sony019\Sony019.h">
+      <Filter>Header Files\Burn\Sony019</Filter>
+    </ClInclude>
+    <ClInclude Include="Device\Aardvark\AardvarkDevice.h">
+      <Filter>Header Files\Device\Aardvark</Filter>
+    </ClInclude>
+    <ClInclude Include="Burn\BaseBurn.h">
+      <Filter>Header Files\Burn</Filter>
+    </ClInclude>
+    <ClInclude Include="ChipBurn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

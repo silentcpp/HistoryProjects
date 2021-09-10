@@ -1,0 +1,12 @@
+﻿  Reading Qt configuration (D:\Softwares\Qt\5.7.0\5.7\msvc2015\bin\qmake.exe)
+  OVX1E.cpp
+  ASX340.cpp
+  BaseBurn.cpp
+  OV7958.cpp
+  Sony016.cpp
+  Sony019.cpp
+  ChipBurn.cpp
+  aardvark.cpp
+  AardvarkDevice.cpp
+  BaseDevice.cpp
+  ChipBurn.vcxproj -> E:\Silence\Lib\Release\ChipBurn.lib

@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+      <ParseFiles>true</ParseFiles>
+    </Filter>
+    <Filter Include="Header Files\Dlg">
+      <UniqueIdentifier>{6970f438-2652-407f-8b57-5c544f218f78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dlg">
+      <UniqueIdentifier>{4c81f9e0-329e-4e51-964a-c581c2c28169}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Manage">
+      <UniqueIdentifier>{3897c6f6-1d3c-4b91-9c8b-bd3e6d90817f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Manage">
+      <UniqueIdentifier>{ffb1cabf-d77d-42d9-9f58-4cdf0d3deb16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Control">
+      <UniqueIdentifier>{74143942-2b04-4c48-8a05-ebbea7116e72}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Control">
+      <UniqueIdentifier>{fcb25fbd-3f62-4c91-ae7a-d0ffa35648b9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UnlockDlg.cpp">
+      <Filter>Source Files\Dlg</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdateDlg.cpp">
+      <Filter>Source Files\Dlg</Filter>
+    </ClCompile>
+    <ClCompile Include="AuthDlg.cpp">
+      <Filter>Source Files\Dlg</Filter>
+    </ClCompile>
+    <ClCompile Include="File.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="JQCPUMonitor.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>Source Files\Manage</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+    <None Include="JQCPUMonitor.inc">
+      <Filter>Header Files\Manage</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="AuthDlg.h">
+      <Filter>Header Files\Dlg</Filter>
+    </QtMoc>
+    <QtMoc Include="UnlockDlg.h">
+      <Filter>Header Files\Dlg</Filter>
+    </QtMoc>
+    <QtMoc Include="UpdateDlg.h">
+      <Filter>Header Files\Dlg</Filter>
+    </QtMoc>
+    <QtMoc Include="JQCPUMonitor.h">
+      <Filter>Header Files\Manage</Filter>
+    </QtMoc>
+    <QtMoc Include="QMessageBoxEx.hpp">
+      <Filter>Header Files\Control</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="AuthDlg.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="UnlockDlg.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="UpdateDlg.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="File.h">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+    <ClInclude Include="Window.h">
+      <Filter>Header Files\Manage</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
